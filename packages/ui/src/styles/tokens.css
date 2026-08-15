@@ -1,0 +1,274 @@
+/**
+ * MasseurMatch design tokens — CSS custom properties.
+ *
+ * Mirrors `src/tokens.ts`. Import this once, from the root layout of each app,
+ * BEFORE the app's Tailwind entrypoint so utilities keep the upper hand:
+ *
+ *   import "@masseurmatch/ui/styles.css";
+ *   import "./globals.css";
+ */
+
+:root {
+  /* --- shadcn semantic tokens (HSL channels) --- */
+  --background: 0 0% 100%;
+  --foreground: 0 0% 7%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 7%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 7%;
+  --primary: 350 64% 33%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 0 0% 97%;
+  --secondary-foreground: 0 0% 7%;
+  --muted: 0 0% 97%;
+  --muted-foreground: 0 0% 44%;
+  --accent: 350 64% 33%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 73% 52%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 0 0% 91%;
+  --input: 0 0% 85%;
+  --ring: 350 64% 33%;
+  --radius: 0.75rem;
+  --success: 152 60% 30%;
+  --success-foreground: 0 0% 100%;
+  --warning: 24 95% 53%;
+  --warning-foreground: 0 0% 100%;
+
+  /* --- Dashboard sidebar surface --- */
+  --sidebar-background: 0 0% 7%;
+  --sidebar-foreground: 0 0% 100%;
+  --sidebar-primary: 350 64% 33%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 0 0% 20%;
+  --sidebar-accent-foreground: 0 0% 100%;
+  --sidebar-border: 0 0% 20%;
+  --sidebar-ring: 350 64% 33%;
+
+  /* --- Status badges --- */
+  --badge-verified: 152 60% 30%;
+  --badge-verified-light: 152 45% 93%;
+  --badge-verified-border: 152 60% 60%;
+  --badge-available: 152 60% 30%;
+  --badge-available-light: 152 45% 93%;
+  --badge-available-border: 152 60% 60%;
+  --badge-offer: 350 64% 33%;
+  --badge-offer-light: 350 60% 95%;
+  --badge-offer-border: 350 60% 65%;
+  --badge-promo: 24 95% 53%;
+  --badge-promo-light: 24 95% 93%;
+  --badge-promo-border: 24 95% 70%;
+
+  /* --- Brand palette (space-separated RGB channels for <alpha-value>) --- */
+  --color-brand-primary: #111111;
+  --color-brand-primary-rgb: 17 17 17;
+  --color-brand-deep-navy: #111111;
+  --color-brand-deep-navy-rgb: 17 17 17;
+  --color-brand-secondary: #8b1e2d;
+  --color-brand-secondary-rgb: 139 30 45;
+  --color-brand-electric: #a52538;
+  --color-brand-electric-rgb: 165 37 56;
+  --color-brand-accent: #8b1e2d;
+  --color-brand-accent-rgb: 139 30 45;
+  --color-brand-soft-accent: #f8edee;
+  --color-brand-soft-accent-rgb: 248 237 238;
+  --color-brand-gold: #8b1e2d;
+  --color-brand-gold-rgb: 139 30 45;
+
+  /* --- Surfaces --- */
+  --color-bg-body: #ffffff;
+  --color-bg-body-rgb: 255 255 255;
+  --color-bg-surface: #ffffff;
+  --color-bg-surface-rgb: 255 255 255;
+  --color-bg-subtle: #f7f7f7;
+  --color-bg-subtle-rgb: 247 247 247;
+  --color-background-primary: #ffffff;
+  --color-background-primary-rgb: 255 255 255;
+
+  /* --- Text --- */
+  --color-text-primary: #111111;
+  --color-text-primary-rgb: 17 17 17;
+  --color-text-secondary: #6f6f6f;
+  --color-text-secondary-rgb: 111 111 111;
+  --color-text-muted: #8e8e8e;
+  --color-text-muted-rgb: 142 142 142;
+  --color-text-inverse: #ffffff;
+  --color-text-inverse-rgb: 255 255 255;
+
+  /* --- Borders --- */
+  --color-border-subtle: #e8e8e8;
+  --color-border-subtle-rgb: 232 232 232;
+  --color-border-strong: #d9d9d9;
+  --color-border-strong-rgb: 217 217 217;
+
+  /* --- Actions --- */
+  --color-action-primary: #8b1e2d;
+  --color-action-primary-rgb: 139 30 45;
+  --color-action-primary-hover: #6e1521;
+  --color-action-primary-hover-rgb: 110 21 33;
+  --color-action-secondary: #111111;
+  --color-action-secondary-rgb: 17 17 17;
+  --color-action-secondary-hover: #2b2b2b;
+  --color-action-secondary-hover-rgb: 43 43 43;
+
+  /* --- Feedback --- */
+  --color-feedback-success: #1e7a46;
+  --color-feedback-success-rgb: 30 122 70;
+  --color-feedback-error: #dc2626;
+  --color-feedback-error-rgb: 220 38 38;
+  --color-feedback-warning: #f97316;
+  --color-feedback-warning-rgb: 249 115 22;
+
+  /* --- Component token bridge (consumed by Button/Input variants) --- */
+  --color-primary: #8b1e2d;
+  --color-primary-hover: #6e1521;
+  --color-primary-active: #5a1019;
+  --color-error: #dc2626;
+  --color-success: #1e7a46;
+  --color-surface: #ffffff;
+  --color-surface-offset: #f7f7f7;
+  --color-surface-dynamic: #fafafa;
+  --color-text: #111111;
+  --color-text-faint: #8e8e8e;
+  --color-border: #e8e8e8;
+  --color-divider: #e8e8e8;
+
+  /* --- Gradients --- */
+  --gradient-brand: linear-gradient(135deg, #111111 0%, #2b2b2b 38%, #8b1e2d 100%);
+  --gradient-surface: linear-gradient(180deg, rgb(255 255 255 / 0.98), rgb(247 247 247 / 0.92));
+  --gradient-warm: linear-gradient(135deg, #8b1e2d, #a52538);
+
+  /* --- Fonts (the Satoshi face is bound by next/font in each app) --- */
+  --font-sans: var(--font-satoshi), Arial, sans-serif;
+  --font-display: var(--font-satoshi), Arial, sans-serif;
+  --font-body: var(--font-satoshi), Arial, sans-serif;
+  --font-serif: Georgia, "Times New Roman", serif;
+  --font-mono: ui-monospace, "SFMono-Regular", "Roboto Mono", Consolas, monospace;
+
+  /* --- Spacing scale --- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 40px;
+  --space-8: 48px;
+  --space-9: 64px;
+
+  /* --- Typography scale --- */
+  --fs-12: 12px;
+  --fs-14: 14px;
+  --fs-16: 16px;
+  --fs-18: 18px;
+  --fs-24: 24px;
+  --fs-32: 32px;
+  --fs-40: 40px;
+  --fs-56: 56px;
+
+  --lh-tight: 1.05;
+  --lh-snug: 1.2;
+  --lh-base: 1.5;
+  --lh-relaxed: 1.65;
+
+  /* --- Radii --- */
+  --radius-sm: 12px;
+  --radius-md: 18px;
+  --radius-lg: 24px;
+  --radius-xl: 28px;
+
+  /* --- Shadows --- */
+  --shadow-xs: 0 4px 6px rgba(17, 17, 17, 0.04);
+  --shadow-sm: 0 8px 16px rgba(17, 17, 17, 0.06);
+  --shadow-md: 0 14px 40px rgba(17, 17, 17, 0.08);
+  --shadow-lg: 0 20px 60px rgba(17, 17, 17, 0.12);
+  --shadow-xl: 0 28px 80px rgba(17, 17, 17, 0.18);
+  --shadow-subtle: 0 6px 18px rgba(17, 17, 17, 0.06);
+  --shadow-card: 0 14px 40px rgb(17 17 17 / 0.08);
+
+  /* --- Motion --- */
+  --ease-smooth-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-editorial: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* --- Focus ring --- */
+  --focus-ring: 0 0 0 3px rgba(139, 30, 45, 0.18);
+}
+
+/**
+ * Editorial surface treatment carried over from the legacy site: a white card
+ * that lifts on hover with a long smooth-out curve.
+ */
+.premium-surface {
+  position: relative;
+  isolation: isolate;
+  background: #ffffff;
+  transition:
+    transform 0.55s var(--ease-smooth-out),
+    box-shadow 0.55s var(--ease-smooth-out),
+    border-color 0.35s ease;
+}
+
+.premium-surface:hover,
+.premium-surface:focus-within {
+  transform: translateY(-4px);
+  box-shadow: 0 24px 56px rgb(0 0 0 / 0.1);
+  border-color: rgb(var(--color-border-strong-rgb) / 0.95);
+}
+
+/** Shared interactive transition for inputs, buttons and small surfaces. */
+.motion-premium {
+  transition:
+    transform 0.45s var(--ease-smooth-out),
+    box-shadow 0.45s var(--ease-smooth-out),
+    background-color 0.28s ease,
+    border-color 0.28s ease,
+    color 0.22s ease,
+    opacity 0.22s ease;
+}
+
+.motion-premium:hover,
+.motion-premium:focus-visible {
+  transform: translateY(-2px);
+}
+
+/** Diagonal light sweep across premium cards. */
+.premium-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.premium-shimmer::before {
+  content: "";
+  position: absolute;
+  inset: -120% -40% auto;
+  height: 200%;
+  transform: translateX(-120%) rotate(14deg);
+  background: linear-gradient(
+    100deg,
+    transparent 35%,
+    rgb(255 255 255 / 0.56) 50%,
+    transparent 65%
+  );
+  animation: premiumSweep 3.8s var(--ease-smooth-out) infinite;
+  pointer-events: none;
+}
+
+@keyframes premiumSweep {
+  0% {
+    transform: translateX(-120%) rotate(14deg);
+  }
+  45%,
+  100% {
+    transform: translateX(140%) rotate(14deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .premium-surface,
+  .motion-premium,
+  .premium-shimmer::before {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+  }
+}

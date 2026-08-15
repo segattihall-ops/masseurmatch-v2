@@ -1,0 +1,108 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  TURBO_TELEMETRY_DISABLED: 1
+  NEXT_TELEMETRY_DISABLED: 1
+
+jobs:
+  verify:
+    name: ${{ matrix.task }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      # Report every failing step in one run rather than stopping at the first.
+      fail-fast: false
+      matrix:
+        task: [lint, typecheck, build]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run ${{ matrix.task }}
+        run: pnpm ${{ matrix.task }}
+
+  format:
+    name: format
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check formatting
+        run: pnpm format:check
+
+  secrets:
+    name: secret-scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fail if any .env file is tracked
+        run: |
+          tracked="$(git ls-files -- '.env' '.env.*' ':!:.env.example')"
+          if [ -n "$tracked" ]; then
+            echo "::error::Tracked env files found:"
+            echo "$tracked"
+            exit 1
+          fi
+          echo "No tracked .env files."
+
+      - name: Fail if .env.example carries values
+        run: |
+          offenders="$(grep -nE '^[A-Za-z_][A-Za-z0-9_]*=.+' .env.example || true)"
+          if [ -n "$offenders" ]; then
+            echo "::error::.env.example must document names only, never values:"
+            echo "$offenders"
+            exit 1
+          fi
+          echo ".env.example contains names only."
+
+      - name: Scan tracked files for credential-shaped strings
+        run: bash scripts/scan-secrets.sh
+
+  # Single required status check. Point branch protection at this job so a
+  # failure in any matrix leg blocks the merge.
+  ci:
+    name: ci
+    if: always()
+    needs: [verify, format, secrets]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail if any dependency failed
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        run: exit 1
+      - run: echo "All CI checks passed."
