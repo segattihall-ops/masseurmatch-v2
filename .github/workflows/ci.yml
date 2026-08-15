@@ -25,7 +25,11 @@ jobs:
       # Report every failing step in one run rather than stopping at the first.
       fail-fast: false
       matrix:
-        task: [lint, typecheck, build]
+        # `test` runs the RLS/ranking suites. Without Supabase credentials in
+        # the repo secrets they skip rather than fail — add
+        # NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY (pointed at
+        # STAGING) to actually exercise the policies here.
+        task: [lint, typecheck, build, test]
     steps:
       - uses: actions/checkout@v4
 

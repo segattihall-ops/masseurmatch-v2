@@ -22,11 +22,11 @@ export type {
   Tables,
   TablesInsert,
   TablesUpdate,
-} from "./types.generated";
+} from "./types";
 
-export { Constants } from "./types.generated";
+export { Constants } from "./types";
 
-import type { Database } from "./types.generated";
+import type { Database } from "./types";
 
 /** Schema names available on the project. */
 export type SchemaName = Exclude<keyof Database, "__InternalSupabase">;

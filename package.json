@@ -11,6 +11,9 @@
     "dev": "turbo run dev",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "db:types": "pnpm --filter @masseurmatch/db db:types",
+    "db:audit-rls": "pnpm --filter @masseurmatch/db db:audit-rls",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,mjs,cjs,json,css,md}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,mjs,cjs,json,css,md}\"",
     "clean": "turbo run clean && rm -rf node_modules"

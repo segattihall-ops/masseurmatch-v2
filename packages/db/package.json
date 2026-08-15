@@ -4,22 +4,47 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts",
-    "./types": "./src/types.generated.ts"
+    ".": "./index.ts",
+    "./types": "./types.ts",
+    "./actions/ranking": "./actions/ranking.ts",
+    "./client": "./client.ts",
+    "./actions/ranking-config": "./actions/ranking-config.ts"
   },
   "files": [
-    "src"
+    "index.ts",
+    "types.ts",
+    "client.ts",
+    "actions",
+    "POLICIES.md"
   ],
   "scripts": {
-    "generate": "supabase gen types typescript --project-id \"$SUPABASE_PROJECT_ID\" --schema public > src/types.generated.ts",
-    "generate:local": "supabase gen types typescript --local --schema public > src/types.generated.ts",
-    "lint": "eslint src --max-warnings 0",
+    "db:types": "supabase gen types typescript --project-id \"$SUPABASE_PROJECT_ID\" --schema public > types.ts",
+    "db:types:local": "supabase gen types typescript --local --schema public > types.ts",
+    "db:audit-rls": "tsx scripts/audit-rls.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint . --ext .ts --max-warnings 0",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf .turbo node_modules"
   },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.47.10"
+  },
+  "peerDependencies": {
+    "next": "^14.2.0"
+  },
+  "peerDependenciesMeta": {
+    "next": {
+      "optional": true
+    }
+  },
   "devDependencies": {
+    "@types/node": "^20.19.9",
     "eslint": "^8.57.1",
     "eslint-config-next": "^14.2.23",
-    "typescript": "^5.7.3"
+    "next": "^14.2.23",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3",
+    "vitest": "^2.1.8"
   }
 }

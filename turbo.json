@@ -18,6 +18,17 @@
     "typecheck": {
       "dependsOn": ["^build"]
     },
+    "test": {
+      "dependsOn": ["^build"],
+      "env": [
+        "NEXT_PUBLIC_SUPABASE_URL",
+        "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+        "TEST_THERAPIST_A_EMAIL",
+        "TEST_THERAPIST_A_PASSWORD",
+        "TEST_THERAPIST_B_PROFILE_ID",
+        "TEST_CITY_SLUG"
+      ]
+    },
     "dev": {
       "cache": false,
       "persistent": true

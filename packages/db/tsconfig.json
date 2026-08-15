@@ -1,8 +1,9 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "baseUrl": "."
+    "baseUrl": ".",
+    "types": ["node"]
   },
-  "include": ["src/**/*.ts"],
+  "include": ["*.ts", "actions/**/*.ts", "scripts/**/*.ts", "tests/**/*.ts"],
   "exclude": ["node_modules", ".turbo"]
 }
