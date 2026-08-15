@@ -11,21 +11,26 @@ cd "$(dirname "$0")/.."
 
 # Provider-specific prefixes. Generic high-entropy detection is intentionally
 # left out — it produces false positives on lockfile hashes and font subsets.
+#
+# Every token pattern is anchored with \b so a prefix cannot match mid-word:
+# without it, /re_.../ fires on `require_identity_verification` and /sk-.../
+# on `task-...`. Character classes exclude `_` for the same reason — real keys
+# are unbroken base62 runs, snake_case identifiers are not.
 PATTERNS=(
-  'sk_live_[0-9a-zA-Z]{16,}'                  # Stripe secret key
-  'sk_test_[0-9a-zA-Z]{16,}'                  # Stripe test secret key
-  'rk_live_[0-9a-zA-Z]{16,}'                  # Stripe restricted key
-  'whsec_[0-9a-zA-Z]{16,}'                    # Stripe webhook secret
-  're_[0-9A-Za-z_]{20,}'                      # Resend API key
-  'sk-(proj-)?[A-Za-z0-9_-]{20,}'             # OpenAI API key
-  'sk-ant-[A-Za-z0-9_-]{20,}'                 # Anthropic API key
-  'AIza[0-9A-Za-z_-]{35}'                     # Google API key
-  'SG\.[A-Za-z0-9_-]{20,}'                    # SendGrid
-  'AC[0-9a-f]{32}'                            # Twilio account SID
-  'ghp_[0-9A-Za-z]{36}'                       # GitHub personal access token
-  'github_pat_[0-9A-Za-z_]{40,}'              # GitHub fine-grained PAT
-  'AKIA[0-9A-Z]{16}'                          # AWS access key ID
-  'eyJhbGciOi[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{20,}\.'  # JWT (Supabase keys)
+  '\bsk_live_[0-9a-zA-Z]{16,}'                # Stripe secret key
+  '\bsk_test_[0-9a-zA-Z]{16,}'                # Stripe test secret key
+  '\brk_live_[0-9a-zA-Z]{16,}'                # Stripe restricted key
+  '\bwhsec_[0-9a-zA-Z]{16,}'                  # Stripe webhook secret
+  '\bre_[0-9A-Za-z]{24,}'                     # Resend API key
+  '\bsk-(proj-)?[A-Za-z0-9-]{20,}'            # OpenAI API key
+  '\bsk-ant-[A-Za-z0-9-]{20,}'                # Anthropic API key
+  '\bAIza[0-9A-Za-z_-]{35}'                   # Google API key
+  '\bSG\.[A-Za-z0-9_-]{20,}'                  # SendGrid
+  '\bAC[0-9a-f]{32}\b'                        # Twilio account SID
+  '\bghp_[0-9A-Za-z]{36}'                     # GitHub personal access token
+  '\bgithub_pat_[0-9A-Za-z_]{40,}'            # GitHub fine-grained PAT
+  '\bAKIA[0-9A-Z]{16}\b'                      # AWS access key ID
+  '\beyJhbGciOi[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{20,}\.'  # JWT (Supabase keys)
   '-----BEGIN [A-Z ]*PRIVATE KEY-----'        # PEM private key
   'postgres(ql)?://[^:@/[:space:]]+:[^@/[:space:]]+@'   # Postgres URL with password
 )

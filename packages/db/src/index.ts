@@ -10,39 +10,40 @@
  *
  *   const supabase = createClient<Database>(url, anonKey);
  *   const therapist: Tables<"therapists"> = …;
+ *
+ * The row/insert/update helpers come straight from the generated file, so they
+ * keep supporting the `{ schema: … }` option form for non-public schemas.
  */
-export type { Database, Json } from "./types.generated";
+export type {
+  CompositeTypes,
+  Database,
+  Enums,
+  Json,
+  Tables,
+  TablesInsert,
+  TablesUpdate,
+} from "./types.generated";
+
+export { Constants } from "./types.generated";
 
 import type { Database } from "./types.generated";
 
 /** Schema names available on the project. */
-export type SchemaName = keyof Database;
+export type SchemaName = Exclude<keyof Database, "__InternalSupabase">;
 
 type PublicSchema = Database["public"];
 
-/** Row type of a table or view, e.g. `Tables<"therapists">`. */
-export type Tables<T extends keyof PublicSchema["Tables"] | keyof PublicSchema["Views"]> =
-  T extends keyof PublicSchema["Tables"]
-    ? PublicSchema["Tables"][T]["Row"]
-    : T extends keyof PublicSchema["Views"]
-      ? PublicSchema["Views"][T]["Row"]
-      : never;
+/** Names of every table in the `public` schema. */
+export type TableName = keyof PublicSchema["Tables"];
 
-/** Insert payload for a table, e.g. `TablesInsert<"therapists">`. */
-export type TablesInsert<T extends keyof PublicSchema["Tables"]> =
-  PublicSchema["Tables"][T]["Insert"];
+/** Names of every view in the `public` schema. */
+export type ViewName = keyof PublicSchema["Views"];
 
-/** Update payload for a table, e.g. `TablesUpdate<"therapists">`. */
-export type TablesUpdate<T extends keyof PublicSchema["Tables"]> =
-  PublicSchema["Tables"][T]["Update"];
+/** Names of every Postgres function exposed through PostgREST. */
+export type FunctionName = keyof PublicSchema["Functions"];
 
-/** Postgres enum union, e.g. `Enums<"therapist_status">`. */
-export type Enums<T extends keyof PublicSchema["Enums"]> = PublicSchema["Enums"][T];
+/** Arguments of an RPC function, e.g. `FunctionArgs<"current_user_role">`. */
+export type FunctionArgs<T extends FunctionName> = PublicSchema["Functions"][T]["Args"];
 
-/** Arguments of a Postgres function exposed through PostgREST. */
-export type FunctionArgs<T extends keyof PublicSchema["Functions"]> =
-  PublicSchema["Functions"][T]["Args"];
-
-/** Return type of a Postgres function exposed through PostgREST. */
-export type FunctionReturns<T extends keyof PublicSchema["Functions"]> =
-  PublicSchema["Functions"][T]["Returns"];
+/** Return type of an RPC function, e.g. `FunctionReturns<"current_user_role">`. */
+export type FunctionReturns<T extends FunctionName> = PublicSchema["Functions"][T]["Returns"];

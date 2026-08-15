@@ -125,7 +125,10 @@ import type { Database, Tables } from "@masseurmatch/db";
 const supabase = createClient<Database>(url, anonKey);
 ```
 
-`src/types.generated.ts` is generated output. Regenerate with:
+`src/types.generated.ts` is `supabase gen types typescript` output for the
+`public` schema — 121 tables, 6 views and 52 RPC functions. It is committed
+verbatim and excluded from Prettier, so regenerating never fails the format
+check. Regenerate with:
 
 ```bash
 SUPABASE_PROJECT_ID=<project-ref> pnpm --filter @masseurmatch/db generate
@@ -133,8 +136,10 @@ SUPABASE_PROJECT_ID=<project-ref> pnpm --filter @masseurmatch/db generate
 pnpm --filter @masseurmatch/db generate:local
 ```
 
-The committed version is the empty scaffold produced before any schema exists
-in this repository; regenerating overwrites it cleanly.
+`src/index.ts` re-exports the generated `Tables` / `TablesInsert` /
+`TablesUpdate` / `Enums` helpers (which understand the `{ schema: … }` option
+form) and adds `TableName`, `ViewName`, `FunctionName`, `FunctionArgs` and
+`FunctionReturns` on top.
 
 ## Environment and secrets
 
