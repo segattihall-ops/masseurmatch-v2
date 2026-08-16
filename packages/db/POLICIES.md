@@ -97,6 +97,31 @@ Fix, still worth applying for the hardening even though the grant is back:
 `security definer`, `stable` and a pinned `search_path` on `is_admin()`, so a
 future grant change cannot take the public directory offline the same way.
 
+### Phase 6 tables — measured 2026-08-16
+
+The phase 6 spec asks for an `audit_log` table to be created. **It already
+exists**, with the columns the spec names (`id`, `admin_id`, `action`,
+`target_type`, `target_id`, `reason`, `created_at`) plus `details`, `metadata`
+and several `target_*` variants. So do `moderation_actions` and
+`moderation_queue`. No `CREATE TABLE` is needed — only policies.
+
+Anon reachability, tested with the anon key:
+
+| Table                | anon | Meaning                                |
+| -------------------- | ---- | -------------------------------------- |
+| `audit_log`          | 401  | No grant — fails closed twice          |
+| `moderation_actions` | 401  | No grant — fails closed twice          |
+| `keyword_trends`     | 401  | No grant — fails closed twice          |
+| `moderation_queue`   | 200  | Grant present; RLS returns `*/0`, `[]` |
+
+**`moderation_queue` leaks nothing** — zero rows, empty array. But it is the
+only one of the four resting on RLS alone; the others are grant-denied as well.
+It holds `payload`, `notes`, `admin_reason`, `moderation_reason` and
+`ai_response`, so a single future permissive policy would expose internal review
+material with no second layer to catch it. `20260816000000_rls_safe_hardening.sql`
+revokes the grant, which costs nothing today and restores parity with its
+siblings.
+
 ### Known gaps, confirmed against production
 
 - `keyword_trends` — carries **two** overlapping read policies:

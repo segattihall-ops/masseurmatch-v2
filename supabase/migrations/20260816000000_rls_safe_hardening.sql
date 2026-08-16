@@ -57,6 +57,29 @@ drop policy if exists "Public read keyword_trends" on public.keyword_trends;
 -- ---------------------------------------------------------------------------
 alter view public.public_therapists set (security_invoker = on);
 
+-- ---------------------------------------------------------------------------
+-- 3. moderation_queue — remove the anon SELECT grant
+-- ---------------------------------------------------------------------------
+-- Measured 2026-08-16 with the anon key:
+--
+--   audit_log           -> 401  (no grant)
+--   moderation_actions  -> 401  (no grant)
+--   keyword_trends      -> 401  (no grant)
+--   moderation_queue    -> 200, content-range */0, []
+--
+-- **Nothing leaks.** The queue returns zero rows because RLS filters them all.
+-- But it is the only one of the four defended by RLS *alone*: the others are
+-- also grant-denied, so they fail closed twice over. `moderation_queue` holds
+-- `payload`, `notes`, `admin_reason`, `moderation_reason` and `ai_response` —
+-- internal review material — and one future permissive policy would expose all
+-- of it with nothing behind to catch the mistake.
+--
+-- Revoking costs nothing today (anon already reads no rows) and restores the
+-- same two-layer defence its siblings have. Phase 6 reads this table as an
+-- admin, which is unaffected.
+-- ---------------------------------------------------------------------------
+revoke select on public.moderation_queue from anon;
+
 commit;
 
 -- ============================================================================
