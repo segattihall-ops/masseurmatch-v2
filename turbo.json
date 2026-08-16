@@ -1,0 +1,83 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "globalEnv": ["NODE_ENV", "ANALYZE"],
+  "globalPassThroughEnv": [
+    "VERCEL_URL",
+    "VERCEL_PROJECT_PRODUCTION_URL",
+    "SUPABASE_SERVICE_ROLE_KEY",
+    "SUPABASE_DB_URL",
+    "BILLING_PROVIDER",
+    "AUTHORIZENET_SIGNATURE_KEY",
+    "AUTHORIZENET_API_LOGIN_ID",
+    "AUTHORIZENET_TRANSACTION_KEY",
+    "PAYPAL_CLIENT_ID",
+    "PAYPAL_CLIENT_SECRET",
+    "PAYPAL_WEBHOOK_ID",
+    "PAYPAL_API_BASE",
+    "PAYPAL_RETURN_URL",
+    "PAYPAL_CANCEL_URL",
+
+    "PAYPAL_PLAN_STANDARD",
+    "PAYPAL_PLAN_PRO",
+    "PAYPAL_PLAN_ELITE",
+
+    "CLOUDINARY_API_KEY",
+    "CLOUDINARY_API_SECRET",
+    "TURNSTILE_SECRET_KEY",
+    "SENTRY_ENVIRONMENT",
+    "VERCEL_ENV",
+    "TEST_THERAPIST_A_EMAIL",
+    "TEST_THERAPIST_A_PASSWORD",
+    "TEST_THERAPIST_B_PROFILE_ID",
+    "TEST_CITY_SLUG",
+    "NODE_EXTRA_CA_CERTS",
+    "SSL_CERT_FILE",
+    "CURL_CA_BUNDLE",
+    "REQUESTS_CA_BUNDLE",
+    "HTTP_PROXY",
+    "HTTPS_PROXY",
+    "NO_PROXY",
+    "http_proxy",
+    "https_proxy",
+    "no_proxy"
+  ],
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": [".next/**", "!.next/cache/**", "dist/**"],
+      "env": [
+        "NEXT_PUBLIC_SITE_URL",
+        "NEXT_PUBLIC_DASHBOARD_URL",
+        "NEXT_PUBLIC_SUPABASE_URL",
+        "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+        "NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME",
+        "NEXT_PUBLIC_TURNSTILE_SITE_KEY",
+        "NEXT_PUBLIC_SENTRY_DSN"
+      ]
+    },
+    "lint": {
+      "dependsOn": ["^build"]
+    },
+    "typecheck": {
+      "dependsOn": ["^build"]
+    },
+    "test": {
+      "dependsOn": ["^build"],
+      "env": [
+        "NEXT_PUBLIC_SUPABASE_URL",
+        "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+        "TEST_THERAPIST_A_EMAIL",
+        "TEST_THERAPIST_A_PASSWORD",
+        "TEST_THERAPIST_B_PROFILE_ID",
+        "TEST_CITY_SLUG"
+      ]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "clean": {
+      "cache": false
+    }
+  }
+}

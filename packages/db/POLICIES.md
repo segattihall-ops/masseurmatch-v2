@@ -1,0 +1,356 @@
+# Row Level Security policies
+
+Every table in the `public` schema, the access rule it should carry, and why.
+
+## Status of this document
+
+Audited against the production database on 2026-08-16 with `execute_sql`, and
+verified end-to-end with the anon key over PostgREST.
+
+| Check                                   | Result                                  |
+| --------------------------------------- | --------------------------------------- |
+| Tables in `public`                      | 118                                     |
+| **RLS disabled**                        | **0** — every table has RLS on          |
+| RLS on, but no policies at all          | 25 (deny-all for anon/authenticated)    |
+| RLS on, missing ≥1 per-operation policy | 40                                      |
+| Anonymous read of `profiles`            | Returns only `approved` + `public` rows |
+
+**Grants matter as much as policies.** Several tables carry permissive
+policies that are unreachable because `anon` holds no `SELECT` grant —
+`keyword_trends` has a `USING (true)` read policy but PostgREST returns
+`42501`, and the same is true of `cities` and the `public_therapists` view.
+A policy-only audit reads those as leaks; they are not. The audit script in
+`scripts/audit-rls.sql` inspects `pg_policy` only, so treat its output as a
+policy-coverage report, not an access report.
+
+What `anon` can actually read today: **`profiles` and `profile_photos`, and
+nothing else.**
+
+### Schema drift since the phase-2 type generation
+
+`types.ts` was generated earlier in this work and the production schema moved
+underneath it. Regenerated on 2026-08-16 and this document reconciled to match:
+
+| Change                | Objects                                                                                                                                                           |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Tables dropped (5)    | `appointments`, `booking_analytics`, `booking_inquiries`, `payment_transactions`, `therapist_availability`                                                        |
+| Table added (1)       | `edge_job_invocation_tokens`                                                                                                                                      |
+| Columns added         | `user_id` on 7 messaging/AI tables, `processing_status` on `stripe_events`, `therapist_profile_id` on `therapist_subscriptions`                                   |
+| Functions dropped (2) | `process_stripe_payment_intent_failed`, `process_stripe_payment_intent_succeeded`                                                                                 |
+| Functions added (5)   | `consume_edge_job_token`, `run_city_digest_weekly`, `run_lifecycle_campaign_jobs_daily`, `run_lifecycle_campaign_jobs_weekly`, `run_post_signup_campaigns_hourly` |
+
+**`profiles`, `profile_photos` and `cities` are unchanged**, so the public
+site's data path is unaffected. The dropped booking and payment tables were
+**intentional** — confirmed by the product owner; there is no booking or
+payment flow in this product, so nothing in the access layer should reference
+them.
+
+### Correction to an earlier draft
+
+The first version of the baseline migration gated `profiles` on
+`status IN ('active','approved') AND (is_active = true OR is_active IS NULL)`,
+copied from the previous repo's March 2026 migration. That is **not** the live
+gate. The deployed policy uses `profile_status`, `visibility_status`,
+`is_suspended` and `is_banned`. Both old columns still exist, so the wrong
+predicate would have applied cleanly and silently — matching 14 rows where the
+real policy matched 27, delisting 13 live profiles. The migration now carries
+the correct predicate.
+
+The migration file has still **not been applied** — but note what that does and
+does not mean for `profiles`. The public-read policy it would create,
+`profiles_public_read_active`, is **already live** with the correct predicate
+(see the table above), so `profiles` is correctly gated right now. What the
+migration would still add is the cleanup of the legacy duplicates, the
+`keyword_trends` read policy drop, and the deny-all backstop.
+
+### ✅ Resolved incident, 2026-08-16 — anon reads of `profiles` failed for ~75 minutes
+
+**Detected 05:20Z, confirmed resolved 06:40Z.**
+
+```
+GET /rest/v1/profiles  ->  401
+{"code":"42501","message":"permission denied for function is_admin"}
+```
+
+`anon` lost `EXECUTE` on `public.is_admin()` between 04:35Z (anon reads working,
+suite green) and 05:20Z. Because `profiles_public_read_active` calls that
+function in its `USING` clause, the whole read errored instead of the branch
+evaluating false — so **no profile was readable anonymously**, including rows
+that satisfied the public predicate. `profile_photos` was unaffected.
+
+Verified resolved end to end at 06:40Z: the anon read returns `200`, the suite
+passes 6/1-skipped against production, and `apps/web` builds 26 sitemap URLs —
+5 static + 10 cities + 11 profiles, matching the 11 approved-and-public rows
+live at that moment.
+
+**The lasting lesson is the detection gap, not the grant.** While the site was
+down, GitHub Actions was 8/8 green and the Vercel preview deployed clean. Both
+lack Supabase credentials, so the RLS tests skip and the access layer degrades
+to an empty directory rather than failing. The same commit failed locally with
+credentials present. **A green pipeline here is not evidence that the database
+is reachable.** The access layer cannot currently distinguish "no credentials
+configured" from "credentials present but refused", and those warrant different
+behaviour — the first is a legitimate shell build, the second is an outage.
+
+Fix, still worth applying for the hardening even though the grant is back:
+`supabase/migrations/20260816010000_fix_is_admin_execute_grant.sql` also sets
+`security definer`, `stable` and a pinned `search_path` on `is_admin()`, so a
+future grant change cannot take the public directory offline the same way.
+
+### Phase 6 tables — measured 2026-08-16
+
+The phase 6 spec asks for an `audit_log` table to be created. **It already
+exists**, with the columns the spec names (`id`, `admin_id`, `action`,
+`target_type`, `target_id`, `reason`, `created_at`) plus `details`, `metadata`
+and several `target_*` variants. So do `moderation_actions` and
+`moderation_queue`. No `CREATE TABLE` is needed — only policies.
+
+Anon reachability, tested with the anon key:
+
+| Table                | anon | Meaning                                |
+| -------------------- | ---- | -------------------------------------- |
+| `audit_log`          | 401  | No grant — fails closed twice          |
+| `moderation_actions` | 401  | No grant — fails closed twice          |
+| `keyword_trends`     | 401  | No grant — fails closed twice          |
+| `moderation_queue`   | 200  | Grant present; RLS returns `*/0`, `[]` |
+
+**`moderation_queue` leaks nothing** — zero rows, empty array. But it is the
+only one of the four resting on RLS alone; the others are grant-denied as well.
+It holds `payload`, `notes`, `admin_reason`, `moderation_reason` and
+`ai_response`, so a single future permissive policy would expose internal review
+material with no second layer to catch it. `20260816000000_rls_safe_hardening.sql`
+revokes the grant, which costs nothing today and restores parity with its
+siblings.
+
+### Known gaps, confirmed against production
+
+- `keyword_trends` — carries **two** overlapping read policies:
+  `Public read keyword_trends` with `USING (true)`, and
+  `allow_read_keyword_trends` with `auth.role() = 'authenticated'`. Neither is
+  reachable today (no grant to `anon` or `authenticated`), but the first should
+  not exist; the migration drops it. Writes are covered by
+  `Service role write keyword_trends` on insert — the Python collector runs as
+  `service_role`, which bypasses RLS regardless, so that policy is redundant
+  rather than load-bearing.
+- `public_therapists` — `security_invoker` is **not set**, so the view runs as
+  definer and does not inherit RLS from `profiles`. Anon has no grant on it, so
+  it is not currently exposed, but the view is one `GRANT` away from bypassing
+  every rule below.
+- `search_public_therapists` — the ranking RPC **errors** against production:
+  `column tp.slug does not exist`. The public site therefore reads `profiles`
+  directly rather than going through it.
+
+### Migrations, and what to apply when
+
+The RLS work is split in two so the safe half is not held hostage by the risky
+half. Neither is applied yet.
+
+| Migration                               | Contents                                                                                                 | Recommendation                                                                                                                                                                                  |
+| --------------------------------------- | -------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `20260816000000_rls_safe_hardening.sql` | Drops the `using (true)` read policy on `keyword_trends`; sets `security_invoker` on `public_therapists` | **Apply now** (branch → staging → production). Closes two latent holes and cannot break a path that currently works.                                                                            |
+| `20260815000000_rls_baseline.sql`       | Deny-all backstop across all 118 tables, legacy `profiles` policy cleanup, `profiles` policy rewrite     | **Defer** until `apps/dashboard` exists. It enforces rules against flows nobody has exercised, and the `profiles` rewrite is redundant — the live policy already carries the correct predicate. |
+
+Neither migration touches data. Both are policy and view definitions only.
+
+Re-run the policy-coverage audit any time:
+
+```bash
+SUPABASE_DB_URL=postgresql://… pnpm db:audit-rls
+```
+
+## Principles
+
+| Principle                                                   | Why                                                                                                                                                                               |
+| ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **RLS on every table, no exceptions**                       | Postgres denies by default only once RLS is enabled. A table without it is fully readable by anyone holding the anon key, which ships in the browser.                             |
+| **Deny by default, allow deliberately**                     | Every operation needs a policy that says yes. Absence of a policy means "no", never "maybe".                                                                                      |
+| **`service_role` bypasses RLS, so it never needs a policy** | Back-end jobs — the Python collector, cron, webhooks — authenticate as `service_role`. Writing a policy for them would only widen the surface reachable with a leaked user token. |
+| **Ownership is `user_id = (select auth.uid())`**            | The scalar subselect makes Postgres evaluate `auth.uid()` once per statement instead of once per row (`auth_rls_initplan`).                                                       |
+| **Admin override is `public.is_admin()`**                   | One role check, defined once, so admin access is auditable in a single place.                                                                                                     |
+| **`NEXT_PUBLIC_*` implies public**                          | The anon key is in the browser. Anything anon can read is effectively published.                                                                                                  |
+
+Policy naming: `<table>_<operation>_<who>` — e.g. `profiles_update_self_or_admin`.
+
+---
+
+## 1. Public directory
+
+Read by logged-out visitors; this is the product surface. Writes are owner-only
+or admin-only.
+
+### `profiles` — the central table
+
+This is what is **deployed today**, read back from `pg_policy` on 2026-08-16 —
+not an aspiration:
+
+| Policy                         | Cmd      | Roles           | Expression                                                                                                                                                                                 |
+| ------------------------------ | -------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `profiles_public_read_active`  | `select` | `public`        | `profile_status = 'approved' and visibility_status = 'public' and coalesce(is_suspended,false) = false and coalesce(is_banned,false) = false` — or `user_id = auth.uid()`, or `is_admin()` |
+| `profiles_owner_read`          | `select` | `authenticated` | `user_id = auth.uid() or id = auth.uid()`                                                                                                                                                  |
+| `Users can view own profile`   | `select` | `public`        | `auth.uid() = id` — legacy                                                                                                                                                                 |
+| `profiles_insert_own`          | `insert` | `public`        | check `auth.uid() = user_id`                                                                                                                                                               |
+| `Users can insert own profile` | `insert` | `public`        | check `auth.uid() = id` — legacy                                                                                                                                                           |
+| `profiles_owner_update`        | `update` | `authenticated` | `user_id = auth.uid() or id = auth.uid()`                                                                                                                                                  |
+| `Users can update own profile` | `update` | `public`        | `auth.uid() = id` — legacy                                                                                                                                                                 |
+| `profiles_admin_all`           | `all`    | `public`        | `auth.jwt() -> 'app_metadata' ->> 'role' = 'admin'`                                                                                                                                        |
+
+| Rule                                                        | Reason                                                                                                                                                                                 |
+| ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Public read gated on `profile_status` + `visibility_status` | Drafts, suspended, banned and pending-moderation profiles must never appear in the directory or be scrapeable via the anon key. This is the single gate the whole site depends on.     |
+| Owner always sees their own row                             | A therapist must be able to load their profile while it is still pending.                                                                                                              |
+| Writes restricted to the owner                              | The isolation guarantee: one therapist can never edit another's profile, which is what the cross-tenant test asserts.                                                                  |
+| Delete has **no dedicated policy**                          | Deletion is reachable only through `profiles_admin_all`, so it is admin-only in effect. Deletion cascades to photos, reviews and subscriptions — an operator action, not self-service. |
+
+**Three inconsistencies worth cleaning up** (none is a leak; all are recorded
+here so the next person does not mistake them for intent):
+
+1. **Duplicate legacy policies** key ownership on `id`, while the current ones
+   key on `user_id`. Permissive policies are OR-ed, so the legacy pair only
+   ever widens access — to rows where `id = auth.uid()`. Harmless while `id`
+   and `user_id` agree; a latent cross-tenant hole the moment they diverge.
+2. **`profiles_admin_all` reads the JWT claim directly** rather than calling
+   `public.is_admin()`, which is what every other admin rule uses and what the
+   principles below state. Two definitions of "admin" can drift apart.
+3. **`auth.uid()` is called bare**, not as `(select auth.uid())`. The scalar
+   subselect lets Postgres evaluate it once per statement instead of once per
+   row (`auth_rls_initplan`).
+
+### Other public-read tables
+
+| Table                                                                               | Rule                                                           | Reason                                                                                                                                |
+| ----------------------------------------------------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `therapists`, `therapist_profiles`                                                  | public read of listed rows; owner write; admin all             | Directory projections of `profiles`; must match its visibility gate or they become a bypass.                                          |
+| `therapist_services`, `therapist_pricing`, `therapist_locations`, `provider_travel` | public read; owner write                                       | Shown on the public profile. Owner-scoped so a therapist edits only their own offering.                                               |
+| `therapist_photos`, `profile_photos`                                                | public read of approved; owner write; admin moderate           | Unapproved imagery must not be publicly reachable before moderation clears it.                                                        |
+| `profile_sections`                                                                  | public read; owner write                                       | Free-text profile blocks rendered publicly.                                                                                           |
+| `reviews`, `profile_reviews`, `imported_reviews`                                    | public read of published; authenticated insert; admin moderate | Reviews are the trust signal. Anyone signed in may submit; only admins may edit or unpublish, so a therapist cannot delete criticism. |
+| `cities`                                                                            | public read; admin write                                       | Directory taxonomy driving `search_public_therapists`.                                                                                |
+| `keywords`                                                                          | public read; admin write                                       | Public SEO landing terms — distinct from `keyword_trends`, which is private.                                                          |
+| `blog_posts`                                                                        | public read of published; admin write                          | Marketing content.                                                                                                                    |
+| `featured_masters`                                                                  | public read; admin write                                       | Editorial placement; must not be self-assignable.                                                                                     |
+| `subscription_plans`                                                                | public read; admin write                                       | Pricing is shown on the public pricing page.                                                                                          |
+| `site_settings`, `admin_content`                                                    | public read; admin write                                       | Copy and flags rendered on public pages.                                                                                              |
+
+---
+
+## 2. Owner-scoped
+
+Private to one user. No public read at all: read and write require
+`user_id = (select auth.uid())`, with `public.is_admin()` as override.
+
+| Table                                                                                                                                                                                                              | Reason the data is owner-only                                                                                                                   |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `subscriptions`, `therapist_subscriptions`, `visibility_addons`                                                                                                                                                    | Billing state. Exposing tier or lapse status publicly would reveal commercial standing.                                                         |
+| `checkout_sessions`                                                                                                                                                                                                | Payment history. Written by Stripe webhooks under `service_role`; the user only reads.                                                          |
+| `identity_verifications`, `text_verifications`, `profile_documents`                                                                                                                                                | Government ID and verification artifacts — the most sensitive data in the system. Read by the owner, written only by the verification pipeline. |
+| `user_mfa`, `mfa_pending`                                                                                                                                                                                          | Authentication factors. Never readable cross-user.                                                                                              |
+| `sms_profiles`                                                                                                                                                                                                     | Phone numbers.                                                                                                                                  |
+| `push_subscriptions`, `notification_deliveries`, `notifications`                                                                                                                                                   | Delivery endpoints and per-user message history.                                                                                                |
+| `user_notification_preferences`, `marketing_preferences`, `contact_preferences`                                                                                                                                    | Consent state. Must be editable by its owner and by nobody else, for CAN-SPAM/GDPR.                                                             |
+| `favorites`, `client_favorites`                                                                                                                                                                                    | Reveals who a client is interested in.                                                                                                          |
+| `search_history`                                                                                                                                                                                                   | Behavioural history tied to an identity.                                                                                                        |
+| `contact_inquiries`, `contact_events`                                                                                                                                                                              | Visible to the two parties on the enquiry only.                                                                                                 |
+| `conversations`, `messages`                                                                                                                                                                                        | Private messaging: readable only by participants.                                                                                               |
+| `support_tickets`, `support_ticket_messages`                                                                                                                                                                       | Reporter plus admin.                                                                                                                            |
+| `complaints`, `profile_reports`                                                                                                                                                                                    | Reporter plus admin — the subject must not see who reported them.                                                                               |
+| `referral_codes`, `referral_signups`                                                                                                                                                                               | Owner reads their own referral funnel; awards are written by `service_role` so rewards cannot be self-granted.                                  |
+| `ai_profile_coach_daily_snapshots`, `ai_profile_coach_email_preferences`, `ai_profile_analysis_runs`, `ai_profile_optimization_runs`, `ai_profile_photo_scores`, `ai_profile_content_drafts`, `ai_profile_reports` | Per-therapist coaching output, including weaknesses. Competitively sensitive; owner-read, pipeline-write.                                       |
+| `trial_feedback_responses`                                                                                                                                                                                         | Marked service-role-only in the schema comment: confidential questionnaire responses.                                                           |
+
+---
+
+## 3. Admin-only
+
+No anon or owner access. Read and write both gated on `public.is_admin()`.
+
+| Table                                                                                                                                                                | Reason                                                                          |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| `admin_actions`, `audit_log`                                                                                                                                         | The audit trail. If a user could write it, it would stop being evidence.        |
+| `moderation_queue`, `moderation_actions`, `photo_moderations`                                                                                                        | Moderation decisions and reviewer notes about users.                            |
+| `user_roles`, `users`                                                                                                                                                | Role assignment. Self-service write here is privilege escalation.               |
+| `user_suspensions`                                                                                                                                                   | Enforcement state; the suspended user must not be able to clear it.             |
+| `runtime_config`                                                                                                                                                     | Feature flags and operational switches.                                         |
+| `admin_email_templates`, `admin_email_campaigns`                                                                                                                     | Outbound campaigns to the whole user base.                                      |
+| `messaging_settings`, `messaging_contacts`, `messaging_campaigns`, `messaging_campaign_contacts`, `messaging_conversations`, `messaging_messages`, `messaging_queue` | Admin outreach, explicitly separate from user messaging per the schema comment. |
+| `bruno_agent_config`, `bruno_conversations`                                                                                                                          | Internal agent configuration and transcripts.                                   |
+| `imported_profile_data`, `profile_migrations`, `profile_status_debug_log`, `profile_status_invalid_log`                                                              | Migration internals and debug traces.                                           |
+| `keyword_insights`, `keyword_alerts`, `keyword_content_map`                                                                                                          | Derived SEO strategy — same reasoning as `keyword_trends`.                      |
+
+---
+
+## 4. Service-role only
+
+RLS on, **no policy granting anyone anything**. Written and read exclusively by
+back-end jobs authenticating as `service_role`, which bypasses RLS. Admin
+surfaces read these through server routes that authorise the caller first, not
+through the anon key.
+
+The absence of a policy here is the design, not an oversight: it means a
+compromised anon or user JWT reaches none of it.
+
+### `keyword_trends` — specified explicitly
+
+```sql
+select  using (public.is_admin())
+insert  with check (false)
+update  using/check (false)
+delete  using (false)
+grant select, insert, update, delete on public.keyword_trends to service_role;
+```
+
+Admins read it in the dashboard. Nobody writes it through PostgREST — the
+Python collector connects with the service-role key and so bypasses RLS
+entirely, which is why the write policies deny everyone and the collector keeps
+working unchanged. Trend history is competitive intelligence: it must not leak,
+and it must not be forgeable with a stolen user token.
+
+### The rest
+
+| Table                                                                                                                                                                                                                 | Reason                                                                                                                                                                                                                                                                                                    |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `demand_scores`, `demand_collection_runs`, `demand_radar_collection_runs`, `demand_radar_market_interest`, `demand_radar_trend_metrics`, `demand_radar_ads_historical_metrics`, `demand_radar_spike_alert_deliveries` | Demand Radar market signals. The schema comment already states client access is blocked and reads go through authenticated server APIs.                                                                                                                                                                   |
+| `analytics_events`, `search_analytics`, `profile_view_analytics`, `inquiry_analytics`                                                                                                                                 | Aggregate behavioural data across all users.                                                                                                                                                                                                                                                              |
+| `ranking_events`, `therapist_learning_scores`, `upgrade_opportunities`                                                                                                                                                | Ranking inputs. Readable ranking weights would be directly gameable by therapists competing for placement.                                                                                                                                                                                                |
+| `email_queue`, `email_workflows`, `email_decisions`, `email_deliveries`, `email_suppressions`, `email_provider_events`, `lifecycle_email_queue`, `lifecycle_email_log`                                                | Delivery pipeline. Suppressions especially: writable suppressions would let one user unsubscribe another.                                                                                                                                                                                                 |
+| `background_jobs`                                                                                                                                                                                                     | Job runner state.                                                                                                                                                                                                                                                                                         |
+| `edge_job_invocation_tokens`                                                                                                                                                                                          | Single-use tokens authorising edge-function invocation. Verified locked: RLS on, **zero** policies, and no grant to `anon` or `authenticated` — reachable only by `service_role`. A readable token here is a direct privilege escalation, so it must stay policy-less rather than gain a permissive rule. |
+| `stripe_events`                                                                                                                                                                                                       | Raw webhook payloads, the idempotency ledger for billing.                                                                                                                                                                                                                                                 |
+| `sms_logs`, `sms_follow_up_alerts`, `vapi_sms_sessions`                                                                                                                                                               | Message logs containing phone numbers.                                                                                                                                                                                                                                                                    |
+| `newsletter_subscribers`, `waitlist_signups`, `waitlist_events`, `waitlist_rate_limits`, `waitlist_voice_ai`                                                                                                          | Email lists. Readable via anon key, this is a harvestable address book; `waitlist_rate_limits` must also be unwritable or the limit is bypassable.                                                                                                                                                        |
+
+---
+
+## Views
+
+Views do not carry their own RLS — they run with the privileges of their owner
+and inherit the policies of their underlying tables only when defined with
+`security_invoker = on`.
+
+| View                                                              | Note                                                                                                                                                      |
+| ----------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `public_profiles`, `public_therapists`, `public_imported_reviews` | Intended as the anon-facing projections. Their `WHERE` clause is the visibility gate; confirm `security_invoker` is set, otherwise they bypass table RLS. |
+| `provider_profiles_private`                                       | Must not be reachable by anon.                                                                                                                            |
+| `ai_profile_coach_source`, `therapist_analytics_daily`            | Internal; server-side reads only.                                                                                                                         |
+
+Verifying `security_invoker` on all six is the first follow-up once database
+access is restored — a `security_definer` view over `profiles` would defeat
+every rule above.
+
+---
+
+## Testing
+
+`packages/db/tests/rls.test.ts` asserts the behaviour, not the policy text:
+
+1. Anonymous read of `keyword_trends` returns empty (or is refused).
+2. Anonymous read of `profiles` returns only `active`/`approved` rows.
+3. Anonymous write to `profiles` affects zero rows.
+4. An authenticated therapist updating another therapist's profile affects zero rows.
+
+`packages/db/tests/ranking.test.ts` asserts `search_public_therapists` returns
+rows for a real city, ordered by `priority_rank`.
+
+They need `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and
+skip cleanly without them. The cross-therapist test additionally needs
+`TEST_THERAPIST_A_EMAIL`, `TEST_THERAPIST_A_PASSWORD` and
+`TEST_THERAPIST_B_PROFILE_ID`. Point them at staging where possible.

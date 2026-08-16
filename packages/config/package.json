@@ -1,0 +1,10 @@
+{
+  "name": "@masseurmatch/config",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./security-headers": "./security-headers.mjs",
+    "./observability": "./observability.ts"
+  }
+}
