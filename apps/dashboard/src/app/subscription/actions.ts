@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { getOrCreateMyProfile } from "@/lib/profile";
+import { LIMITS, rateLimit } from "@/lib/rate-limit";
 
 import type { BillingState } from "./billing-state";
 import {
@@ -42,6 +43,23 @@ async function requireTherapistProfile() {
   return profile;
 }
 
+/**
+ * Rate limit, keyed on the user.
+ *
+ * Every action below makes a live call to a payment provider, so an unbounded
+ * caller can make us hammer PayPal — and, on `startSubscription`, create real
+ * subscription records in a loop. Returns an error string rather than throwing,
+ * so a limited user sees the same kind of message as any other failure.
+ */
+function billingLimit(userId: string): string | null {
+  const limited = rateLimit(
+    `billing:${userId}`,
+    LIMITS.billingAction.limit,
+    LIMITS.billingAction.windowMs,
+  );
+  return limited.ok ? null : "Too many attempts. Please wait a moment and try again.";
+}
+
 /** Read and validate the requested tier. `free` is rejected — see rule 1. */
 function requestedPlan(formData: FormData): string | null {
   const raw = String(formData.get("plan") ?? "").toLowerCase();
@@ -64,6 +82,8 @@ export async function startSubscription(
   formData: FormData,
 ): Promise<BillingState> {
   const profile = await requireTherapistProfile();
+  const limited = billingLimit(profile.id);
+  if (limited) return { error: limited };
 
   const plan = requestedPlan(formData);
   if (!plan || !isPlanId(plan)) return { error: "Choose one of the paid plans." };
@@ -111,6 +131,8 @@ export async function startSubscription(
  */
 export async function changePlan(_prev: BillingState, formData: FormData): Promise<BillingState> {
   const profile = await requireTherapistProfile();
+  const limited = billingLimit(profile.id);
+  if (limited) return { error: limited };
 
   const plan = requestedPlan(formData);
   if (!plan || !isPlanId(plan)) return { error: "Choose one of the paid plans." };
@@ -145,6 +167,8 @@ export async function changePlan(_prev: BillingState, formData: FormData): Promi
  */
 export async function cancelSubscription(_prev: BillingState): Promise<BillingState> {
   const profile = await requireTherapistProfile();
+  const limited = billingLimit(profile.id);
+  if (limited) return { error: limited };
 
   const existing = await getMySubscription(profile.id);
   if (!existing?.providerSubscriptionId) {

@@ -10,6 +10,7 @@ import { PAUSED, PUBLIC } from "@masseurmatch/db/visibility";
 import { NextResponse, type NextRequest } from "next/server";
 
 import { alreadyProcessed, annotateEvent, claimEvent } from "@/lib/billing-events";
+import { clientAddress, LIMITS, rateLimit } from "@/lib/rate-limit";
 
 /**
  * POST /api/webhooks/billing
@@ -47,6 +48,23 @@ function extractSignature(request: NextRequest): string {
 }
 
 export async function POST(request: NextRequest) {
+  // Before the signature check, which is the expensive part — PayPal's is a
+  // round trip to their verification endpoint, so an unlimited caller could
+  // make us hammer PayPal on their behalf. The limit is far above PayPal's real
+  // delivery rate; see lib/rate-limit.ts for why this is a speed bump and not a
+  // guarantee.
+  const limited = rateLimit(
+    `webhook:${clientAddress(request.headers)}`,
+    LIMITS.webhook.limit,
+    LIMITS.webhook.windowMs,
+  );
+  if (!limited.ok) {
+    return NextResponse.json(
+      { error: "Too many requests." },
+      { status: 429, headers: { "Retry-After": String(limited.retryAfter) } },
+    );
+  }
+
   // Read the raw body once and never re-serialise it: providers sign the exact
   // bytes, so parsing and re-stringifying breaks verification.
   const rawBody = await request.text();
