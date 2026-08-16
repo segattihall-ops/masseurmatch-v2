@@ -126,8 +126,9 @@ const supabase = createClient<Database>(url, anonKey);
 ```
 
 `types.ts` is `supabase gen types typescript` output for the `public` schema —
-122 tables, 6 views and 52 RPC functions. It is committed verbatim and excluded
-from Prettier, so regenerating never fails the format check. Regenerate with:
+118 tables, 6 views and 55 RPC functions, regenerated against production on
+2026-08-16. It is committed verbatim and excluded from Prettier, so regenerating
+never fails the format check. Regenerate with:
 
 ```bash
 SUPABASE_PROJECT_ID=<project-ref> pnpm db:types
@@ -165,26 +166,49 @@ own.
 
 ## Deploying
 
-This is a monorepo with two Next.js apps, so **one Vercel project per app**.
-Each project's **Root Directory** must point at the app, not at the repo root:
+This is a monorepo with two Next.js apps. Vercel's framework detection looks
+for `next` in the `package.json` of whatever directory it builds from, so a
+project pointed at the repo root fails before it builds:
+
+```
+Error: No Next.js version detected.
+```
+
+**The preferred fix is a project setting**, not a repo change: set each Vercel
+project's **Root Directory** to the app it deploys.
 
 | Vercel project | Root Directory   |
 | -------------- | ---------------- |
 | public site    | `apps/web`       |
 | dashboard      | `apps/dashboard` |
 
-The root `package.json` has no `next` dependency — it is a workspace manifest.
-A project left with Root Directory at the repo root fails before it builds
-with `No Next.js version detected`. Root Directory is a **project setting in
-the Vercel dashboard**; there is no `vercel.json` field for it, so it cannot be
-fixed from the repository.
+Root Directory can only be set in the dashboard (Settings → General) or at
+project-creation time — `vercel.json` has no field for it.
 
-Nothing else needs configuring, and there is no `vercel.json` on purpose:
-Vercel finds `pnpm-lock.yaml` at the repo root, installs the whole workspace,
-and reads the Turborepo graph to decide which app a commit affects. Leave
-**"Include files outside the Root Directory"** enabled — the apps consume
-`packages/*` as source via `transpilePackages`, and neither package has a
-build step of its own.
+### Why the root `vercel.json` exists
+
+Because the `masseurmatch-v2` project was created with its Root Directory at
+the repo root, the root `vercel.json` makes that configuration work anyway:
+
+| Key               | Why                                                                           |
+| ----------------- | ----------------------------------------------------------------------------- |
+| `framework`       | Pins Next.js instead of relying on detection                                  |
+| `buildCommand`    | Delegates to Turborepo, filtered to `@masseurmatch/web`                       |
+| `outputDirectory` | Points at `apps/web/.next`, since the build output is not at the root         |
+| `installCommand`  | `--frozen-lockfile`, so a stale lockfile fails the deploy instead of drifting |
+
+The root `package.json` also carries `next` as a devDependency **purely to
+satisfy Vercel's detection step** — nothing at the root imports it. If the
+Root Directory is ever moved to `apps/web`, this file and that dependency
+should both be removed; the app builds correctly under plain auto-detection.
+
+Note this configuration deploys **only `apps/web`**. Deploying the dashboard
+needs a second Vercel project with Root Directory `apps/dashboard`, which also
+avoids this workaround entirely.
+
+Leave **"Include files outside the Root Directory"** enabled — the apps consume
+`packages/*` as source via `transpilePackages`, and neither package has a build
+step of its own.
 
 Set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` in the
 project's environment variables. Without them the build still succeeds, but
