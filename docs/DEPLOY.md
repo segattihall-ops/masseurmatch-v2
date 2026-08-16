@@ -15,6 +15,14 @@
 > **Fix: add `www.` to the webhook URL in the PayPal dashboard.** One field.
 > Then use the `resend` link on the failed events to replay them.
 >
+> Or from a terminal, without the dashboard:
+>
+> ```sh
+> export PAYPAL_CLIENT_ID=... PAYPAL_CLIENT_SECRET=...
+> scripts/paypal-admin.sh webhooks            # flags the apex one
+> scripts/paypal-admin.sh fix-webhook WH-...  # prompts before writing
+> ```
+>
 > Scope, measured in the production database on 2026-08-16:
 >
 > |                                          |                      |
@@ -169,6 +177,16 @@ Create a plan only where a price has none.
 
 The ids are opaque strings PayPal mints (`P-5ML4271244454362`) and cannot be
 derived from our names, which is why they are environment variables.
+
+The fastest way to do this mapping is:
+
+```sh
+export PAYPAL_CLIENT_ID=... PAYPAL_CLIENT_SECRET=...
+scripts/paypal-admin.sh plans
+```
+
+It lists every plan with its price and prints the `PAYPAL_PLAN_*` lines ready to
+paste, naming any price that has no active plan yet. To do it by hand instead:
 
 1. PayPal dashboard → **Pay & Get Paid** → **Subscriptions** → **Plans**.
 2. Each of these prices needs a live monthly plan in **USD**:
