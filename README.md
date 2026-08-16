@@ -44,6 +44,13 @@ The visual identity is carried over from the previous site (an adaptation of
 the Agencee template) and is **not** to be redesigned. Everything derives from
 one set of tokens:
 
+> **Source of the identity.** Values were read from
+> [`X-RANKFLOW-MEDIA-GROUP/masseurmatch`](https://github.com/X-RANKFLOW-MEDIA-GROUP/masseurmatch)
+> — `tailwind.config.ts` for structure and `src/index.css` for the literal
+> values, since that config resolves every colour through CSS variables. That
+> repository is read-only reference: no file was copied from it except the
+> Satoshi binary.
+
 - **`src/tokens.ts`** — the source of truth: palette, spacing, type scale,
   radii, shadows, easing curves.
 - **`src/styles/tokens.css`** — the same values as CSS custom properties, plus
