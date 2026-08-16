@@ -13,14 +13,14 @@ and the mechanics of the domain switch; this file holds the audit.
 
 **The code is ready to deploy. Two things outside the repository are not.**
 
-|                                 | State                                                                                              |
-| ------------------------------- | -------------------------------------------------------------------------------------------------- |
-| All 79 indexed URLs             | ✅ Resolve — 68 render, 11 redirect, 0 broken                                                      |
-| Tests                           | ✅ 161 unit + 35 smoke, all passing                                                                |
-| Lighthouse                      | ✅ 98–100 across all four categories, on 11 page types                                             |
-| Lint, typecheck, build, CI      | ✅ Green                                                                                           |
-| `apps/dashboard` Vercel project | 🚧 **Does not exist.** Cannot be created from here — the API token returns 403 on project creation |
-| PayPal plans + credentials      | 🚧 Not configured. Nothing can be charged until they are                                           |
+|                                 | State                                                                                                                                                                     |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| All 79 indexed URLs             | ✅ Resolve — 68 render, 11 redirect, 0 broken                                                                                                                             |
+| Tests                           | ✅ 161 unit + 35 smoke, all passing                                                                                                                                       |
+| Lighthouse                      | ✅ 98–100 across all four categories, on 11 page types                                                                                                                    |
+| Lint, typecheck, build, CI      | ✅ Green                                                                                                                                                                  |
+| `apps/dashboard` Vercel project | 🚧 **Exists but misconfigured.** `masseurmatch-v2-kftd` builds from the repo root and fails. Needs Root Directory `apps/dashboard` — a project setting, not a repo change |
+| PayPal plans + credentials      | 🚧 Not configured. Nothing can be charged until they are                                                                                                                  |
 
 Those last two are account actions, not code. Everything the repository controls
 is done.
@@ -102,17 +102,57 @@ equity.
 
 ## 4. Deployment
 
-| Item                       | Status                                                                                                                                                                         |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `apps/web` on Vercel       | ✅ Project `masseurmatch-v2`, Root Directory `apps/web`                                                                                                                        |
-| `apps/dashboard` on Vercel | 🚧 **No project exists.** Creating one via the API returns `403 forbidden`. Must be created in the Vercel dashboard: same repo, Root Directory `apps/dashboard`                |
-| Billing webhook URL        | 🚧 Follows from the above — PayPal has nowhere to deliver, so no subscription can reach `active`                                                                               |
-| PayPal plans               | 🚧 Must be created at **$39 / $79 / $99** and set as `PAYPAL_PLAN_STANDARD/PRO/ELITE`. PayPal bills what its own plan says, so a mismatch shows one figure and charges another |
-| Domain on v2               | ⏳ Ready. Gated only on the two rows above                                                                                                                                     |
+| Item                       | Status                                                                                                                                                                                                                  |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `apps/web` on Vercel       | ✅ Project `masseurmatch-v2`, Root Directory `apps/web`. Deploys green                                                                                                                                                  |
+| `apps/dashboard` on Vercel | 🚧 Project `masseurmatch-v2-kftd` **exists but does not build** — its Root Directory is the repo root, so Vercel reports `No Next.js version detected`. Fix: set Root Directory to `apps/dashboard` in project settings |
+| Billing webhook URL        | 🚧 Follows from the above                                                                                                                                                                                               |
+| PayPal plans               | 🚧 Must be created at **$39 / $79 / $99**                                                                                                                                                                               |
+| Domain on v2               | ⏳ Ready. Gated only on the rows above                                                                                                                                                                                  |
 
-A commit touching only `apps/dashboard` shows "Skipped" on the Vercel PR
-comment. That is correct for a project rooted at `apps/web` — and also the
-symptom: nothing deploys the dashboard because nothing is configured to.
+### The dashboard project, precisely
+
+`masseurmatch-v2-kftd` was created against the right repository but at the
+wrong Root Directory, and its first deployment failed with exactly the error
+`masseurmatch-v2` hit before its own Root Directory was corrected:
+
+```
+Error: No Next.js version detected. Make sure your package.json has "next" in
+either "dependencies" or "devDependencies". Also check your Root Directory
+setting matches the directory of your package.json file.
+```
+
+The repo root's `package.json` is the workspace manifest and has no `next`
+dependency — correctly. The fix is one setting: **Root Directory →
+`apps/dashboard`**.
+
+It cannot be fixed from the repository, and that is worth stating so nobody
+tries. A root `vercel.json` cannot express Root Directory, and building the
+dashboard from the repo root with an explicit `buildCommand` would require
+`framework: null`, which costs ISR, image optimisation and serverless
+functions — a dashboard that builds but does not work. There is also no MCP
+tool that edits an existing project's Root Directory, and `create_git_project`
+reuses the first project linked to a repository rather than creating a second,
+so it cannot be used to make a correctly-configured replacement.
+
+### Where the PayPal variables have to live
+
+**On the dashboard project, not the web one.** Verified by grep: no file under
+`apps/web/src` reads `PAYPAL_*` or `BILLING_PROVIDER`. Every consumer is in
+`apps/dashboard` or `packages/billing`:
+
+```
+apps/dashboard/src/app/api/webhooks/billing/route.ts
+apps/dashboard/src/lib/subscription.ts
+packages/billing/{plans,provider,providers/paypal}.ts
+```
+
+`apps/web` imports `@masseurmatch/billing` only for `plans.ts`, which is static
+data and reads no environment variable — that is why the pricing page renders
+correctly with no PayPal configuration at all.
+
+So PayPal credentials set on `masseurmatch-v2` are on the app that never reads
+them. They take effect only once the dashboard project builds and carries them.
 
 ## 5. Known gaps, stated rather than closed
 
@@ -193,11 +233,14 @@ security headers.
 
 ## 7. What is left
 
-1. **Create a Vercel project for `apps/dashboard`** — same repo, Root Directory
-   `apps/dashboard`. Everything else in this list depends on it.
+1. **Set `masseurmatch-v2-kftd`'s Root Directory to `apps/dashboard`.** The
+   project already exists and is linked to the right repository; it is building
+   from the repo root, which has no `next` dependency. Everything else in this
+   list depends on this one setting.
 2. **Create the PayPal plans** at $39 / $79 / $99 and set
    `PAYPAL_PLAN_STANDARD/PRO/ELITE`, `PAYPAL_CLIENT_ID/SECRET/WEBHOOK_ID`, and
-   `BILLING_PROVIDER=paypal`.
+   `BILLING_PROVIDER=paypal` — **on the dashboard project**. Nothing in
+   `apps/web` reads any of them.
 3. **Point the webhook** at `<dashboard-url>/api/webhooks/billing`.
 4. **Move the domain**, following the checklist in `CUTOVER.md`.
 
