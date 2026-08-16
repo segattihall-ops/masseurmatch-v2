@@ -1,5 +1,17 @@
+import { contentSecurityPolicy, securityHeaders } from "../../packages/config/security-headers.mjs";
+
+// Imported by relative path rather than as a workspace package: `next.config`
+// is evaluated by Node before any bundler resolution, and two exported
+// functions do not justify a package.json.
+const csp = contentSecurityPolicy({
+  supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
+});
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  async headers() {
+    return [{ source: "/:path*", headers: securityHeaders({ csp }) }];
+  },
   reactStrictMode: true,
   // The design system and data layer are consumed as TypeScript source.
   transpilePackages: ["@masseurmatch/ui", "@masseurmatch/db"],
