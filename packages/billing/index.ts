@@ -11,4 +11,5 @@
 
 export * from "./plans";
 export * from "./provider";
+export * from "./transitions";
 export { getProvider } from "./providers/registry";
