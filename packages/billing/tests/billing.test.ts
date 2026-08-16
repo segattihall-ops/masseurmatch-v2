@@ -7,6 +7,7 @@ import {
   formatPrice,
   GRACE_PERIOD_DAYS,
   PAID_PLAN_IDS,
+  PLAN_IDS,
   PLANS,
   photoLimitFor,
   planFor,
@@ -27,7 +28,7 @@ describe("plans", () => {
   it("prices the tiers the spec names", () => {
     expect(PLANS.standard.priceCents).toBe(3_900);
     expect(PLANS.pro.priceCents).toBe(7_900);
-    expect(PLANS.elite.priceCents).toBe(14_900);
+    expect(PLANS.elite.priceCents).toBe(9_900);
   });
 
   it("keeps money in integer cents, never floats", () => {
@@ -55,20 +56,39 @@ describe("plans", () => {
   it("is the single source of the photo limits the dashboard enforces", () => {
     expect(photoLimitFor("free")).toBe(3);
     expect(photoLimitFor("standard")).toBe(10);
-    expect(photoLimitFor("pro")).toBe(20);
-    expect(photoLimitFor("elite")).toBe(40);
+    expect(photoLimitFor("pro")).toBe(15);
+    expect(photoLimitFor("elite")).toBe(20);
+  });
+
+  it("gives every step up the ladder more photos than the one below", () => {
+    // Elite was set to 20 to match production, which briefly made it identical
+    // to pro — a tier costing $20/mo more that bought nothing on this axis.
+    // Adjacent tiers with the same limit are the bug this pins.
+    for (let i = 1; i < PLAN_IDS.length; i += 1) {
+      const lower = PLANS[PLAN_IDS[i - 1]!]!;
+      const upper = PLANS[PLAN_IDS[i]!]!;
+      expect(upper.photoLimit, upper.id).toBeGreaterThan(lower.photoLimit);
+    }
+  });
+
+  it("charges more for every step up the ladder", () => {
+    for (let i = 1; i < PLAN_IDS.length; i += 1) {
+      const lower = PLANS[PLAN_IDS[i - 1]!]!;
+      const upper = PLANS[PLAN_IDS[i]!]!;
+      expect(upper.priceCents, upper.id).toBeGreaterThan(lower.priceCents);
+    }
   });
 
   it("lets a per-account override win, ignoring nonsense values", () => {
     expect(photoLimitFor("free", 25)).toBe(25);
-    expect(photoLimitFor("pro", 0)).toBe(20);
-    expect(photoLimitFor("pro", -3)).toBe(20);
+    expect(photoLimitFor("pro", 0)).toBe(15);
+    expect(photoLimitFor("pro", -3)).toBe(15);
   });
 
   it("formats prices for display", () => {
     expect(formatPrice(PLANS.free)).toBe("Free");
     expect(formatPrice(PLANS.standard)).toBe("$39");
-    expect(formatPrice(PLANS.elite)).toBe("$149");
+    expect(formatPrice(PLANS.elite)).toBe("$99");
   });
 });
 

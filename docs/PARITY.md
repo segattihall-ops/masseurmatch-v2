@@ -142,15 +142,15 @@ to.
 Each of these is a deliberate decision with its reasoning recorded at the code
 that implements it.
 
-| Gap                                                         | Where                                                        | Why it is open                                                                                                                                                                |
-| ----------------------------------------------------------- | ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| CSP allows `'unsafe-inline'` / `'unsafe-eval'`              | `packages/config/security-headers.mjs`                       | Next's App Router injects inline hydration and RSC bootstrap scripts. Removing them needs per-request nonces through middleware — worth doing, real breakage risk             |
-| Rate limiting is per-instance                               | `apps/dashboard/src/lib/rate-limit.ts`                       | A shared store drops into the same place; needs an account                                                                                                                    |
-| `subscription_plans` disagrees with `plans.ts`              | `apps/dashboard/src/lib/subscription.ts`                     | Elite is $99/20 photos in the database against $149/40 in code, and every photo limit differs. A pricing decision, not a code fix                                             |
-| `profile_status` is text with an 8-value CHECK, not an enum | `supabase/migrations/20260816020000_profile_status_enum.sql` | The old application still writes to this database. Narrowing the domain to 5 while a second writer is live would break it, and the migration's own guard would not catch that |
-| PayPal never exercised against a real account               | `packages/billing/providers/paypal.ts`                       | 19 tests stub `fetch`; they prove shape, not acceptance. Needs sandbox credentials                                                                                            |
-| RLS tests skip in CI                                        | `packages/db/tests/rls.test.ts`                              | Neither CI nor Vercel has Supabase credentials, so the access layer degrades silently and the tests skip rather than fail. Green CI is not evidence the database works        |
-| `backup_20260527` schema has RLS disabled                   | production database                                          | A full copy of `therapist_subscriptions` outside every policy. Not exposed by PostgREST, so not a live leak — but it should be dropped                                        |
+| Gap                                                         | Where                                                        | Why it is open                                                                                                                                                                                                 |
+| ----------------------------------------------------------- | ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| CSP allows `'unsafe-inline'` / `'unsafe-eval'`              | `packages/config/security-headers.mjs`                       | Next's App Router injects inline hydration and RSC bootstrap scripts. Removing them needs per-request nonces through middleware — worth doing, real breakage risk                                              |
+| Rate limiting is per-instance                               | `apps/dashboard/src/lib/rate-limit.ts`                       | A shared store drops into the same place; needs an account                                                                                                                                                     |
+| `subscription_plans` photo limits differ from `plans.ts`    | `apps/dashboard/src/lib/subscription.ts`                     | RESOLVED for prices — elite corrected to $99 to match the database (2026-08-16). Photo limits deliberately differ (3/10/15/20 here vs 1/5/12/20 there); the table is the FK target and only its `code` is read |
+| `profile_status` is text with an 8-value CHECK, not an enum | `supabase/migrations/20260816020000_profile_status_enum.sql` | The old application still writes to this database. Narrowing the domain to 5 while a second writer is live would break it, and the migration's own guard would not catch that                                  |
+| PayPal never exercised against a real account               | `packages/billing/providers/paypal.ts`                       | 19 tests stub `fetch`; they prove shape, not acceptance. Needs sandbox credentials                                                                                                                             |
+| RLS tests skip in CI                                        | `packages/db/tests/rls.test.ts`                              | Neither CI nor Vercel has Supabase credentials, so the access layer degrades silently and the tests skip rather than fail. Green CI is not evidence the database works                                         |
+| `backup_20260527` schema has RLS disabled                   | production database                                          | A full copy of `therapist_subscriptions` outside every policy. Not exposed by PostgREST, so not a live leak — but it should be dropped                                                                         |
 
 ## 7. Test and CI state
 
@@ -243,8 +243,10 @@ In order, because each depends on the last:
 1. **Create a Vercel project for `apps/dashboard`.** Unblocks the webhook URL,
    Lighthouse on the dashboard, and the smoke test. Nothing else in phases 5–7
    is verifiable in production until this exists.
-2. **Decide the pricing conflict** in §6, then reconcile `subscription_plans`
-   and the PayPal plan ids to match.
+2. **Create the PayPal plans at the `plans.ts` prices** — $39 / $79 / $99 —
+   and set `PAYPAL_PLAN_STANDARD/PRO/ELITE`. PayPal bills what its own plan
+   says, so a mismatch shows a therapist one figure and charges another. The
+   price conflict itself is resolved: elite is $99.
 3. **Build the 68 indexed URLs.** Legal and marketing pages are quick; guides,
    comparisons and blog need a content source decided. The 11 directory URLs are
    already handled by redirects.

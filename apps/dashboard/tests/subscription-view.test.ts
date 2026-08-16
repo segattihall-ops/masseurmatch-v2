@@ -69,9 +69,10 @@ describe("status drives what is offered", () => {
 
 describe("the money and limits come from plans.ts", () => {
   it("uses the plan's own price and photo limit, not the database's", () => {
-    // subscription_plans in production disagrees — elite is $99 / 20 photos
-    // there against $149 / 40 here. plans.ts is the source of truth the brief
-    // named, and this pins which one the page renders.
+    // subscription_plans is the FK target, not the price list: only its `code`
+    // column is read. Prices now agree ($99); photo limits deliberately do not
+    // (it has 20 for elite by coincidence, but 12 for pro against 15 here).
+    // This pins that the page renders plans.ts either way.
     const view = buildView("elite", row());
     expect(view.priceCents).toBe(PLANS.elite.priceCents);
     expect(view.photoLimit).toBe(PLANS.elite.photoLimit);

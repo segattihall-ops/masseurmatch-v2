@@ -9,6 +9,25 @@
  *
  * Plain module, no `server-only`: prices are shown in the browser. It contains
  * no credentials and no provider logic.
+ *
+ * ---------------------------------------------------------------------------
+ * Relationship to `subscription_plans` in the database
+ * ---------------------------------------------------------------------------
+ * That table predates this repository and still exists, because
+ * `therapist_subscriptions.plan_id` is a `uuid NOT NULL` foreign key into it.
+ * **It is the FK target, not the price list.** Only its `code` column is read
+ * (see `apps/dashboard/src/lib/subscription.ts`); its `price_cents` and
+ * `max_photos` are ignored.
+ *
+ * Prices agree with it on every tier. Photo limits deliberately do not — the
+ * database has 1/5/12/20 and this file has 3/10/15/20, which is the product
+ * decision, made 2026-08-16.
+ *
+ * The number that actually gets charged is neither of these: PayPal bills
+ * whatever its own plan says. So every `PAYPAL_PLAN_*` must be created at the
+ * price below, or a therapist is shown one figure and billed another. Changing
+ * a price means creating a NEW PayPal plan and repointing the variable —
+ * editing a live plan re-prices existing subscribers.
  */
 
 export const PLAN_IDS = ["free", "standard", "pro", "elite"] as const;
@@ -46,15 +65,22 @@ export const PLANS: Record<PlanId, Plan> = {
     id: "pro",
     name: "Pro",
     priceCents: 7_900,
-    photoLimit: 20,
+    // 15, not 20. Elite is 20, and two adjacent tiers with the same photo limit
+    // means the more expensive one buys nothing on this axis.
+    photoLimit: 15,
     featured: true,
     blurb: "Featured placement on your city page.",
   },
   elite: {
     id: "elite",
     name: "Elite",
-    priceCents: 14_900,
-    photoLimit: 40,
+    // $99 / 20 photos, matching `subscription_plans` in production. The two
+    // disagreed — this file said $149 / 40 — and the database was confirmed
+    // correct. PayPal charges whatever its own plan says, so `PAYPAL_PLAN_ELITE`
+    // must be created at $99 too, or a therapist is shown one price and billed
+    // another.
+    priceCents: 9_900,
+    photoLimit: 20,
     featured: true,
     blurb: "Top placement and the highest photo limit.",
   },

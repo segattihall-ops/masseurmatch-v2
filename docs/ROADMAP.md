@@ -81,7 +81,7 @@ package imports a processor SDK**.
 - **`PaymentProvider`** — `createSubscription(therapistId, plan)`,
   `cancelSubscription(subscriptionId)`, `updatePlan(subscriptionId, newPlan)`,
   `handleWebhook(payload, signature)`.
-- **Plans** — standard $39, pro $79, elite $149 monthly, in
+- **Plans** — standard $39, pro $79, elite $99 monthly, in
   `packages/billing/plans.ts` as the single source of truth.
 - **Adapters** — `AuthorizeNetProvider` (primary, ARB, HMAC webhook signature);
   `PayPalProvider` (secondary, Subscriptions API). Active provider chosen by

@@ -27,21 +27,24 @@ import { createServiceClient } from "@masseurmatch/db/client";
  * are assigned by the database and are not derivable, hence the lookup by
  * `code`.
  *
- * **`subscription_plans` is a foreign key target, not a price list.** It
- * predates this repository and its numbers disagree with `plans.ts`:
+ * **`subscription_plans` is a foreign key target, not a price list.** Only
+ * `code` is read here. Its `price_cents` and `max_photos` are ignored, and no
+ * row in it is written by this application.
  *
  *   code      subscription_plans   plans.ts
  *   free      $0     1 photo       $0     3 photos
  *   standard  $39    5 photos      $39    10 photos
- *   pro       $79    12 photos     $79    20 photos
- *   elite     $99    20 photos     $149   40 photos
+ *   pro       $79    12 photos     $79    15 photos
+ *   elite     $99    20 photos     $99    20 photos
  *
- * `plans.ts` is the source of truth the phase 7 brief named, and it is what the
- * dashboard displays. Neither list is what actually gets charged — PayPal
- * charges whatever its own plan says, which is why `PAYPAL_PLAN_*` exists. The
- * elite row differs by $50/month and the photo limits differ everywhere, so
- * this needs reconciling before anyone subscribes; it is deliberately NOT
- * reconciled here, because production data is not this code's to rewrite.
+ * Prices now agree on every tier — this file previously recorded elite as $149
+ * against the database's $99, and the database was confirmed correct
+ * (2026-08-16). The photo limits deliberately still differ: 3/10/15/20 is the
+ * product decision, and the database's 1/5/12/20 is not read.
+ *
+ * What actually gets charged is neither: PayPal bills whatever its own plan
+ * says, so each `PAYPAL_PLAN_*` must be created at the `plans.ts` price or a
+ * therapist is shown one figure and billed another.
  */
 async function planUuid(plan: PlanId): Promise<string> {
   const { data, error } = await createServiceClient()
