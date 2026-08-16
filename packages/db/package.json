@@ -8,6 +8,9 @@
     "./types": "./types.ts",
     "./actions/ranking": "./actions/ranking.ts",
     "./client": "./client.ts",
+    "./auth": "./auth.ts",
+    "./profile-status": "./profile-status.ts",
+    "./middleware": "./middleware.ts",
     "./actions/ranking-config": "./actions/ranking-config.ts",
     "./actions/directory": "./actions/directory.ts",
     "./actions/directory-config": "./actions/directory-config.ts"
@@ -30,6 +33,7 @@
     "clean": "rm -rf .turbo node_modules"
   },
   "dependencies": {
+    "@supabase/ssr": "^0.12.4",
     "@supabase/supabase-js": "^2.47.10",
     "server-only": "^0.0.1"
   },
