@@ -80,7 +80,9 @@ export function LegalPage({
       </nav>
 
       <header className="border-b border-border-subtle pb-6">
-        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-text-muted">Legal</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-text-secondary">
+          Legal
+        </p>
         <h1 className="mt-3 font-display text-ds-40 font-bold tracking-tight text-text-primary">
           {title}
         </h1>

@@ -57,7 +57,9 @@ export default async function CitiesPage() {
                   <span className="font-medium text-text-primary">{city.name}</span>
                   <span className="ml-1.5 text-sm text-text-secondary">{city.state}</span>
                 </span>
-                <span className="tabular-nums text-sm text-text-muted">{city.therapistCount}</span>
+                <span className="tabular-nums text-sm text-text-secondary">
+                  {city.therapistCount}
+                </span>
               </Link>
             </li>
           ))}

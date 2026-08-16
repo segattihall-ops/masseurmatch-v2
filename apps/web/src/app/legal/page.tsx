@@ -95,7 +95,9 @@ export default function LegalCenterPage() {
   return (
     <main className="mx-auto w-full max-w-3xl px-6 pb-16 pt-16">
       <header className="border-b border-border-subtle pb-6">
-        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-text-muted">Legal</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-text-secondary">
+          Legal
+        </p>
         <h1 className="mt-3 font-display text-ds-40 font-bold tracking-tight text-text-primary">
           {TITLE}
         </h1>

@@ -79,7 +79,7 @@ export default function PricingPage() {
               <p className="mt-2 font-stat text-ds-32 text-text-primary">
                 {formatPrice(plan)}
                 {plan.priceCents > 0 ? (
-                  <span className="text-base font-normal text-text-muted">/mo</span>
+                  <span className="text-base font-normal text-text-secondary">/mo</span>
                 ) : null}
               </p>
               <p className="mt-3 flex-1 text-sm leading-relaxed text-text-secondary">
@@ -94,7 +94,7 @@ export default function PricingPage() {
         })}
       </div>
 
-      <p className="mt-6 text-sm text-text-muted">
+      <p className="mt-6 text-sm text-text-secondary">
         Prices are per month in US dollars. MasseurMatch never takes a commission on your work.
       </p>
 

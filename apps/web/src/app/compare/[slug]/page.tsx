@@ -53,7 +53,7 @@ export default function ComparisonPage({ params }: { params: { slug: string } })
       </nav>
 
       <header className="mt-4">
-        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary">
           {competitor.category}
         </p>
         <h1 className="mt-2 font-display text-ds-40 font-bold tracking-tight text-text-primary">

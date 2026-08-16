@@ -58,7 +58,7 @@ export default async function BlogIndexPage() {
                     {post.excerpt ?? post.seoDescription}
                   </p>
                 ) : null}
-                <p className="mt-3 text-xs text-text-muted">
+                <p className="mt-3 text-xs text-text-secondary">
                   {new Date(post.publishedAt).toLocaleDateString("en-US", {
                     year: "numeric",
                     month: "long",

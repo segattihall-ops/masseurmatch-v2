@@ -55,7 +55,7 @@ export default function ComparePage() {
                     href={`/compare/${competitor.slug}`}
                     className="flex h-full flex-col rounded-3xl border border-border-subtle p-6 transition hover:border-brand-secondary"
                   >
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-secondary">
                       {competitor.category}
                     </p>
                     <h3 className="mt-2 font-display text-ds-18 font-semibold tracking-tight text-text-primary">

@@ -51,6 +51,19 @@ export const colors = {
   text: {
     primary: palette.ink,
     secondary: palette.greyText,
+    /**
+     * De-emphasised text — LARGE SIZES ONLY.
+     *
+     * `greyMuted` is #8E8E8E, which is 3.28:1 on white and 3.06:1 on
+     * `offWhite`. WCAG AA needs 4.5:1 for normal text and 3:1 for large
+     * (>=24px, or >=18.66px bold), so this token passes only for large text
+     * and fails everywhere else — Lighthouse has caught it twice.
+     *
+     * There is no lighter alternative: 4.5:1 on `offWhite` requires #717171 or
+     * darker, which is indistinguishable from `secondary` (#6F6F6F). So the
+     * rule is the rule rather than a new token — use `text.secondary` for
+     * body-size de-emphasised text.
+     */
     muted: palette.greyMuted,
     inverse: palette.white,
   },

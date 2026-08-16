@@ -100,6 +100,108 @@ test.describe("dead URLs", () => {
   });
 });
 
+test.describe("every indexed URL resolves", () => {
+  // The 79 URLs in the OLD site's live sitemap. This is the cutover gate: if
+  // any of these stops resolving, the migration loses that page's ranking.
+  // Grouped rather than listed one-per-test so a regression shows every
+  // casualty at once instead of the first alphabetically.
+  const RENDERED = [
+    "/",
+    "/about",
+    "/faq",
+    "/terms",
+    "/privacy",
+    "/search",
+    "/therapists",
+    "/cities",
+    "/states",
+    "/guides",
+    "/compare",
+    "/blog",
+    "/how-it-works",
+    "/for-therapists",
+    "/pricing",
+    "/near-me",
+    "/advertise",
+    "/contact",
+    "/legal",
+    "/client-terms",
+    "/provider-terms",
+    "/advertising-terms",
+    "/subscriptions",
+    "/refund-policy",
+    "/acceptable-use",
+    "/prohibited-conduct",
+    "/community-guidelines",
+    "/content-guidelines",
+    "/photo-profile-policy",
+    "/cookie-policy",
+    "/data-deletion",
+    "/email-opt-out",
+    "/sms-terms",
+    "/safety",
+    "/report-block-safety",
+    "/trust",
+    "/dmca",
+    "/platform-disclaimer",
+    "/ai-disclosure",
+    "/badge-disclaimer",
+    "/verification",
+    "/accessibility",
+  ];
+
+  const REDIRECTED = [
+    "/therapists/mati-eb87b62c",
+    "/therapists/andrey-113174e9",
+    "/therapists/christopher-457ced71",
+    "/therapists/reggie-3ef08824",
+    "/therapists/giovanni-san-francisco",
+    "/therapists/vitor-228df922",
+    "/new-york",
+    "/san-francisco",
+    "/aventura",
+    "/humble",
+    "/indianapolis",
+  ];
+
+  test("every static page renders with real content", async ({ request }) => {
+    const broken: string[] = [];
+    for (const path of RENDERED) {
+      const response = await request.get(path);
+      const text = await response.text();
+      // A 200 that renders an empty shell is still a broken page.
+      if (response.status() !== 200 || text.length < 1500) {
+        broken.push(`${path} -> ${response.status()} (${text.length}b)`);
+      }
+    }
+    expect(broken).toEqual([]);
+  });
+
+  test("every legacy URL still redirects", async ({ page }) => {
+    const broken: string[] = [];
+    for (const path of REDIRECTED) {
+      await page.goto(path);
+      if (new URL(page.url()).pathname === path) broken.push(path);
+    }
+    expect(broken).toEqual([]);
+  });
+
+  test("the sitemap declares the pages that exist", async ({ request }) => {
+    // A page nobody declares is a page nobody crawls.
+    //
+    // Compared by PATH, not by absolute URL: the sitemap is generated against
+    // NEXT_PUBLIC_SITE_URL (the real domain), while the suite runs on
+    // localhost, so matching whole URLs would fail for a reason that has
+    // nothing to do with what is declared.
+    const body = await (await request.get("/sitemap.xml")).text();
+    const declared = new Set(
+      [...body.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => new URL(m[1]).pathname),
+    );
+    const missing = RENDERED.filter((path) => !declared.has(path));
+    expect(missing).toEqual([]);
+  });
+});
+
 test("security headers are present on a real response", async ({ request }) => {
   const response = await request.get("/");
   const headers = response.headers();

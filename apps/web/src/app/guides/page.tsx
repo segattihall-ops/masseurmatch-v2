@@ -63,7 +63,7 @@ export default function GuidesPage() {
               <p className="mt-2 flex-1 text-sm leading-relaxed text-text-secondary">
                 {guide.description}
               </p>
-              <p className="mt-4 text-xs text-text-muted">{guide.readMinutes} min read</p>
+              <p className="mt-4 text-xs text-text-secondary">{guide.readMinutes} min read</p>
             </Link>
           </li>
         ))}

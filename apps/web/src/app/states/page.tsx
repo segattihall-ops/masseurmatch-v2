@@ -78,7 +78,7 @@ export default async function StatesPage() {
                       className="rounded-full border border-border-subtle px-3 py-1.5 text-sm text-text-secondary transition hover:border-brand-secondary hover:text-text-primary"
                     >
                       {city.name}
-                      <span className="ml-1.5 tabular-nums text-xs text-text-muted">
+                      <span className="ml-1.5 tabular-nums text-xs text-text-secondary">
                         {city.therapistCount}
                       </span>
                     </Link>

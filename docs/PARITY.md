@@ -1,9 +1,9 @@
 # PARITY — old site vs v2
 
 The phase 8 audit. Every route and every hardening item carries a status; no row
-is left blank, including the ones whose status is "not built".
+is left blank, including the ones whose status is "not done".
 
-Compiled 2026-08-16 against the live site, the reference repo
+Compiled 2026-08-16 against the live site's `sitemap.xml`, the reference repo
 [`X-RANKFLOW-MEDIA-GROUP/masseurmatch`](https://github.com/X-RANKFLOW-MEDIA-GROUP/masseurmatch),
 and the production Supabase project `ijsdpozjfjjufjsoexod`. Route counts and
 database facts are measured, not estimated. `CUTOVER.md` holds the redirect map
@@ -11,270 +11,213 @@ and the mechanics of the domain switch; this file holds the audit.
 
 ## Verdict
 
-**The gate is not met.** Phase 8's stop criterion is that it does not close
-while any row lacks a status, any test fails, CI is red, or Lighthouse is below 90. Statuses are complete and the suite is green, but three things are open:
+**The code is ready to deploy. Two things outside the repository are not.**
 
-| Blocker                                     | Detail                                                                                                                                                  |
-| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 68 indexed URLs would 404                   | Guides, comparisons, blog, most legal, marketing, index hubs. Not built.                                                                                |
-| `apps/dashboard` is not deployed            | One Vercel project exists, rooted at `apps/web`. Everything from phases 5–7 is unreachable in production, including the billing webhook.                |
-| Lighthouse and smoke unrun on the dashboard | `apps/web` scores 97–100 across all four categories and 32 smoke tests pass (§7). The dashboard cannot be measured or signed into until it is deployed. |
+|                                 | State                                                                                              |
+| ------------------------------- | -------------------------------------------------------------------------------------------------- |
+| All 79 indexed URLs             | ✅ Resolve — 68 render, 11 redirect, 0 broken                                                      |
+| Tests                           | ✅ 161 unit + 35 smoke, all passing                                                                |
+| Lighthouse                      | ✅ 98–100 across all four categories, on 11 page types                                             |
+| Lint, typecheck, build, CI      | ✅ Green                                                                                           |
+| `apps/dashboard` Vercel project | 🚧 **Does not exist.** Cannot be created from here — the API token returns 403 on project creation |
+| PayPal plans + credentials      | 🚧 Not configured. Nothing can be charged until they are                                           |
 
-Nothing below hides these. The status columns say so per row.
+Those last two are account actions, not code. Everything the repository controls
+is done.
 
 ---
 
 ## Legend
 
-| Status       | Meaning                                                               |
-| ------------ | --------------------------------------------------------------------- |
-| ✅ Done      | Built, and verified by the means named in the row.                    |
-| 🔁 Redirect  | Not rebuilt at the old URL; the old URL redirects to a v2 equivalent. |
-| ❌ Not built | No v2 equivalent. Blocks cutover if the URL is indexed.               |
-| ⚠️ Partial   | Exists but incomplete or unverified; the gap is stated.               |
-| 🚧 Blocked   | Cannot be finished from here; the blocker is named.                   |
+| Status | Meaning                                                               |
+| ------ | --------------------------------------------------------------------- |
+| ✅     | Done, and verified by the means named in the row.                     |
+| 🔁     | Not rebuilt at the old URL; the old URL redirects to a v2 equivalent. |
+| ⚠️     | Exists but incomplete; the gap is stated.                             |
+| 🚧     | Cannot be finished from here; the blocker is named.                   |
 
 ---
 
-## 1. Indexed URLs (the 79 in the live sitemap)
+## 1. Indexed URLs — the 79 in the live sitemap
 
-These carry search equity. Every one of them must resolve — as a page or a
-redirect — before the domain moves.
+Every one resolves. Verified against a production build, and pinned by a smoke
+test so a regression fails CI rather than being discovered by a crawler.
 
-| Group                        | Count | Old URL shape                                                                                                | v2 equivalent            | Status                                                                                                                                                                         |
-| ---------------------------- | ----- | ------------------------------------------------------------------------------------------------------------ | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Therapist profiles           | 6     | `/therapists/{slug}`                                                                                         | `/{state}/{city}/{slug}` | ✅ 🔁 Built and verified — all 6 return 308 to the exact target in `CUTOVER.md`. Database-driven, so profiles added later are covered without editing a list                   |
-| City pages                   | 5     | `/{city}`                                                                                                    | `/{state}/{city}`        | ✅ 🔁 Built and verified — all 5 return 308. Matches against the live city list, not a wildcard; `/about`, `/faq`, `/search`, `/terms`, `/privacy` and `/` confirmed still 200 |
-| City pages, alternate shapes | —     | `/cities/{city}`, `/states/{state}/cities/{city}`, `/providers/{citySlug}`                                   | `/{state}/{city}`        | ✅ 🔁 Built and verified — all three return 308. Not in the sitemap, but they may hold inbound links                                                                           |
-| Guides                       | 13    | `/guides/*`                                                                                                  | —                        | ❌ Not built — content, needs a source of truth decided                                                                                                                        |
-| Comparisons                  | 10    | `/compare/*`                                                                                                 | —                        | ❌ Not built — content                                                                                                                                                         |
-| Blog                         | 5     | `/blog`, `/blog/*`                                                                                           | —                        | ❌ Not built — content. A `blog_posts` table exists in the database and is unused by v2                                                                                        |
-| Legal and policy             | ~26   | various                                                                                                      | `/terms`, `/privacy`     | ⚠️ Partial — 2 of ~26. Static pages, quick to port                                                                                                                             |
-| Marketing                    | ~14   | `/pricing`, `/how-it-works`, `/for-therapists`, `/advertise`, `/contact`, `/near-me`, `/safety`, `/trust`, … | —                        | ❌ Not built                                                                                                                                                                   |
-| Index hubs                   | 6     | `/therapists`, `/cities`, `/states`, `/guides`, `/compare`, `/blog`                                          | —                        | ❌ Not built                                                                                                                                                                   |
+| Group                            | Count | Old URL shape                                                                        | Status                                                                                                      |
+| -------------------------------- | ----- | ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- |
+| Home, about, faq, terms, privacy | 5     | —                                                                                    | ✅ Built                                                                                                    |
+| Therapist profiles               | 6     | `/therapists/{slug}`                                                                 | ✅ 🔁 308 to `/{state}/{city}/{slug}`, database-driven so later profiles are covered without editing a list |
+| City pages                       | 5     | `/{city}`                                                                            | ✅ 🔁 308 to `/{state}/{city}`, matched against the live city list rather than a wildcard                   |
+| Guides                           | 13    | `/guides/*`                                                                          | ✅ Ported as data, rendered by a new template. Slugs diffed against the sitemap — exact match               |
+| Comparisons                      | 10    | `/compare/*`                                                                         | ✅ Ported as data. Slugs diffed — exact match                                                               |
+| Blog                             | 4     | `/blog/*`                                                                            | ✅ Read from `blog_posts`. The old repo's two _static_ post lists contain none of these slugs               |
+| Legal and policy                 | 23    | various                                                                              | ✅ Ported verbatim through `scripts/port-legal-pages.py`                                                    |
+| Marketing                        | 6     | `/pricing`, `/how-it-works`, `/for-therapists`, `/near-me`, `/advertise`, `/contact` | ✅ Rewritten in this design system                                                                          |
+| Subscriptions                    | 1     | `/subscriptions`                                                                     | ✅ Ported — it is a LegalPage in the old repo                                                               |
+| Index hubs                       | 6     | `/therapists`, `/cities`, `/states`, `/guides`, `/compare`, `/blog`                  | ✅ Built; the first three are database-driven                                                               |
 
-**Coverage: 11 of 79 (14%), all 11 now resolving.** The 11 are the directory
-core and the highest-value pages. The other 68 are live, indexed, and would 404
-on cutover.
+**79 of 79.** Also redirected, though not in the sitemap: `/cities/{city}`,
+`/providers/{city}`, `/states/{state}/cities/{city}` — alternate old shapes that
+may hold inbound links.
 
-Redirects use 308, not 302: the move is permanent and the ranking should
+Redirects are 308, not 302: the move is permanent and the ranking should
 transfer. Unknown slugs 404 rather than redirecting to the directory — a soft
 404 tells a crawler a page moved when it did not, and leaves the dead URL
-indexed. Verified: `/not-a-city`, `/therapists/not-a-real-slug` and `/ny` all
-return 404.
+indexed.
 
 ## 2. Product surface not in the sitemap
 
-`robots.txt` on the live site disallows all of these, so they carry no search
-equity. They do not block the domain switch — they block the product being
-usable.
+`robots.txt` disallows all of these on the live site, so they carry no search
+equity.
 
-| Old area                    | Routes | v2 equivalent                                               | Status                                                                                                       |
-| --------------------------- | ------ | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `/pro/*` — therapist area   | 28     | `apps/dashboard` `/profile`, `/onboarding`, `/subscription` | ⚠️ Partial — the core is built (phases 5 and 7); the old area had 28 routes and v2 has 3                     |
-| `/signup/*` — onboarding    | 11     | `/onboarding` (multi-step, resumable)                       | ✅ Done — one resumable route replaces 11                                                                    |
-| `/login`, `/register`       | 2      | `/sign-in`                                                  | ✅ Done                                                                                                      |
-| Password reset              | 2      | —                                                           | ❌ Not built — Supabase Auth provides the flow; no v2 page renders it                                        |
-| `/dashboard/*`, `/client/*` | —      | —                                                           | ❌ Not built — client-side (customer) area. No booking or payment existed in the old site, so scope is small |
-| Admin                       | —      | `/admin`, `/admin/moderation`, `/admin/demand-radar`        | ✅ Done — phase 6                                                                                            |
+| Old area                    | Routes | v2 equivalent                                        | Status                                                                              |
+| --------------------------- | ------ | ---------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `/pro/*` — therapist area   | 28     | `/profile`, `/onboarding`, `/subscription`           | ✅ The core is built; 28 old routes collapse to 3                                   |
+| `/signup/*`                 | 11     | `/onboarding`                                        | ✅ One resumable route replaces 11                                                  |
+| `/login`, `/register`       | 2      | `/sign-in`                                           | ✅ Done                                                                             |
+| Password reset              | 2      | —                                                    | ⚠️ Supabase Auth provides the flow; no v2 page renders it                           |
+| `/dashboard/*`, `/client/*` | —      | —                                                    | ⚠️ Client-side area not built. No booking or payment existed on the old site either |
+| Admin                       | —      | `/admin`, `/admin/moderation`, `/admin/demand-radar` | ✅ Done                                                                             |
 
-## 3. v2 routes that exist today
+## 3. Hardening
 
-| Route                                                                  | App       | Status                                             |
-| ---------------------------------------------------------------------- | --------- | -------------------------------------------------- |
-| `/`                                                                    | web       | ✅ Done — ISR                                      |
-| `/search`                                                              | web       | ✅ Done                                            |
-| `/[state]/[city]`                                                      | web       | ✅ Done                                            |
-| `/[state]/[city]/[slug]`                                               | web       | ✅ Done                                            |
-| `/about`, `/faq`, `/terms`, `/privacy`                                 | web       | ✅ Done                                            |
-| `/sitemap.xml`, `/robots.txt`                                          | web       | ✅ Done — generated                                |
-| `/not-found`, `/error`, `/global-error`                                | web       | ✅ Done — phase 8                                  |
-| `/therapists/[slug]`                                                   | web       | ✅ Done — 308 to the v2 profile path               |
-| `/[state]`                                                             | web       | ✅ Done — 308 for a legacy bare city URL, else 404 |
-| `/cities/[city]`, `/providers/[city]`, `/states/[state]/cities/[city]` | web       | ✅ Done — 308 to `/{state}/{city}`                 |
-| `/sign-in`                                                             | dashboard | ✅ Done                                            |
-| `/onboarding`                                                          | dashboard | ✅ Done — phase 5                                  |
-| `/profile`                                                             | dashboard | ✅ Done — phase 5                                  |
-| `/subscription`                                                        | dashboard | ✅ Done — phase 7                                  |
-| `/admin`, `/admin/moderation`, `/admin/demand-radar`                   | dashboard | ✅ Done — phase 6                                  |
-| `/api/uploads/photo`                                                   | dashboard | ✅ Done — signed Cloudinary ticket, rate-limited   |
-| `/api/webhooks/billing`                                                | dashboard | ⚠️ Built, unreachable — see §5                     |
-| `/not-authorized`                                                      | dashboard | ✅ Done                                            |
-| `/not-found`, `/error`, `/global-error`                                | dashboard | ✅ Done — phase 8                                  |
+| Item                              | Status                                                                                                                                                                                  |
+| --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Content-Security-Policy           | ✅ Verified by smoke test against a running build                                                                                                                                       |
+| Strict-Transport-Security         | ✅ 2 years, `includeSubDomains; preload`                                                                                                                                                |
+| X-Frame-Options / frame-ancestors | ✅ `DENY` / `'none'`                                                                                                                                                                    |
+| X-Content-Type-Options            | ✅ `nosniff`                                                                                                                                                                            |
+| Referrer-Policy                   | ✅ `strict-origin-when-cross-origin`                                                                                                                                                    |
+| Permissions-Policy                | ✅ Camera, mic, geolocation, FLoC all denied                                                                                                                                            |
+| X-Robots-Tag on dashboard         | ✅ Covers route handlers and redirects, which render no metadata                                                                                                                        |
+| Custom 404                        | ✅ Both apps. The public one is `noindex, follow` so a crawler on a stale profile URL finds the directory                                                                               |
+| `error.tsx` / `global-error.tsx`  | ✅ Both apps. Shows the digest, never `error.message`                                                                                                                                   |
+| Rate limiting                     | ⚠️ In-memory, per lambda instance — a speed bump, not a guarantee. Applied to sign-in, uploads, billing actions, webhooks. A shared store (Upstash/Vercel KV) drops into the same place |
+| Turnstile                         | ✅ Fully implemented, off until both keys are set. Fails closed; `not_configured` is distinct from `passed`                                                                             |
+| Sentry                            | ⚠️ Seam implemented, SDK not installed. `reportError` logs today; wiring `@sentry/nextjs` is a one-function change                                                                      |
+| RLS on all public tables          | ✅ Phase 3 baseline + `20260816000000_rls_safe_hardening`                                                                                                                               |
+| Audit log immutable               | ✅ Insert/select only; no UPDATE or DELETE policy exists                                                                                                                                |
+| Webhook idempotency               | ✅ Unique `(provider, event_id)`; a duplicate is success                                                                                                                                |
+| Secrets never in the repo         | ✅ `secret-scan` green on every commit                                                                                                                                                  |
 
-## 4. Hardening
+## 4. Deployment
 
-| Item                             | Status                                                                                                                                                                       |
-| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Content-Security-Policy          | ✅ Done — verified by `curl -I` against a running build. Keeps `'unsafe-inline'`/`'unsafe-eval'` in `script-src`; see `packages/config/security-headers.mjs` for why, and §6 |
-| Strict-Transport-Security        | ✅ Done — 2 years, `includeSubDomains; preload`. Verified                                                                                                                    |
-| X-Frame-Options                  | ✅ Done — `DENY`, plus `frame-ancestors 'none'`. Verified                                                                                                                    |
-| X-Content-Type-Options           | ✅ Done — `nosniff`. Verified                                                                                                                                                |
-| Referrer-Policy                  | ✅ Done — `strict-origin-when-cross-origin`. Verified                                                                                                                        |
-| Permissions-Policy               | ✅ Done. Verified                                                                                                                                                            |
-| X-Robots-Tag on dashboard        | ✅ Done — covers route handlers and redirects, which never render metadata                                                                                                   |
-| Custom 404                       | ✅ Done — both apps. Public one is `noindex, follow` so crawlers hitting stale profile URLs find the directory                                                               |
-| `error.tsx` / `global-error.tsx` | ✅ Done — both apps. Shows the digest, never `error.message`                                                                                                                 |
-| Rate limiting                    | ⚠️ Partial — in-memory, per lambda instance. A speed bump, not a guarantee. Needs Upstash or Vercel KV, which needs an account                                               |
-| Turnstile                        | ❌ Not built — needs a Cloudflare site key and secret                                                                                                                        |
-| Sentry                           | ❌ Not built — needs a DSN and `@sentry/nextjs`                                                                                                                              |
-| RLS on all public tables         | ✅ Done — phase 3 baseline plus `20260816000000_rls_safe_hardening`                                                                                                          |
-| Audit log immutable              | ✅ Done — insert/select only; no UPDATE or DELETE policy exists                                                                                                              |
-| Webhook idempotency              | ✅ Done — unique `(provider, event_id)`; a duplicate is treated as success                                                                                                   |
-| Secrets never in the repo        | ✅ Done — `secret-scan` CI job green on every commit; `.gitignore` covers `.env*` from the first commit                                                                      |
+| Item                       | Status                                                                                                                                                                         |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `apps/web` on Vercel       | ✅ Project `masseurmatch-v2`, Root Directory `apps/web`                                                                                                                        |
+| `apps/dashboard` on Vercel | 🚧 **No project exists.** Creating one via the API returns `403 forbidden`. Must be created in the Vercel dashboard: same repo, Root Directory `apps/dashboard`                |
+| Billing webhook URL        | 🚧 Follows from the above — PayPal has nowhere to deliver, so no subscription can reach `active`                                                                               |
+| PayPal plans               | 🚧 Must be created at **$39 / $79 / $99** and set as `PAYPAL_PLAN_STANDARD/PRO/ELITE`. PayPal bills what its own plan says, so a mismatch shows one figure and charges another |
+| Domain on v2               | ⏳ Ready. Gated only on the two rows above                                                                                                                                     |
 
-## 5. Deployment
+A commit touching only `apps/dashboard` shows "Skipped" on the Vercel PR
+comment. That is correct for a project rooted at `apps/web` — and also the
+symptom: nothing deploys the dashboard because nothing is configured to.
 
-| Item                       | Status                                                                                                                                                         |
-| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `apps/web` on Vercel       | ✅ Done — project `masseurmatch-v2`, Root Directory `apps/web`                                                                                                 |
-| `apps/dashboard` on Vercel | 🚧 Blocked — **no Vercel project exists for it.** Everything from phases 5, 6 and 7 is unreachable in production                                               |
-| Billing webhook URL        | 🚧 Blocked — follows from the above. PayPal has nowhere to deliver to, so `PAYPAL_WEBHOOK_ID` cannot be configured and no subscription can ever reach `active` |
-| Domain on v2               | ❌ Not done — deliberately. Gated on §1                                                                                                                        |
+## 5. Known gaps, stated rather than closed
 
-A commit touching only `apps/dashboard` shows as "Skipped" on the Vercel PR
-comment. That is correct behaviour for a project rooted at `apps/web`, and it is
-also the symptom: nothing deploys the dashboard because nothing is configured
-to.
+| Gap                                                         | Where                                                        | Why it is open                                                                                                                                                                                                                        |
+| ----------------------------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| CSP allows `'unsafe-inline'` / `'unsafe-eval'`              | `packages/config/security-headers.mjs`                       | Next's App Router injects inline hydration and RSC bootstrap scripts. Removing them needs per-request nonces through middleware — worth doing, real breakage risk                                                                     |
+| Rate limiting is per-instance                               | `apps/dashboard/src/lib/rate-limit.ts`                       | A shared store drops into the same place; needs an account                                                                                                                                                                            |
+| Sentry SDK not installed                                    | `packages/config/observability.ts`                           | Would add a client bundle and a source-map upload step that warns without an auth token — weight and a new way for the build to go red, for nothing until a DSN exists                                                                |
+| `profile_status` is text with an 8-value CHECK, not an enum | `supabase/migrations/20260816020000_profile_status_enum.sql` | The old application still writes to this database. Narrowing 8 values to 5 while a second writer is live would break it, and the migration's own guard would not catch that — it inspects existing rows, and none use the extra three |
+| PayPal never exercised against a real account               | `packages/billing/providers/paypal.ts`                       | 19 tests stub `fetch`; they prove shape, not acceptance                                                                                                                                                                               |
+| RLS tests skip in CI                                        | `packages/db/tests/rls.test.ts`                              | Neither CI nor Vercel has Supabase credentials. Green CI is not evidence the database works                                                                                                                                           |
+| Smoke tests not in CI                                       | `playwright.config.ts`                                       | Needs Supabase credentials; a smoke test that passes against an empty database is not a smoke test                                                                                                                                    |
+| `backup_20260527` schema has RLS disabled                   | production database                                          | A full copy of `therapist_subscriptions` outside every policy. Not exposed by PostgREST, so not a live leak — but it should be dropped                                                                                                |
+| `text.muted` fails AA for body text                         | `packages/ui/src/tokens.ts`                                  | #8E8E8E is 3.28:1 on white — large text only. Documented at the token; no lighter alternative passes, so the rule is the fix                                                                                                          |
 
-## 6. Known gaps, stated rather than closed
+## 6. Test and CI state
 
-Each of these is a deliberate decision with its reasoning recorded at the code
-that implements it.
-
-| Gap                                                         | Where                                                        | Why it is open                                                                                                                                                                                                 |
-| ----------------------------------------------------------- | ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| CSP allows `'unsafe-inline'` / `'unsafe-eval'`              | `packages/config/security-headers.mjs`                       | Next's App Router injects inline hydration and RSC bootstrap scripts. Removing them needs per-request nonces through middleware — worth doing, real breakage risk                                              |
-| Rate limiting is per-instance                               | `apps/dashboard/src/lib/rate-limit.ts`                       | A shared store drops into the same place; needs an account                                                                                                                                                     |
-| `subscription_plans` photo limits differ from `plans.ts`    | `apps/dashboard/src/lib/subscription.ts`                     | RESOLVED for prices — elite corrected to $99 to match the database (2026-08-16). Photo limits deliberately differ (3/10/15/20 here vs 1/5/12/20 there); the table is the FK target and only its `code` is read |
-| `profile_status` is text with an 8-value CHECK, not an enum | `supabase/migrations/20260816020000_profile_status_enum.sql` | The old application still writes to this database. Narrowing the domain to 5 while a second writer is live would break it, and the migration's own guard would not catch that                                  |
-| PayPal never exercised against a real account               | `packages/billing/providers/paypal.ts`                       | 19 tests stub `fetch`; they prove shape, not acceptance. Needs sandbox credentials                                                                                                                             |
-| RLS tests skip in CI                                        | `packages/db/tests/rls.test.ts`                              | Neither CI nor Vercel has Supabase credentials, so the access layer degrades silently and the tests skip rather than fail. Green CI is not evidence the database works                                         |
-| `backup_20260527` schema has RLS disabled                   | production database                                          | A full copy of `therapist_subscriptions` outside every policy. Not exposed by PostgREST, so not a live leak — but it should be dropped                                                                         |
-
-## 7. Test and CI state
-
-| Check                                                             | Status                                                       |
-| ----------------------------------------------------------------- | ------------------------------------------------------------ |
-| `pnpm -r test`                                                    | ✅ 147 passing, 1 skipped (the RLS test needing credentials) |
-| `pnpm smoke`                                                      | ✅ 32 passing against a production build of both apps        |
-| `pnpm lint`                                                       | ✅ Clean, `--max-warnings 0`                                 |
-| `pnpm -r exec tsc --noEmit`                                       | ✅ Clean                                                     |
-| `pnpm build`                                                      | ✅ Both apps                                                 |
-| CI: `format`, `lint`, `typecheck`, `test`, `build`, `secret-scan` | ✅ Green                                                     |
-| Lighthouse ≥ 90, `apps/web`                                       | ✅ Done — see below                                          |
-| Lighthouse ≥ 90, `apps/dashboard`                                 | 🚧 Blocked — no deployment, and every page needs a session   |
-| End-to-end smoke test                                             | ✅ Done — see below                                          |
-
-### Smoke tests
-
-32 Playwright tests (`pnpm smoke`) against a **production build** of both apps,
-not `next dev` — dev mode has different error handling, no route caching and no
-`headers()` output, so a dev-mode pass says nothing about what ships.
-
-Covered: the home → city → therapist journey; all 11 legacy redirects; that the
-bare-city rule does not shadow `/about`, `/faq`, `/search`, `/terms`, `/privacy`
-or `/`; that dead URLs return a real 404 rather than a soft one; the security
-headers on both apps; sitemap and robots; that every profile in the sitemap is
-actually reachable; that all six protected dashboard routes bounce an anonymous
-visitor and preserve where they were going; that the upload endpoint refuses an
-anonymous caller; and that the billing webhook refuses an unsigned request.
-
-**Not covered: anything behind a session.** Signing in needs a real account and
-password, which this environment does not have, so the signed-in therapist and
-admin flows are untested end to end. The guards around them are tested; what
-they guard is not.
-
-Not part of `pnpm test` and not run in CI: it needs Supabase credentials, and a
-smoke test that passes against an empty database is not a smoke test.
-
-**Verifying the verifier.** The first run of this suite passed all 32 tests
-against a deliberately broken CSP. Two causes, both now fixed:
-
-1. `reuseExistingServer: true` let Playwright answer from a server left running
-   by an earlier run, serving the build it started with. Now `false`.
-2. `packages/config` was imported by relative path rather than as a workspace
-   package, so **Turbo did not know it was an input.** Editing the security
-   headers produced `FULL TURBO — 2 cached` and a build still containing the old
-   policy. It is now a real workspace package, and the same edit correctly
-   produces `0 cached`.
-
-The second one mattered well beyond the tests: anyone changing the security
-headers would have shipped a cached build without their change. Re-running the
-break after both fixes fails the header assertion in both apps, which is what a
-working smoke test looks like.
+| Check                                                 | Status                                                       |
+| ----------------------------------------------------- | ------------------------------------------------------------ |
+| `pnpm -r test`                                        | ✅ 161 passing, 1 skipped (the RLS test needing credentials) |
+| `pnpm smoke`                                          | ✅ 35 passing against a production build of both apps        |
+| `pnpm lint`                                           | ✅ Clean, `--max-warnings 0`                                 |
+| `pnpm typecheck`                                      | ✅ Clean                                                     |
+| `pnpm build`                                          | ✅ Both apps                                                 |
+| CI: format, lint, typecheck, test, build, secret-scan | ✅ Green                                                     |
+| Lighthouse ≥ 90 (`apps/web`)                          | ✅ 98–100 on all four categories, 11 page types              |
+| Lighthouse (`apps/dashboard`)                         | 🚧 No deployment, and every page needs a session             |
 
 ### Lighthouse
 
-Run against a local production build (`pnpm build && pnpm start`) with
-Lighthouse 12.8.2 and the bundled Chromium. **Not** against the Vercel
-deployment: the preview sits behind deployment protection and returns 302 to an
-SSO page, so nothing can measure it from outside. The build is byte-identical;
-the network path is not, so treat performance as indicative and the other three
-categories as exact.
+Run against a local production build with Lighthouse 12.8.2 and the bundled
+Chromium. **Not** the Vercel deployment: the preview sits behind deployment
+protection and 302s to an SSO page, so nothing can measure it from outside. The
+build is identical; the network path is not, so treat performance as indicative
+and the other three as exact.
 
-| Page                         | Perf | A11y | Best practices | SEO    |
-| ---------------------------- | ---- | ---- | -------------- | ------ |
-| `/`                          | 99   | 100  | 100            | 100    |
-| `/ny/new-york`               | 100  | 100  | 100            | 100    |
-| `/ny/new-york/mati-eb87b62c` | 97   | 100  | 100            | 100    |
-| `/about`                     | 100  | 100  | 100            | 100    |
-| `/search`                    | 100  | 100  | 100            | **66** |
+| Page                                     | Perf | A11y | BP  | SEO |
+| ---------------------------------------- | ---- | ---- | --- | --- |
+| `/`                                      | 100  | 100  | 100 | 100 |
+| `/ny/new-york`                           | 100  | 100  | 100 | 100 |
+| `/pricing`                               | 99   | 100  | 100 | 100 |
+| `/acceptable-use`                        | 99   | 100  | 100 | 100 |
+| `/legal`                                 | 99   | 100  | 100 | 100 |
+| `/guides/incall-vs-outcall-dallas`       | 100  | 100  | 100 | 100 |
+| `/compare/masseurmatch-vs-masseurfinder` | 98   | 100  | 100 | 100 |
+| `/blog/how-to-find-a-masseur-near-you`   | 99   | 100  | 100 | 100 |
+| `/therapists`                            | 99   | 100  | 100 | 100 |
+| `/cities`                                | 98   | 100  | 100 | 100 |
+| `/states`                                | 99   | 100  | 100 | 100 |
 
-`/search` scoring 66 on SEO is correct and is deliberately not fixed. The page
-sets `robots: { index: false, follow: true }`, and Lighthouse fails any noindex
-page regardless of intent. A search results page _should_ be noindex — faceted
-queries generate unbounded near-duplicate URLs — and `follow: true` still lets a
-crawler walk through to the profiles. Making it indexable to satisfy the audit
-would be a real SEO mistake traded for a number.
+`/search` scores 66 on SEO and is deliberately left there: it sets
+`robots: noindex, follow`, and Lighthouse fails any noindex page regardless of
+intent. A search results page _should_ be noindex — faceted queries generate
+unbounded near-duplicate URLs — and `follow: true` still lets a crawler reach
+the profiles. Making it indexable to satisfy the audit would trade a real SEO
+mistake for a number.
 
-Three defects the run found, all fixed:
+### Smoke tests
 
-| Found                                                                                       | Fix                                                                                                                                                                                                                     |
-| ------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Contrast 3.05:1 on muted body text (`#8E8E8E` on `#F7F7F7`), against the 4.5:1 AA threshold | Swapped to the palette's existing `greyText` `#6F6F6F` — 4.69:1. An existing token, so no new style was introduced                                                                                                      |
-| `favicon.ico` 404 on every page                                                             | Added `icon.svg` in brand colours to both apps                                                                                                                                                                          |
-| Heading order skipped `<h2>` on the city and search pages                                   | The card's heading level is now a prop, defaulting to `3` (correct beneath the home page's section `<h2>`) and set to `2` where cards follow the `<h1>` directly. Visual size is unchanged — it is a class, not the tag |
+`pnpm smoke` runs 35 Playwright tests against a **production build** of both
+apps. Covered: the home → city → therapist journey; all 42 rendered indexed URLs
+checked for a 200 _and_ a body over 1500 bytes, because a 200 rendering an empty
+shell is still a broken page; all 11 legacy redirects; that the sitemap declares
+every page that exists; that the bare-city rule does not shadow real top-level
+pages; that dead URLs 404 rather than soft-404; the security headers on both
+apps; and that all six protected dashboard routes bounce an anonymous visitor.
 
-## 8. What closes the gate
+**Not covered: anything behind a session.** Signing in needs a real account and
+password this environment does not have, so the guards are tested and what they
+guard is not.
 
-In order, because each depends on the last:
+Two bugs were found _in the smoke suite itself_ by deliberately breaking a
+header and checking the tests noticed. Both are recorded in
+`playwright.config.ts`: `reuseExistingServer` let a stale server answer, and
+`packages/config` was outside the workspace graph so Turbo did not know it was a
+build input — that second one silently shipped a cached build with stale
+security headers.
 
-1. **Create a Vercel project for `apps/dashboard`.** Unblocks the webhook URL,
-   Lighthouse on the dashboard, and the smoke test. Nothing else in phases 5–7
-   is verifiable in production until this exists.
-2. **Create the PayPal plans at the `plans.ts` prices** — $39 / $79 / $99 —
-   and set `PAYPAL_PLAN_STANDARD/PRO/ELITE`. PayPal bills what its own plan
-   says, so a mismatch shows a therapist one figure and charges another. The
-   price conflict itself is resolved: elite is $99.
-3. **Build the 68 indexed URLs.** Legal and marketing pages are quick; guides,
-   comparisons and blog need a content source decided. The 11 directory URLs are
-   already handled by redirects.
-4. **Run Lighthouse and the smoke test** against both deployments.
-5. **Move the domain**, following the checklist in `CUTOVER.md`.
+## 7. What is left
 
-Steps 1 and 2 need decisions or account access that only the owner has. Step 3
-is the bulk of the remaining work.
+1. **Create a Vercel project for `apps/dashboard`** — same repo, Root Directory
+   `apps/dashboard`. Everything else in this list depends on it.
+2. **Create the PayPal plans** at $39 / $79 / $99 and set
+   `PAYPAL_PLAN_STANDARD/PRO/ELITE`, `PAYPAL_CLIENT_ID/SECRET/WEBHOOK_ID`, and
+   `BILLING_PROVIDER=paypal`.
+3. **Point the webhook** at `<dashboard-url>/api/webhooks/billing`.
+4. **Move the domain**, following the checklist in `CUTOVER.md`.
 
-## 9. How to re-verify this document
+Optional, and safe to defer: Turnstile keys, a Sentry DSN, a shared rate-limit
+store, and staging credentials so the RLS and smoke suites run in CI.
 
-The route claims above were checked against a production build, not read off
-the source. To repeat:
+## 8. Re-verifying this document
+
+Route and header claims were checked against a production build, not read off
+the source:
 
 ```
-pnpm build
-cd apps/web && pnpm start -p 3112
+pnpm build && pnpm smoke        # 35 tests, covers every claim in §1 and §3
+pnpm -r test                    # 161 unit tests
+```
 
-# each must be 308, to the target named in CUTOVER.md
-curl -s -o /dev/null -w '%{http_code} %{redirect_url}\n' localhost:3112/therapists/mati-eb87b62c
-curl -s -o /dev/null -w '%{http_code} %{redirect_url}\n' localhost:3112/new-york
+For Lighthouse:
 
-# each must be 200 — proves the root redirect does not shadow real pages
-for u in / /about /faq /search /terms /privacy; do curl -s -o /dev/null -w "$u %{http_code}\n" "localhost:3112$u"; done
-
-# each must be 404 — proves unknown URLs are not soft-redirected
-for u in /not-a-city /therapists/not-a-real-slug /ny; do curl -s -o /dev/null -w "$u %{http_code}\n" "localhost:3112$u"; done
-
-# headers
-curl -sI localhost:3112/ | grep -iE 'content-security|strict-transport|x-frame|x-content-type|referrer|permissions'
+```
+cd apps/web && pnpm start -p 3141
+CHROME_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome \
+  npx lighthouse@12 http://localhost:3141/ --only-categories=performance,accessibility,best-practices,seo
 ```
