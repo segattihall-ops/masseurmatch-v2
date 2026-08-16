@@ -40,9 +40,10 @@ underneath it. Regenerated on 2026-08-16 and this document reconciled to match:
 | Functions added (5)   | `consume_edge_job_token`, `run_city_digest_weekly`, `run_lifecycle_campaign_jobs_daily`, `run_lifecycle_campaign_jobs_weekly`, `run_post_signup_campaigns_hourly` |
 
 **`profiles`, `profile_photos` and `cities` are unchanged**, so the public
-site's data path is unaffected. The dropped booking/payment tables mean this
-schema no longer carries a booking flow — worth confirming that is intended
-rather than an incomplete migration.
+site's data path is unaffected. The dropped booking and payment tables were
+**intentional** — confirmed by the product owner; there is no booking or
+payment flow in this product, so nothing in the access layer should reference
+them.
 
 ### Correction to an earlier draft
 

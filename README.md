@@ -185,30 +185,28 @@ project's **Root Directory** to the app it deploys.
 Root Directory can only be set in the dashboard (Settings → General) or at
 project-creation time — `vercel.json` has no field for it.
 
-### Why the root `vercel.json` exists
+### There is deliberately no `vercel.json`
 
-Because the `masseurmatch-v2` project was created with its Root Directory at
-the repo root, the root `vercel.json` makes that configuration work anyway:
+With the Root Directory set correctly, everything auto-detects and no config
+file is needed: Vercel finds `next` in the app's own `package.json`, installs
+the workspace from the repo-root `pnpm-lock.yaml`, runs `next build`, and picks
+up `.next` from the app directory.
 
-| Key               | Why                                                                           |
-| ----------------- | ----------------------------------------------------------------------------- |
-| `framework`       | Pins Next.js instead of relying on detection                                  |
-| `buildCommand`    | Delegates to Turborepo, filtered to `@masseurmatch/web`                       |
-| `outputDirectory` | Points at `apps/web/.next`, since the build output is not at the root         |
-| `installCommand`  | `--frozen-lockfile`, so a stale lockfile fails the deploy instead of drifting |
-
-The root `package.json` also carries `next` as a devDependency **purely to
-satisfy Vercel's detection step** — nothing at the root imports it. If the
-Root Directory is ever moved to `apps/web`, this file and that dependency
-should both be removed; the app builds correctly under plain auto-detection.
-
-Note this configuration deploys **only `apps/web`**. Deploying the dashboard
-needs a second Vercel project with Root Directory `apps/dashboard`, which also
-avoids this workaround entirely.
+Do **not** try to solve a Root Directory problem with a `vercel.json` at the
+repo root. Vercel resolves `vercel.json` _relative to the Root Directory_, so a
+root file is ignored once the setting is correct — and while the setting is
+wrong, a root file written for the repo-root layout (an `outputDirectory` of
+`apps/web/.next`, say) resolves to `apps/web/apps/web/.next` the moment the
+setting is fixed, turning one broken build into another. This was tried and
+reverted; configure the deployment through project settings instead.
 
 Leave **"Include files outside the Root Directory"** enabled — the apps consume
 `packages/*` as source via `transpilePackages`, and neither package has a build
-step of its own.
+step of its own. Without it the build fails resolving `@masseurmatch/ui` and
+`@masseurmatch/db`.
+
+Each app needs its own Vercel project: the dashboard requires a second one with
+Root Directory `apps/dashboard`.
 
 Set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` in the
 project's environment variables. Without them the build still succeeds, but
