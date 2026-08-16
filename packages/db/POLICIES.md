@@ -63,7 +63,9 @@ does not mean for `profiles`. The public-read policy it would create,
 migration would still add is the cleanup of the legacy duplicates, the
 `keyword_trends` read policy drop, and the deny-all backstop.
 
-### 🔴 Live incident, 2026-08-16 ~05:20Z — anon reads of `profiles` are failing
+### ✅ Resolved incident, 2026-08-16 — anon reads of `profiles` failed for ~75 minutes
+
+**Detected 05:20Z, confirmed resolved 06:40Z.**
 
 ```
 GET /rest/v1/profiles  ->  401
@@ -72,17 +74,28 @@ GET /rest/v1/profiles  ->  401
 
 `anon` lost `EXECUTE` on `public.is_admin()` between 04:35Z (anon reads working,
 suite green) and 05:20Z. Because `profiles_public_read_active` calls that
-function in its `USING` clause, the whole read errors instead of the branch
-evaluating false — so **no profile is readable anonymously**, including rows
-that satisfy the public predicate. `profile_photos` is unaffected.
+function in its `USING` clause, the whole read errored instead of the branch
+evaluating false — so **no profile was readable anonymously**, including rows
+that satisfied the public predicate. `profile_photos` was unaffected.
 
-Consequences: `pnpm build` for `apps/web` fails, and a Vercel deploy **with**
-Supabase credentials will fail the same way. Deploys without credentials still
-pass, because the access layer short-circuits to an empty directory — which is
-exactly why CI and the 05:10Z preview stayed green while the site was broken.
+Verified resolved end to end at 06:40Z: the anon read returns `200`, the suite
+passes 6/1-skipped against production, and `apps/web` builds 26 sitemap URLs —
+5 static + 10 cities + 11 profiles, matching the 11 approved-and-public rows
+live at that moment.
 
-Fix: `supabase/migrations/20260816010000_fix_is_admin_execute_grant.sql`.
-**Apply it before setting `NEXT_PUBLIC_SUPABASE_*` on Vercel.**
+**The lasting lesson is the detection gap, not the grant.** While the site was
+down, GitHub Actions was 8/8 green and the Vercel preview deployed clean. Both
+lack Supabase credentials, so the RLS tests skip and the access layer degrades
+to an empty directory rather than failing. The same commit failed locally with
+credentials present. **A green pipeline here is not evidence that the database
+is reachable.** The access layer cannot currently distinguish "no credentials
+configured" from "credentials present but refused", and those warrant different
+behaviour — the first is a legitimate shell build, the second is an outage.
+
+Fix, still worth applying for the hardening even though the grant is back:
+`supabase/migrations/20260816010000_fix_is_admin_execute_grant.sql` also sets
+`security definer`, `stable` and a pinned `search_path` on `is_admin()`, so a
+future grant change cannot take the public directory offline the same way.
 
 ### Known gaps, confirmed against production
 
