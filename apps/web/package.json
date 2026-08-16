@@ -11,6 +11,7 @@
     "clean": "rm -rf .next .turbo node_modules"
   },
   "dependencies": {
+    "@masseurmatch/billing": "workspace:*",
     "@masseurmatch/config": "workspace:*",
     "@masseurmatch/db": "workspace:*",
     "@masseurmatch/ui": "workspace:*",

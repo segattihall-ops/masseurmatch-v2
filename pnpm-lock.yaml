@@ -90,6 +90,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@masseurmatch/billing':
+        specifier: workspace:*
+        version: link:../../packages/billing
       '@masseurmatch/config':
         specifier: workspace:*
         version: link:../../packages/config

@@ -16,7 +16,7 @@ const nextConfig = {
   },
   reactStrictMode: true,
   // The design system and data layer are consumed as TypeScript source.
-  transpilePackages: ["@masseurmatch/ui", "@masseurmatch/db"],
+  transpilePackages: ["@masseurmatch/ui", "@masseurmatch/db", "@masseurmatch/billing"],
   eslint: {
     // Linting runs as its own CI step; keep `next build` focused on compiling.
     ignoreDuringBuilds: true,
