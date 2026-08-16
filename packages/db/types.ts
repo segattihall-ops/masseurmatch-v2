@@ -4,10 +4,10 @@
  * Supabase types for the `public` schema of the MasseurMatch project.
  *
  * Regenerate against the remote project:
- *   SUPABASE_PROJECT_ID=<project-ref> pnpm --filter @masseurmatch/db generate
+ *   SUPABASE_PROJECT_ID=<project-ref> pnpm db:types
  *
  * …or against a local stack (`supabase start`):
- *   pnpm --filter @masseurmatch/db generate:local
+ *   pnpm --filter @masseurmatch/db db:types:local
  */
 
 export type Json =
@@ -381,6 +381,7 @@ export type Database = {
           trial_status: string | null
           trust_score: number
           trust_signals: Json
+          user_id: string | null
           visibility_score: number
           weakest_section: string | null
         }
@@ -430,6 +431,7 @@ export type Database = {
           trial_status?: string | null
           trust_score?: number
           trust_signals?: Json
+          user_id?: string | null
           visibility_score?: number
           weakest_section?: string | null
         }
@@ -479,6 +481,7 @@ export type Database = {
           trial_status?: string | null
           trust_score?: number
           trust_signals?: Json
+          user_id?: string | null
           visibility_score?: number
           weakest_section?: string | null
         }
@@ -1025,103 +1028,6 @@ export type Database = {
         }
         Relationships: []
       }
-      appointments: {
-        Row: {
-          client_id: string | null
-          created_at: string
-          end_time: string | null
-          ends_at: string | null
-          id: string
-          location_type: string | null
-          notes: string | null
-          profile_id: string | null
-          service_type: string | null
-          start_time: string | null
-          starts_at: string | null
-          status: string
-          therapist_id: string | null
-          updated_at: string
-          user_id: string | null
-        }
-        Insert: {
-          client_id?: string | null
-          created_at?: string
-          end_time?: string | null
-          ends_at?: string | null
-          id?: string
-          location_type?: string | null
-          notes?: string | null
-          profile_id?: string | null
-          service_type?: string | null
-          start_time?: string | null
-          starts_at?: string | null
-          status?: string
-          therapist_id?: string | null
-          updated_at?: string
-          user_id?: string | null
-        }
-        Update: {
-          client_id?: string | null
-          created_at?: string
-          end_time?: string | null
-          ends_at?: string | null
-          id?: string
-          location_type?: string | null
-          notes?: string | null
-          profile_id?: string | null
-          service_type?: string | null
-          start_time?: string | null
-          starts_at?: string | null
-          status?: string
-          therapist_id?: string | null
-          updated_at?: string
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "appointments_profile_id_fkey"
-            columns: ["profile_id"]
-            isOneToOne: false
-            referencedRelation: "ai_profile_coach_source"
-            referencedColumns: ["profile_id"]
-          },
-          {
-            foreignKeyName: "appointments_profile_id_fkey"
-            columns: ["profile_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "appointments_profile_id_fkey"
-            columns: ["profile_id"]
-            isOneToOne: false
-            referencedRelation: "provider_profiles_private"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "appointments_profile_id_fkey"
-            columns: ["profile_id"]
-            isOneToOne: false
-            referencedRelation: "public_profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "appointments_profile_id_fkey"
-            columns: ["profile_id"]
-            isOneToOne: false
-            referencedRelation: "public_therapists"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "appointments_therapist_id_fkey"
-            columns: ["therapist_id"]
-            isOneToOne: false
-            referencedRelation: "therapists"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       audit_log: {
         Row: {
           action: string
@@ -1244,204 +1150,6 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
-      }
-      booking_analytics: {
-        Row: {
-          created_at: string | null
-          id: string
-          location_city: string | null
-          location_state: string | null
-          location_zip: string | null
-          price: number | null
-          profile_id: string | null
-          session_duration_minutes: number | null
-          session_type: string | null
-          technique: string | null
-          user_ip: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          location_city?: string | null
-          location_state?: string | null
-          location_zip?: string | null
-          price?: number | null
-          profile_id?: string | null
-          session_duration_minutes?: number | null
-          session_type?: string | null
-          technique?: string | null
-          user_ip?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          location_city?: string | null
-          location_state?: string | null
-          location_zip?: string | null
-          price?: number | null
-          profile_id?: string | null
-          session_duration_minutes?: number | null
-          session_type?: string | null
-          technique?: string | null
-          user_ip?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "booking_analytics_profile_id_fkey"
-            columns: ["profile_id"]
-            isOneToOne: false
-            referencedRelation: "ai_profile_coach_source"
-            referencedColumns: ["profile_id"]
-          },
-          {
-            foreignKeyName: "booking_analytics_profile_id_fkey"
-            columns: ["profile_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "booking_analytics_profile_id_fkey"
-            columns: ["profile_id"]
-            isOneToOne: false
-            referencedRelation: "provider_profiles_private"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "booking_analytics_profile_id_fkey"
-            columns: ["profile_id"]
-            isOneToOne: false
-            referencedRelation: "public_profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "booking_analytics_profile_id_fkey"
-            columns: ["profile_id"]
-            isOneToOne: false
-            referencedRelation: "public_therapists"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      booking_inquiries: {
-        Row: {
-          admin_notes: string | null
-          ai_conversation: Json | null
-          appointment_id: string | null
-          client_email: string | null
-          client_hotel: string | null
-          client_name: string | null
-          client_phone: string | null
-          confirmed_date: string | null
-          confirmed_time: string | null
-          created_at: string | null
-          duration_minutes: number | null
-          id: string
-          intelligence_report: Json | null
-          intelligence_status: string
-          message: string | null
-          preferred_date: string | null
-          preferred_time: string | null
-          reviewed_at: string | null
-          reviewed_by: string | null
-          service_type: string | null
-          sheets_row_id: string | null
-          source: string | null
-          status: string
-          therapist_id: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          admin_notes?: string | null
-          ai_conversation?: Json | null
-          appointment_id?: string | null
-          client_email?: string | null
-          client_hotel?: string | null
-          client_name?: string | null
-          client_phone?: string | null
-          confirmed_date?: string | null
-          confirmed_time?: string | null
-          created_at?: string | null
-          duration_minutes?: number | null
-          id?: string
-          intelligence_report?: Json | null
-          intelligence_status?: string
-          message?: string | null
-          preferred_date?: string | null
-          preferred_time?: string | null
-          reviewed_at?: string | null
-          reviewed_by?: string | null
-          service_type?: string | null
-          sheets_row_id?: string | null
-          source?: string | null
-          status?: string
-          therapist_id?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          admin_notes?: string | null
-          ai_conversation?: Json | null
-          appointment_id?: string | null
-          client_email?: string | null
-          client_hotel?: string | null
-          client_name?: string | null
-          client_phone?: string | null
-          confirmed_date?: string | null
-          confirmed_time?: string | null
-          created_at?: string | null
-          duration_minutes?: number | null
-          id?: string
-          intelligence_report?: Json | null
-          intelligence_status?: string
-          message?: string | null
-          preferred_date?: string | null
-          preferred_time?: string | null
-          reviewed_at?: string | null
-          reviewed_by?: string | null
-          service_type?: string | null
-          sheets_row_id?: string | null
-          source?: string | null
-          status?: string
-          therapist_id?: string | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "booking_inquiries_therapist_id_fkey"
-            columns: ["therapist_id"]
-            isOneToOne: false
-            referencedRelation: "ai_profile_coach_source"
-            referencedColumns: ["profile_id"]
-          },
-          {
-            foreignKeyName: "booking_inquiries_therapist_id_fkey"
-            columns: ["therapist_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "booking_inquiries_therapist_id_fkey"
-            columns: ["therapist_id"]
-            isOneToOne: false
-            referencedRelation: "provider_profiles_private"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "booking_inquiries_therapist_id_fkey"
-            columns: ["therapist_id"]
-            isOneToOne: false
-            referencedRelation: "public_profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "booking_inquiries_therapist_id_fkey"
-            columns: ["therapist_id"]
-            isOneToOne: false
-            referencedRelation: "public_therapists"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       bruno_agent_config: {
         Row: {
@@ -2493,6 +2201,30 @@ export type Database = {
           trend?: string
           velocity_score?: number
           week_start?: string
+        }
+        Relationships: []
+      }
+      edge_job_invocation_tokens: {
+        Row: {
+          consumed_at: string | null
+          created_at: string
+          expires_at: string
+          function_name: string
+          token: string
+        }
+        Insert: {
+          consumed_at?: string | null
+          created_at?: string
+          expires_at?: string
+          function_name: string
+          token?: string
+        }
+        Update: {
+          consumed_at?: string | null
+          created_at?: string
+          expires_at?: string
+          function_name?: string
+          token?: string
         }
         Relationships: []
       }
@@ -3829,6 +3561,7 @@ export type Database = {
           status: string
           transport_preference: string
           updated_at: string
+          user_id: string
         }
         Insert: {
           completed_at?: string | null
@@ -3845,6 +3578,7 @@ export type Database = {
           status?: string
           transport_preference?: string
           updated_at?: string
+          user_id: string
         }
         Update: {
           completed_at?: string | null
@@ -3861,6 +3595,7 @@ export type Database = {
           status?: string
           transport_preference?: string
           updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -3885,6 +3620,7 @@ export type Database = {
           state: string | null
           timezone: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           city?: string | null
@@ -3906,6 +3642,7 @@ export type Database = {
           state?: string | null
           timezone?: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           city?: string | null
@@ -3927,6 +3664,7 @@ export type Database = {
           state?: string | null
           timezone?: string
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -3944,6 +3682,7 @@ export type Database = {
           status: string
           unread_count: number
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           contact_id: string
@@ -3958,6 +3697,7 @@ export type Database = {
           status?: string
           unread_count?: number
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           contact_id?: string
@@ -3972,6 +3712,7 @@ export type Database = {
           status?: string
           unread_count?: number
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -4005,6 +3746,7 @@ export type Database = {
           sender_type: string
           sent_at: string | null
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           body: string
@@ -4027,6 +3769,7 @@ export type Database = {
           sender_type: string
           sent_at?: string | null
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           body?: string
@@ -4049,6 +3792,7 @@ export type Database = {
           sender_type?: string
           sent_at?: string | null
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -4098,6 +3842,7 @@ export type Database = {
           status: string
           transport_preference: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           attempts?: number
@@ -4122,6 +3867,7 @@ export type Database = {
           status?: string
           transport_preference?: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           attempts?: number
@@ -4146,6 +3892,7 @@ export type Database = {
           status?: string
           transport_preference?: string
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -4189,6 +3936,7 @@ export type Database = {
           receiving_number: string
           transport_mode: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
@@ -4200,6 +3948,7 @@ export type Database = {
           receiving_number?: string
           transport_mode?: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
@@ -4211,6 +3960,7 @@ export type Database = {
           receiving_number?: string
           transport_mode?: string
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -4552,75 +4302,6 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
-      }
-      payment_transactions: {
-        Row: {
-          amount: number | null
-          amount_cents: number | null
-          appointment_id: string | null
-          created_at: string
-          currency: string | null
-          id: string
-          metadata: Json | null
-          provider: string | null
-          provider_transaction_id: string | null
-          status: string | null
-          stripe_payment_intent_id: string | null
-          stripe_refund_id: string | null
-          therapist_id: string | null
-          updated_at: string
-          user_id: string | null
-        }
-        Insert: {
-          amount?: number | null
-          amount_cents?: number | null
-          appointment_id?: string | null
-          created_at?: string
-          currency?: string | null
-          id?: string
-          metadata?: Json | null
-          provider?: string | null
-          provider_transaction_id?: string | null
-          status?: string | null
-          stripe_payment_intent_id?: string | null
-          stripe_refund_id?: string | null
-          therapist_id?: string | null
-          updated_at?: string
-          user_id?: string | null
-        }
-        Update: {
-          amount?: number | null
-          amount_cents?: number | null
-          appointment_id?: string | null
-          created_at?: string
-          currency?: string | null
-          id?: string
-          metadata?: Json | null
-          provider?: string | null
-          provider_transaction_id?: string | null
-          status?: string | null
-          stripe_payment_intent_id?: string | null
-          stripe_refund_id?: string | null
-          therapist_id?: string | null
-          updated_at?: string
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "payment_transactions_appointment_id_fkey"
-            columns: ["appointment_id"]
-            isOneToOne: false
-            referencedRelation: "appointments"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "payment_transactions_therapist_id_fkey"
-            columns: ["therapist_id"]
-            isOneToOne: false
-            referencedRelation: "therapists"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       photo_moderations: {
         Row: {
@@ -6312,7 +5993,6 @@ export type Database = {
       sms_logs: {
         Row: {
           body: string
-          booking_inquiry_id: string | null
           created_at: string | null
           direction: string
           from_number: string
@@ -6326,7 +6006,6 @@ export type Database = {
         }
         Insert: {
           body: string
-          booking_inquiry_id?: string | null
           created_at?: string | null
           direction: string
           from_number: string
@@ -6340,7 +6019,6 @@ export type Database = {
         }
         Update: {
           body?: string
-          booking_inquiry_id?: string | null
           created_at?: string | null
           direction?: string
           from_number?: string
@@ -6353,13 +6031,6 @@ export type Database = {
           twilio_sid?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "sms_logs_booking_inquiry_id_fkey"
-            columns: ["booking_inquiry_id"]
-            isOneToOne: false
-            referencedRelation: "booking_inquiries"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "sms_logs_profile_id_fkey"
             columns: ["profile_id"]
@@ -6473,6 +6144,7 @@ export type Database = {
           payload: Json
           processed_at: string
           processing_error: string | null
+          processing_status: string
           stripe_event_id: string
         }
         Insert: {
@@ -6482,6 +6154,7 @@ export type Database = {
           payload: Json
           processed_at?: string
           processing_error?: string | null
+          processing_status?: string
           stripe_event_id: string
         }
         Update: {
@@ -6491,6 +6164,7 @@ export type Database = {
           payload?: Json
           processed_at?: string
           processing_error?: string | null
+          processing_status?: string
           stripe_event_id?: string
         }
         Relationships: []
@@ -6859,85 +6533,6 @@ export type Database = {
             columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "public_therapists"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      therapist_availability: {
-        Row: {
-          created_at: string
-          day_of_week: number | null
-          end_time: string | null
-          id: string
-          is_available: boolean
-          profile_id: string | null
-          start_time: string | null
-          therapist_id: string | null
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          day_of_week?: number | null
-          end_time?: string | null
-          id?: string
-          is_available?: boolean
-          profile_id?: string | null
-          start_time?: string | null
-          therapist_id?: string | null
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          day_of_week?: number | null
-          end_time?: string | null
-          id?: string
-          is_available?: boolean
-          profile_id?: string | null
-          start_time?: string | null
-          therapist_id?: string | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "therapist_availability_profile_id_fkey"
-            columns: ["profile_id"]
-            isOneToOne: false
-            referencedRelation: "ai_profile_coach_source"
-            referencedColumns: ["profile_id"]
-          },
-          {
-            foreignKeyName: "therapist_availability_profile_id_fkey"
-            columns: ["profile_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "therapist_availability_profile_id_fkey"
-            columns: ["profile_id"]
-            isOneToOne: false
-            referencedRelation: "provider_profiles_private"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "therapist_availability_profile_id_fkey"
-            columns: ["profile_id"]
-            isOneToOne: false
-            referencedRelation: "public_profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "therapist_availability_profile_id_fkey"
-            columns: ["profile_id"]
-            isOneToOne: false
-            referencedRelation: "public_therapists"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "therapist_availability_therapist_id_fkey"
-            columns: ["therapist_id"]
-            isOneToOne: false
-            referencedRelation: "therapists"
             referencedColumns: ["id"]
           },
         ]
@@ -7356,7 +6951,7 @@ export type Database = {
           provider: string | null
           provider_subscription_id: string | null
           status: string
-          therapist_profile_id: string
+          therapist_profile_id: string | null
           updated_at: string
         }
         Insert: {
@@ -7370,7 +6965,7 @@ export type Database = {
           provider?: string | null
           provider_subscription_id?: string | null
           status?: string
-          therapist_profile_id: string
+          therapist_profile_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -7384,7 +6979,7 @@ export type Database = {
           provider?: string | null
           provider_subscription_id?: string | null
           status?: string
-          therapist_profile_id?: string
+          therapist_profile_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -9419,6 +9014,10 @@ export type Database = {
         Args: { p_referral_code: string; p_referred_user_id: string }
         Returns: boolean
       }
+      consume_edge_job_token: {
+        Args: { p_function_name: string; p_token: string }
+        Returns: boolean
+      }
       current_user_role: { Args: never; Returns: string }
       ensure_referral_code: {
         Args: { p_user_id: string }
@@ -9536,14 +9135,6 @@ export type Database = {
       }
       process_stripe_identity_verified: {
         Args: { p_stripe_session_id: string; p_user_id: string }
-        Returns: undefined
-      }
-      process_stripe_payment_intent_failed: {
-        Args: { p_provider_transaction_id: string }
-        Returns: undefined
-      }
-      process_stripe_payment_intent_succeeded: {
-        Args: { p_appointment_id?: string; p_provider_transaction_id: string }
         Returns: undefined
       }
       publish_verified_identity_profile: {
@@ -9779,8 +9370,12 @@ export type Database = {
         Args: { p_reason: string; p_stripe_charge_id: string }
         Returns: boolean
       }
+      run_city_digest_weekly: { Args: never; Returns: undefined }
       run_lifecycle_campaign_jobs: { Args: never; Returns: undefined }
+      run_lifecycle_campaign_jobs_daily: { Args: never; Returns: undefined }
+      run_lifecycle_campaign_jobs_weekly: { Args: never; Returns: undefined }
       run_lifecycle_queue_worker: { Args: never; Returns: undefined }
+      run_post_signup_campaigns_hourly: { Args: never; Returns: undefined }
       search_public_therapists: {
         Args: {
           radius_miles?: number
