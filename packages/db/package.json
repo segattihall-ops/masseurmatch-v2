@@ -14,7 +14,8 @@
     "./middleware": "./middleware.ts",
     "./actions/ranking-config": "./actions/ranking-config.ts",
     "./actions/directory": "./actions/directory.ts",
-    "./actions/directory-config": "./actions/directory-config.ts"
+    "./actions/directory-config": "./actions/directory-config.ts",
+    "./actions/blog": "./actions/blog.ts"
   },
   "files": [
     "index.ts",
