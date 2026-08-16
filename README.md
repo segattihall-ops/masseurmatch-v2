@@ -148,6 +148,50 @@ pnpm --filter @masseurmatch/db db:types:local
 form) and adds `TableName`, `ViewName`, `FunctionName`, `FunctionArgs` and
 `FunctionReturns` on top.
 
+## Dashboard — `apps/dashboard`
+
+Therapist and admin app, port 3001. Every page is behind auth.
+
+| Route                 | Who       | What                                                 |
+| --------------------- | --------- | ---------------------------------------------------- |
+| `/`                   | therapist | Status, photo count, plan, links out                 |
+| `/sign-in`            | anyone    | Email + password                                     |
+| `/onboarding`         | therapist | Four steps, resumable                                |
+| `/profile`            | therapist | Edit, with re-moderation on sensitive changes        |
+| `/subscription`       | therapist | Read-only until phase 7                              |
+| `/admin`              | admin     | Metrics, by city                                     |
+| `/admin/moderation`   | admin     | Queue, FOSTA-SESTA checklist, audit-logged decisions |
+| `/admin/demand-radar` | admin     | `keyword_trends` chart and insights                  |
+| `/api/uploads/photo`  | therapist | Mints a signed Cloudinary ticket                     |
+
+### Auth
+
+Sessions are cookies via `@supabase/ssr`. `packages/db/auth.ts` is `server-only`
+and validates with `getUser()` — never `getSession()`, which trusts the cookie
+without contacting the auth server and would therefore believe a forged one.
+Roles are read server-side from `user_roles`, keyed to the id in the validated
+JWT; nothing the browser sends can influence them.
+
+**Authorisation lives in `apps/dashboard/src/lib/guards.ts`, not in middleware.**
+Middleware only refreshes the session cookie. A middleware matcher is a denylist
+by shape — miss a path and it silently becomes public — whereas a guard called
+inside a layout means an unguarded route renders nothing rather than leaking.
+
+### Onboarding progress is derived, not stored
+
+There is no `onboarding_step` column. `currentStep()` reads the furthest
+complete step from the data itself, so a counter and the data can never drift
+apart, and profiles that predate the flow are resumable for free.
+
+### Photo upload
+
+The browser never sees `CLOUDINARY_API_SECRET`. The server signs a narrow set of
+parameters and the browser posts the file straight to Cloudinary. Four of those
+parameters — `folder`, `public_id`, `allowed_formats`, `max_bytes` — are inside
+the signature, so Cloudinary itself enforces them. On confirmation the server
+fetches the asset from Cloudinary's Admin API rather than trusting the URL the
+browser reports.
+
 ## Environment and secrets
 
 - `.env.example` documents every variable **by name only** and is the one env

@@ -102,6 +102,19 @@ export default async function DashboardPage() {
           ))}
         </StaggerList>
 
+        {viewer.role === "admin" ? (
+          <FadeIn delay={0.08} className="mt-6">
+            <Card className="flex flex-wrap items-center justify-between gap-3 p-4">
+              <p className="text-sm text-ink/70">
+                You are signed in as an admin. This page shows your own therapist profile.
+              </p>
+              <Link href="/admin" className={buttonVariants({ variant: "outline", size: "sm" })}>
+                Go to admin
+              </Link>
+            </Card>
+          </FadeIn>
+        ) : null}
+
         <FadeIn delay={0.12} className="mt-10 flex flex-wrap gap-3">
           {complete ? null : (
             <Link href="/onboarding" className={buttonVariants()}>
