@@ -50,37 +50,20 @@ step 4 needs the URL that step 2 produces.
 
 ---
 
-## Step 1 — Fix both Root Directories
+## Step 1 — Fix both Root Directories ✅ DONE
 
-Two Vercel projects are connected to this repository and **both are currently
-pointing at the wrong folder.**
+Verified in the build logs for commit `5801c3b` on 2026-08-16 at 21:24 UTC:
 
-| Project                | Currently builds         | Must build           |
-| ---------------------- | ------------------------ | -------------------- |
-| `masseurmatch-v2`      | `apps/dashboard` ← wrong | **`apps/web`**       |
-| `masseurmatch-v2-kftd` | repository root ← wrong  | **`apps/dashboard`** |
+| Project                | Root Directory   | Build log says                  |
+| ---------------------- | ---------------- | ------------------------------- |
+| `masseurmatch-v2`      | `apps/web`       | `@masseurmatch/web:build` ✅     |
+| `masseurmatch-v2-kftd` | `apps/dashboard` | `@masseurmatch/dashboard:build` ✅ |
 
-For **each** project:
+Both deployments reached **Ready**. Nothing further to do here.
 
-1. Go to <https://vercel.com/mm-website> and open the project.
-2. **Settings** → **Build and Deployment**. (On older accounts this is
-   **Settings** → **General**.) Find **Root Directory**.
-3. Click **Edit**, type the path from the table above — `apps/web` or
-   `apps/dashboard`, with no leading `./` and no trailing slash — and **Save**.
-4. **Deployments** tab → the newest deployment → **⋯** menu → **Redeploy**.
-
-### How to know it worked
-
-- `masseurmatch-v2` build log should show `@masseurmatch/web:build`.
-- `masseurmatch-v2-kftd` build log should show `@masseurmatch/dashboard:build`.
-
-If a build still says `No Next.js version detected`, the Root Directory did not
-save — the repository root has no `next` dependency because it is a workspace
-manifest, which is correct.
-
-> **Do not merge the PR until step 1 is done.** Merging deploys `main` to
-> production, and with the current Root Directory `masseurmatch-v2` would
-> publish the dashboard on the public site's URL.
+If a build ever says `No Next.js version detected`, the Root Directory was
+cleared — the repository root has no `next` dependency because it is a
+workspace manifest, which is correct.
 
 ---
 
@@ -88,6 +71,28 @@ manifest, which is correct.
 
 Set these under **Settings** → **Environment Variables** on each project, for
 **Production** and **Preview**.
+
+> ### What is actually set today is the OLD site's variable names
+>
+> The 21:24 build logs name the variables present on each project. On
+> `masseurmatch-v2` they are `SITE_URL`, `CLOUDINARY_URL`,
+> `SUPABASE_ACCESS_TOKEN`, `PAYPAL_ENVIRONMENT`, and `PAYPAL_PLAN_STANDARD` /
+> `_PRO` / `_ELITE`. **v2 reads none of those names.** It wants
+> `NEXT_PUBLIC_SITE_URL` and `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME`.
+>
+> Two consequences, both confirmed in the same log:
+>
+> 1. **The public site renders an empty directory.** The build printed
+>    `NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY are not set —
+>    the directory will render empty`. The preview deploy has no therapists on
+>    it. These two are the only variables the site cannot start without.
+> 2. **The PayPal plan ids are on the wrong project.** They are set on
+>    `masseurmatch-v2` (the public site, which reads no PayPal variable at all)
+>    and absent from `masseurmatch-v2-kftd`, which is the app that bills. Move
+>    them; do not copy them.
+>
+> Renaming is not optional and old names are not aliased — a variable under the
+> wrong name is the same as an unset one.
 
 The two apps need _different_ variables. This matters: nothing in `apps/web`
 reads any PayPal variable, so PayPal credentials set on `masseurmatch-v2` do
@@ -127,6 +132,29 @@ nothing at all.
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY`    | optional     | Both Turnstile keys, or neither — one alone leaves the check off     |
 | `TURNSTILE_SECRET_KEY`              | optional     | Server only                                                          |
 | `NEXT_PUBLIC_SENTRY_DSN`            | optional     |                                                                      |
+
+### Adding a variable Vercel does not already know about
+
+Turborepo runs in strict env mode: a variable that is not declared in
+`turbo.json` is **stripped before the build sees it**, even when it is set
+correctly in Vercel. The build does not fail — the value simply arrives as
+`undefined`. Vercel prints this as
+`the following environment variables are set on your Vercel project, but
+missing from "turbo.json" … These variables WILL NOT be available`.
+
+So a new variable takes two edits, not one: set it in Vercel **and** add it to
+`turbo.json`.
+
+- Build-time (`NEXT_PUBLIC_*`, inlined into the bundle) → the `env` array on
+  the `build` task, so changing it busts the Turbo cache. In
+  `globalPassThroughEnv` it would not, and a cache hit would re-serve a bundle
+  with the previous value compiled in.
+- Server-side, read at request time → `globalPassThroughEnv`.
+
+`PAYPAL_PLAN_STANDARD` / `_PRO` / `_ELITE` deserve a specific warning: the code
+builds those names at runtime (``process.env[`PAYPAL_PLAN_${tier.toUpperCase()}`]``
+in `packages/billing/providers/paypal.ts`), so they appear in no plain search
+and are easy to miss. They are declared in `turbo.json` — leave them there.
 
 ---
 

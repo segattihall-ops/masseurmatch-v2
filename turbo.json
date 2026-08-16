@@ -2,13 +2,8 @@
   "$schema": "https://turbo.build/schema.json",
   "globalEnv": ["NODE_ENV", "ANALYZE"],
   "globalPassThroughEnv": [
-    "NEXT_PUBLIC_SITE_URL",
-    "NEXT_PUBLIC_DASHBOARD_URL",
     "VERCEL_URL",
     "VERCEL_PROJECT_PRODUCTION_URL",
-    "NEXT_PUBLIC_SUPABASE_URL",
-    "NEXT_PUBLIC_SUPABASE_ANON_KEY",
-    "NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME",
     "SUPABASE_SERVICE_ROLE_KEY",
     "SUPABASE_DB_URL",
     "BILLING_PROVIDER",
@@ -19,8 +14,18 @@
     "PAYPAL_CLIENT_SECRET",
     "PAYPAL_WEBHOOK_ID",
     "PAYPAL_API_BASE",
+    "PAYPAL_RETURN_URL",
+    "PAYPAL_CANCEL_URL",
+
+    "PAYPAL_PLAN_STANDARD",
+    "PAYPAL_PLAN_PRO",
+    "PAYPAL_PLAN_ELITE",
+
     "CLOUDINARY_API_KEY",
     "CLOUDINARY_API_SECRET",
+    "TURNSTILE_SECRET_KEY",
+    "SENTRY_ENVIRONMENT",
+    "VERCEL_ENV",
     "TEST_THERAPIST_A_EMAIL",
     "TEST_THERAPIST_A_PASSWORD",
     "TEST_THERAPIST_B_PROFILE_ID",
@@ -39,7 +44,16 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": [".next/**", "!.next/cache/**", "dist/**"]
+      "outputs": [".next/**", "!.next/cache/**", "dist/**"],
+      "env": [
+        "NEXT_PUBLIC_SITE_URL",
+        "NEXT_PUBLIC_DASHBOARD_URL",
+        "NEXT_PUBLIC_SUPABASE_URL",
+        "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+        "NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME",
+        "NEXT_PUBLIC_TURNSTILE_SITE_KEY",
+        "NEXT_PUBLIC_SENTRY_DSN"
+      ]
     },
     "lint": {
       "dependsOn": ["^build"]

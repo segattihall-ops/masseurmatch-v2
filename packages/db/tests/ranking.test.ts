@@ -11,9 +11,10 @@ import { citySlug, compareByRank, type TherapistListing } from "../actions/direc
  * through the anon client (so RLS applies), then order with `compareByRank`.
  *
  * They deliberately do *not* go through `search_public_therapists`. That RPC
- * currently fails against the project with `column tp.slug does not exist`,
- * and the `cities` table is not readable by anon (no GRANT) — the last test
- * pins both facts so a fix flips the suite green instead of going unnoticed.
+ * runs, but it exposes none of the ranking columns and returns fewer rows than
+ * are publicly visible; `cities` is not readable by anon (no GRANT). The last
+ * two tests pin both facts, so if either changes the suite says so rather than
+ * leaving the directory on the slower path for a reason nobody remembers.
  *
  * Required:
  *   NEXT_PUBLIC_SUPABASE_URL
@@ -87,21 +88,57 @@ describe.skipIf(!hasEnv)("directory ranking", () => {
     }
   });
 
-  it("documents the two upstream gaps the directory routes around", async () => {
-    const client = anonClient();
-
-    // `cities` is not readable by anon: no GRANT, so PostgREST refuses.
-    const cities = await client.from("cities").select("slug").limit(1);
+  it("cities is still unreadable by anon", async () => {
+    // No GRANT, so PostgREST refuses. This is why the directory derives its
+    // city list from `profiles` instead of reading `cities` directly.
+    const cities = await anonClient().from("cities").select("slug").limit(1);
     expect(
       cities.error,
       "cities became readable by anon — the directory can stop deriving cities from profiles",
     ).not.toBeNull();
+  });
 
-    // The ranking RPC errors server-side.
-    const rpc = await client.rpc("search_public_therapists", { result_limit: 1 });
+  it("search_public_therapists runs but cannot rank, so the directory still reads profiles", async () => {
+    // This RPC used to fail outright (`column tp.slug does not exist`). It was
+    // fixed upstream, so "does it error?" is no longer the question worth
+    // pinning — "is it usable?" is. Two measured reasons it is not:
+    //
+    //   1. It returns no `subscription_tier`, `is_featured` or `boost_score`.
+    //      Those are what `compareByRank` orders by, so routing the directory
+    //      through this RPC would silently drop paid placement — the thing
+    //      therapists pay for.
+    //   2. It returns fewer rows than are publicly visible, excluding at least
+    //      one approved + public profile (a join on city/coordinates, most
+    //      likely). A directory that hides a paying listing is worse than a
+    //      slower one.
+    //
+    // It does not over-return, which is the part that would have been a leak.
+    const client = anonClient();
+
+    const rpc = await client.rpc("search_public_therapists", { result_limit: 500 });
+    expect(rpc.error, "the RPC started erroring again").toBeNull();
+
+    const rows = (rpc.data ?? []) as Record<string, unknown>[];
+    expect(rows.length).toBeGreaterThan(0);
+
+    for (const column of ["subscription_tier", "is_featured", "boost_score"]) {
+      expect(
+        rows[0],
+        `${column} is exposed now — the RPC could replace the profiles query`,
+      ).not.toHaveProperty(column);
+    }
+
+    const visible = await visibleListings();
+    const returned = new Set(rows.map((row) => row.slug as string));
+    const dropped = visible.filter((listing) => !returned.has(listing.slug));
+
     expect(
-      rpc.error,
-      "search_public_therapists now works — the directory can use it instead of profiles",
-    ).not.toBeNull();
+      dropped.length,
+      "the RPC stopped dropping visible profiles — reconsider using it",
+    ).toBeGreaterThan(0);
+    expect(
+      visible.filter((listing) => returned.has(listing.slug)).length,
+      "the RPC returned nothing the directory considers visible",
+    ).toBeGreaterThan(0);
   });
 });
