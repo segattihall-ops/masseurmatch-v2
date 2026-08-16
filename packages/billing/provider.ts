@@ -19,6 +19,20 @@ export type SubscriptionRef = {
   status: SubscriptionStatus;
   /** ISO date of the next charge, when the provider reports one. */
   nextChargeOn: string | null;
+  /**
+   * Where to send the therapist to authorise the subscription, when the
+   * provider requires it.
+   *
+   * Redirect-based and direct-charge processors differ here in a way the
+   * caller cannot paper over. PayPal creates a subscription in `APPROVAL_PENDING`
+   * and nothing is charged until the payer approves at PayPal's own domain, so
+   * the URL is the whole point of the call. Authorize.Net takes a payment nonce
+   * collected in the browser and charges immediately, so it returns `null`.
+   *
+   * A caller that ignores this on PayPal creates subscriptions nobody ever
+   * approves.
+   */
+  approvalUrl: string | null;
 };
 
 /**
