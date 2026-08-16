@@ -21,26 +21,19 @@ export const ALLOWED_FORMATS = ["jpg", "jpeg", "png", "webp", "heic"] as const;
 /** Hard ceiling, enforced by Cloudinary because it is inside the signature. */
 export const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 
-/** Photos allowed per subscription tier. Phase 7 moves this into packages/billing. */
-const TIER_PHOTO_LIMITS: Record<string, number> = {
-  free: 3,
-  standard: 10,
-  pro: 20,
-  elite: 40,
-};
-
-const DEFAULT_PHOTO_LIMIT = 3;
-
 /**
- * How many photos this profile may hold.
+ * Photo allowance — re-exported from `@masseurmatch/billing`.
  *
- * `profiles.photo_limit` wins when set — it is the per-account override an
- * admin can grant. Otherwise it falls out of the tier.
+ * This module used to hold its own copy of the per-tier limits. It no longer
+ * does: `packages/billing/plans.ts` is the single source of truth for anything
+ * a plan grants. Two lists that are supposed to agree eventually do not, and
+ * the failure is silent — a therapist on Pro quietly capped at the Standard
+ * limit, with nothing to indicate why.
+ *
+ * Re-exported rather than having callers import billing directly, so the ~six
+ * existing call sites keep working and upload concerns stay in one module.
  */
-export function photoLimitFor(tier: string | null, override: number | null): number {
-  if (typeof override === "number" && override > 0) return override;
-  return TIER_PHOTO_LIMITS[(tier ?? "free").toLowerCase()] ?? DEFAULT_PHOTO_LIMIT;
-}
+export { photoLimitFor } from "@masseurmatch/billing";
 
 function requireEnv(name: string): string {
   const value = process.env[name];

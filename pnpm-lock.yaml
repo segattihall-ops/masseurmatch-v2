@@ -23,6 +23,9 @@ importers:
 
   apps/dashboard:
     dependencies:
+      '@masseurmatch/billing':
+        specifier: workspace:*
+        version: link:../../packages/billing
       '@masseurmatch/db':
         specifier: workspace:*
         version: link:../../packages/db
@@ -127,6 +130,28 @@ importers:
       typescript:
         specifier: ^5.7.3
         version: 5.9.3
+
+  packages/billing:
+    dependencies:
+      '@masseurmatch/db':
+        specifier: workspace:*
+        version: link:../db
+    devDependencies:
+      '@types/node':
+        specifier: ^20.19.9
+        version: 20.19.43
+      eslint:
+        specifier: ^8.57.1
+        version: 8.57.1
+      eslint-config-next:
+        specifier: ^14.2.23
+        version: 14.2.35(eslint@8.57.1)(typescript@5.9.3)
+      typescript:
+        specifier: ^5.7.3
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@20.19.43)
 
   packages/db:
     dependencies:
