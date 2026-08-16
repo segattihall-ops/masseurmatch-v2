@@ -257,6 +257,9 @@ security headers.
 
 ## 7. What is left
 
+**`DEPLOY.md` is the runbook** — every dashboard action in order, with the exact
+values and how to verify each one. The summary below is the shape of it.
+
 1. **Set `masseurmatch-v2-kftd`'s Root Directory to `apps/dashboard`.** The
    project already exists and is linked to the right repository; it is building
    from the repo root, which has no `next` dependency. Everything else in this
