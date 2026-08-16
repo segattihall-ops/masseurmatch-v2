@@ -1,10 +1,10 @@
 # Deploy runbook
 
-> ## ⚠️ URGENT — the live PayPal webhook has never worked
+> ## ⚠️ The live PayPal webhook had never worked — URL now fixed
 >
-> The webhook on the OLD site is registered as
-> `https://masseurmatch.com/api/webhooks/paypal` — the **apex** domain. Vercel
-> 308-redirects apex to `www`, and **PayPal does not follow redirects**:
+> Webhook `1VH31349P8377213N` was registered on the **apex** domain,
+> `https://masseurmatch.com/api/webhooks/paypal`. Vercel 308-redirects apex to
+> `www`, and **PayPal does not follow redirects**, so every delivery failed:
 >
 > ```
 > http_status: 308
@@ -12,15 +12,20 @@
 > Location: https://www.masseurmatch.com/api/webhooks/paypal
 > ```
 >
-> **Fix: add `www.` to the webhook URL in the PayPal dashboard.** One field.
-> Then use the `resend` link on the failed events to replay them.
+> **Fixed 2026-08-16 22:31 UTC** to
+> `https://www.masseurmatch.com/api/webhooks/paypal`. Verified: a POST to that
+> URL now returns **400 with zero redirects** — the handler is reached and
+> rejects the unsigned body, which is the correct response. The webhook
+> subscribes to `*`, so event coverage was never the problem.
 >
-> Or from a terminal, without the dashboard:
+> **Still to do: replay the failed deliveries** with `Resend` in the PayPal
+> dashboard. Nothing that failed before the fix has been reprocessed.
+>
+> To re-check at any time:
 >
 > ```sh
 > export PAYPAL_CLIENT_ID=... PAYPAL_CLIENT_SECRET=...
-> scripts/paypal-admin.sh webhooks            # flags the apex one
-> scripts/paypal-admin.sh fix-webhook WH-...  # prompts before writing
+> scripts/paypal-admin.sh webhooks   # flags any apex-domain webhook
 > ```
 >
 > Scope, measured in the production database on 2026-08-16:
@@ -166,27 +171,38 @@ and are easy to miss. They are declared in `turbo.json` — leave them there.
 
 ---
 
-## Step 3 — Map the PayPal plans
+## Step 3 — Map the PayPal plans ✅ IDS CONFIRMED
 
-**Plans already exist.** PayPal is live on the old site: subscription
-`I-EXY5H8HCTVPN` was created against plan `P-0LK9851678808213YNJ5TSKQ`. So this
-step is usually _mapping_ rather than creating — open the plan list, check each
-plan's price, and put its id in the variable for the tier whose price matches.
+**All three plans already exist and are ACTIVE**, at exactly the `plans.ts`
+prices. Verified against the live account on 2026-08-16:
 
-Create a plan only where a price has none.
+| Variable               | Plan id                      | Price          |
+| ---------------------- | ---------------------------- | -------------- |
+| `PAYPAL_PLAN_STANDARD` | `P-0LK9851678808213YNJ5TSKQ` | $39.00 / month |
+| `PAYPAL_PLAN_PRO`      | `P-6DG73865LJ933653NNJ5TU4Q` | $79.00 / month |
+| `PAYPAL_PLAN_ELITE`    | `P-9US760508D1062104NJ5TX7Y` | $99.00 / month |
 
-The ids are opaque strings PayPal mints (`P-5ML4271244454362`) and cannot be
-derived from our names, which is why they are environment variables.
+Nothing needs creating. Set these three on the **dashboard** project.
 
-The fastest way to do this mapping is:
+Two things about these plans that are not obvious:
+
+- **Every plan opens with a 14-day $0.00 trial cycle.** No code change is
+  needed — `BILLING.SUBSCRIPTION.ACTIVATED` already maps to `payment_succeeded`
+  and `trialing` already grants entitlement — but it means a new subscriber is
+  entitled immediately and the first `PAYMENT.SALE.COMPLETED` arrives two weeks
+  later. Do not treat "no payment yet" as "not a subscriber".
+- **`Member Badge Renewal` is also $39.00.** Price alone therefore does not
+  identify the Standard plan. Match on the plan _name_, not the amount.
+
+To re-derive the mapping at any time:
 
 ```sh
 export PAYPAL_CLIENT_ID=... PAYPAL_CLIENT_SECRET=...
 scripts/paypal-admin.sh plans
 ```
 
-It lists every plan with its price and prints the `PAYPAL_PLAN_*` lines ready to
-paste, naming any price that has no active plan yet. To do it by hand instead:
+It prints the `PAYPAL_PLAN_*` lines ready to paste and warns when two plans
+share a price. To do it by hand instead:
 
 1. PayPal dashboard → **Pay & Get Paid** → **Subscriptions** → **Plans**.
 2. Each of these prices needs a live monthly plan in **USD**:
@@ -231,6 +247,11 @@ point the old one at `https://www.masseurmatch.com/api/webhooks/paypal` (with
    - `PAYMENT.SALE.COMPLETED`
    - `PAYMENT.SALE.DENIED`
 4. Copy the **Webhook ID** into `PAYPAL_WEBHOOK_ID` and redeploy the dashboard.
+
+> **Use the new webhook's id, not `1VH31349P8377213N`.** That one is the old
+> site's webhook, now pointing at `https://www.masseurmatch.com/...`. Signature
+> verification is per-webhook: v2 checking events against a webhook id that
+> never delivers to it will reject every event it does receive.
 
 **Nothing marks a therapist as paid except this webhook.** `createSubscription`
 returns status `none` on purpose — a subscription is only `active` once PayPal
