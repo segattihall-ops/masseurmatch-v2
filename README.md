@@ -125,18 +125,17 @@ import type { Database, Tables } from "@masseurmatch/db";
 const supabase = createClient<Database>(url, anonKey);
 ```
 
-`src/types.generated.ts` is `supabase gen types typescript` output for the
-`public` schema — 121 tables, 6 views and 52 RPC functions. It is committed
-verbatim and excluded from Prettier, so regenerating never fails the format
-check. Regenerate with:
+`types.ts` is `supabase gen types typescript` output for the `public` schema —
+122 tables, 6 views and 52 RPC functions. It is committed verbatim and excluded
+from Prettier, so regenerating never fails the format check. Regenerate with:
 
 ```bash
-SUPABASE_PROJECT_ID=<project-ref> pnpm --filter @masseurmatch/db generate
+SUPABASE_PROJECT_ID=<project-ref> pnpm db:types
 # or, against a local stack:
-pnpm --filter @masseurmatch/db generate:local
+pnpm --filter @masseurmatch/db db:types:local
 ```
 
-`src/index.ts` re-exports the generated `Tables` / `TablesInsert` /
+`index.ts` re-exports the generated `Tables` / `TablesInsert` /
 `TablesUpdate` / `Enums` helpers (which understand the `{ schema: … }` option
 form) and adds `TableName`, `ViewName`, `FunctionName`, `FunctionArgs` and
 `FunctionReturns` on top.
@@ -163,3 +162,31 @@ They roll up into a single `ci` job. **Point branch protection on `main` at the
 `ci` check and enable "Require status checks to pass before merging"** — that
 is a repository setting, not something the workflow file can enforce on its
 own.
+
+## Deploying
+
+This is a monorepo with two Next.js apps, so **one Vercel project per app**.
+Each project's **Root Directory** must point at the app, not at the repo root:
+
+| Vercel project | Root Directory   |
+| -------------- | ---------------- |
+| public site    | `apps/web`       |
+| dashboard      | `apps/dashboard` |
+
+The root `package.json` has no `next` dependency — it is a workspace manifest.
+A project left with Root Directory at the repo root fails before it builds
+with `No Next.js version detected`. Root Directory is a **project setting in
+the Vercel dashboard**; there is no `vercel.json` field for it, so it cannot be
+fixed from the repository.
+
+Nothing else needs configuring, and there is no `vercel.json` on purpose:
+Vercel finds `pnpm-lock.yaml` at the repo root, installs the whole workspace,
+and reads the Turborepo graph to decide which app a commit affects. Leave
+**"Include files outside the Root Directory"** enabled — the apps consume
+`packages/*` as source via `transpilePackages`, and neither package has a
+build step of its own.
+
+Set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` in the
+project's environment variables. Without them the build still succeeds, but
+`packages/db` logs a warning and the directory renders empty — no cities, no
+profiles, no sitemap entries. See `.env.example` for the full list.
