@@ -1,5 +1,47 @@
 # Deploy runbook
 
+> ## ⚠️ URGENT — the live PayPal webhook has never worked
+>
+> The webhook on the OLD site is registered as
+> `https://masseurmatch.com/api/webhooks/paypal` — the **apex** domain. Vercel
+> 308-redirects apex to `www`, and **PayPal does not follow redirects**:
+>
+> ```
+> http_status: 308
+> reason_phrase: "Redirects are not allowed"
+> Location: https://www.masseurmatch.com/api/webhooks/paypal
+> ```
+>
+> **Fix: add `www.` to the webhook URL in the PayPal dashboard.** One field.
+> Then use the `resend` link on the failed events to replay them.
+>
+> Scope, measured in the production database on 2026-08-16:
+>
+> |                                          |                      |
+> | ---------------------------------------- | -------------------- |
+> | Rows in `therapist_subscriptions`        | **0**                |
+> | Profiles with a `subscription_status`    | **0**                |
+> | Profiles with a paid `subscription_tier` | 26 (25 elite, 1 pro) |
+>
+> No PayPal event has ever been recorded. A confirmed example: subscription
+> `I-EXY5H8HCTVPN` created 2026-08-11 for `custom_id`
+> `3ef08824-4862-4066-8fff-47f5e5f31ccb` — profile `reggie-3ef08824`, whose
+> `subscription_status` is still null. That event was `APPROVAL_PENDING`, so
+> nothing was charged for it, but any `PAYMENT.SALE.COMPLETED` would have failed
+> delivery in exactly the same way.
+>
+> Two things follow, both needing a decision:
+>
+> 1. **The 26 paid tiers have nothing behind them.** 25 profiles marked `elite`
+>    with no subscription record looks seeded rather than earned. v2 grants photo
+>    limits and featured placement from `profiles.subscription_tier`, so this
+>    decides what those therapists get.
+> 2. **Existing PayPal subscribers have no row in `therapist_subscriptions`.**
+>    The webhook matches on `provider_subscription_id`; with the table empty,
+>    every event for an existing subscription is filed as "No matching
+>    subscription" and ignored. They need backfilling from PayPal's subscription
+>    list before v2 takes over billing.
+
 Everything that has to be done in the Vercel and PayPal dashboards, in order.
 None of it can be done from the repository.
 
@@ -88,14 +130,20 @@ nothing at all.
 
 ---
 
-## Step 3 — Create the PayPal plans
+## Step 3 — Map the PayPal plans
 
-The plan ids are opaque strings PayPal mints (`P-5ML4271244454362`). They cannot
-be derived from our names, which is why they are environment variables.
+**Plans already exist.** PayPal is live on the old site: subscription
+`I-EXY5H8HCTVPN` was created against plan `P-0LK9851678808213YNJ5TSKQ`. So this
+step is usually _mapping_ rather than creating — open the plan list, check each
+plan's price, and put its id in the variable for the tier whose price matches.
+
+Create a plan only where a price has none.
+
+The ids are opaque strings PayPal mints (`P-5ML4271244454362`) and cannot be
+derived from our names, which is why they are environment variables.
 
 1. PayPal dashboard → **Pay & Get Paid** → **Subscriptions** → **Plans**.
-2. Create a product (once), then three monthly plans at **exactly** these
-   prices, in **USD**:
+2. Each of these prices needs a live monthly plan in **USD**:
 
    | Plan     | Price              | Goes in                |
    | -------- | ------------------ | ---------------------- |
@@ -118,6 +166,11 @@ naming the missing variable rather than silently falling back to another tier.
 ---
 
 ## Step 4 — Point the webhook at the dashboard
+
+**The path changed.** The old site listens at `/api/webhooks/paypal`; v2 listens
+at `/api/webhooks/billing`, on the dashboard app. Until cutover both can exist —
+point the old one at `https://www.masseurmatch.com/api/webhooks/paypal` (with
+`www`, per the warning at the top) and add a second webhook for v2.
 
 1. PayPal dashboard → **Apps & Credentials** → your app → **Webhooks** → **Add**.
 2. URL: `https://<dashboard-url>/api/webhooks/billing`
