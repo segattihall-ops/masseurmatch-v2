@@ -22,6 +22,7 @@ const PROFILE_COLUMNS =
   "id,user_id,display_name,full_name,headline,bio,city,state,phone,email,slug," +
   "service_categories,additional_services,incall_price,outcall_price,starting_price," +
   "avatar_url,photo_url,profile_status,visibility_status,subscription_tier," +
+  "moderation_status,moderation_notes," +
   "subscription_status,photo_limit,updated_at";
 
 export type MyProfile = {
@@ -45,6 +46,8 @@ export type MyProfile = {
   photo_url: string | null;
   profile_status: string | null;
   visibility_status: string | null;
+  moderation_status: string | null;
+  moderation_notes: string | null;
   subscription_tier: string | null;
   subscription_status: string | null;
   photo_limit: number | null;
