@@ -102,13 +102,37 @@ equity.
 
 ## 4. Deployment
 
-| Item                       | Status                                                                                                                                                                                                                  |
-| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `apps/web` on Vercel       | ✅ Project `masseurmatch-v2`, Root Directory `apps/web`. Deploys green                                                                                                                                                  |
-| `apps/dashboard` on Vercel | 🚧 Project `masseurmatch-v2-kftd` **exists but does not build** — its Root Directory is the repo root, so Vercel reports `No Next.js version detected`. Fix: set Root Directory to `apps/dashboard` in project settings |
-| Billing webhook URL        | 🚧 Follows from the above                                                                                                                                                                                               |
-| PayPal plans               | 🚧 Must be created at **$39 / $79 / $99**                                                                                                                                                                               |
-| Domain on v2               | ⏳ Ready. Gated only on the rows above                                                                                                                                                                                  |
+| Item                       | Status                                                                                                                                                                              |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `apps/web` on Vercel       | ✅ Project `masseurmatch-v2`, Root Directory `apps/web`. Deploys green                                                                                                              |
+| `apps/dashboard` on Vercel | 🚧 Project `masseurmatch-v2-kftd` **exists but does not build** — Root Directory is the repo root, so Vercel reports `No Next.js version detected`. Must be set to `apps/dashboard` |
+| Billing webhook URL        | 🚧 Follows from the above                                                                                                                                                           |
+| PayPal plans               | 🚧 Must be created at **$39 / $79 / $99**                                                                                                                                           |
+| Domain on v2               | ⏳ Ready. Gated only on the rows above                                                                                                                                              |
+
+### ⚠️ Both projects need their Root Directory set by hand
+
+| Project                | Current          | Required         |
+| ---------------------- | ---------------- | ---------------- |
+| `masseurmatch-v2`      | `apps/dashboard` | `apps/web`       |
+| `masseurmatch-v2-kftd` | _(repo root)_    | `apps/dashboard` |
+
+Settings → Build & Deployment → Root Directory, then redeploy each. No
+production domain points at either project yet, so the damage is confined to
+preview URLs — but `masseurmatch-v2` currently serves the dashboard.
+
+**How `masseurmatch-v2` broke.** Calling Vercel's `create_git_project` MCP tool
+with `rootDirectory: "apps/dashboard"` changed the setting on the existing
+project, even though the tool documents that parameter as _"Only applied when
+creating the project"_ and its response said `Reused project "masseurmatch-v2"`.
+It was applied anyway. The lesson is not subtle: that tool mutates an existing
+project's build configuration, so it must never be pointed at a repository whose
+project is already configured.
+
+It also cannot undo the change. `create_git_project` only takes its reuse path
+when exactly ONE project is linked to the repository; with two linked, it falls
+through to creation, which this token is forbidden to do (`403 forbidden`). No
+other MCP tool edits an existing project's Root Directory.
 
 ### The dashboard project, precisely
 
