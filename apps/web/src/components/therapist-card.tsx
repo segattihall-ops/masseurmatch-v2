@@ -15,11 +15,26 @@ import { hasImage } from "@/lib/cloudinary";
 export function TherapistCard({
   therapist,
   priority = false,
+  headingLevel = 3,
 }: {
   therapist: TherapistListing;
   /** Set on the first card above the fold so its image is not lazy-loaded. */
   priority?: boolean;
+  /**
+   * Heading level for the therapist's name.
+   *
+   * A card does not know what precedes it, and screen-reader navigation breaks
+   * when levels skip. On the home page these sit under a section `<h2>`, so `3`
+   * is right; on the city and search pages they follow the `<h1>` directly and
+   * need `2`. Default is the more nested case, because a card nested one level
+   * deeper is the common one.
+   *
+   * The visual size is unchanged either way — it comes from the class, not the
+   * tag.
+   */
+  headingLevel?: 2 | 3;
 }) {
+  const Heading = `h${headingLevel}` as "h2" | "h3";
   const name = therapistName(therapist);
   const href = profilePath(therapist);
   const photo = therapist.avatar_url ?? therapist.photo_url;
@@ -46,9 +61,9 @@ export function TherapistCard({
 
       <CardContent className="space-y-3 p-6">
         <div className="space-y-1">
-          <h3 className="font-display text-ds-18 font-semibold tracking-tight text-text-primary">
+          <Heading className="font-display text-ds-18 font-semibold tracking-tight text-text-primary">
             {name}
-          </h3>
+          </Heading>
           {therapist.city && therapist.state ? (
             <p className="text-sm text-text-secondary">
               {therapist.city}, {therapist.state}
@@ -74,7 +89,7 @@ export function TherapistCard({
           </ul>
         ) : null}
 
-        <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-text-muted">
+        <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-text-secondary">
           {therapist.is_verified_identity ? (
             <span className="font-semibold text-badge-verified">ID verified</span>
           ) : null}

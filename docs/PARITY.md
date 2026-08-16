@@ -14,11 +14,11 @@ and the mechanics of the domain switch; this file holds the audit.
 **The gate is not met.** Phase 8's stop criterion is that it does not close
 while any row lacks a status, any test fails, CI is red, or Lighthouse is below 90. Statuses are complete and the suite is green, but three things are open:
 
-| Blocker                          | Detail                                                                                                                                   |
-| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| 68 indexed URLs would 404        | Guides, comparisons, blog, most legal, marketing, index hubs. Not built.                                                                 |
-| `apps/dashboard` is not deployed | One Vercel project exists, rooted at `apps/web`. Everything from phases 5–7 is unreachable in production, including the billing webhook. |
-| Lighthouse not run               | Needs a production deployment of the app being measured.                                                                                 |
+| Blocker                             | Detail                                                                                                                                   |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| 68 indexed URLs would 404           | Guides, comparisons, blog, most legal, marketing, index hubs. Not built.                                                                 |
+| `apps/dashboard` is not deployed    | One Vercel project exists, rooted at `apps/web`. Everything from phases 5–7 is unreachable in production, including the billing webhook. |
+| Lighthouse not run on the dashboard | `apps/web` scores 97–100 across all four categories (§7). The dashboard cannot be measured until it is deployed.                         |
 
 Nothing below hides these. The status columns say so per row.
 
@@ -154,15 +154,48 @@ that implements it.
 
 ## 7. Test and CI state
 
-| Check                                                             | Status                                                                                    |
-| ----------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| `pnpm -r test`                                                    | ✅ 147 passing, 1 skipped (the RLS test needing credentials)                              |
-| `pnpm lint`                                                       | ✅ Clean, `--max-warnings 0`                                                              |
-| `pnpm -r exec tsc --noEmit`                                       | ✅ Clean                                                                                  |
-| `pnpm build`                                                      | ✅ Both apps                                                                              |
-| CI: `format`, `lint`, `typecheck`, `test`, `build`, `secret-scan` | ✅ Green                                                                                  |
-| Lighthouse ≥ 90                                                   | 🚧 Blocked — needs a production deployment. `apps/web` has one; `apps/dashboard` does not |
-| End-to-end smoke test                                             | 🚧 Blocked — the therapist and admin flows live in the app that is not deployed           |
+| Check                                                             | Status                                                                          |
+| ----------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| `pnpm -r test`                                                    | ✅ 147 passing, 1 skipped (the RLS test needing credentials)                    |
+| `pnpm lint`                                                       | ✅ Clean, `--max-warnings 0`                                                    |
+| `pnpm -r exec tsc --noEmit`                                       | ✅ Clean                                                                        |
+| `pnpm build`                                                      | ✅ Both apps                                                                    |
+| CI: `format`, `lint`, `typecheck`, `test`, `build`, `secret-scan` | ✅ Green                                                                        |
+| Lighthouse ≥ 90, `apps/web`                                       | ✅ Done — see below                                                             |
+| Lighthouse ≥ 90, `apps/dashboard`                                 | 🚧 Blocked — no deployment, and every page needs a session                      |
+| End-to-end smoke test                                             | 🚧 Blocked — the therapist and admin flows live in the app that is not deployed |
+
+### Lighthouse
+
+Run against a local production build (`pnpm build && pnpm start`) with
+Lighthouse 12.8.2 and the bundled Chromium. **Not** against the Vercel
+deployment: the preview sits behind deployment protection and returns 302 to an
+SSO page, so nothing can measure it from outside. The build is byte-identical;
+the network path is not, so treat performance as indicative and the other three
+categories as exact.
+
+| Page                         | Perf | A11y | Best practices | SEO    |
+| ---------------------------- | ---- | ---- | -------------- | ------ |
+| `/`                          | 99   | 100  | 100            | 100    |
+| `/ny/new-york`               | 100  | 100  | 100            | 100    |
+| `/ny/new-york/mati-eb87b62c` | 97   | 100  | 100            | 100    |
+| `/about`                     | 100  | 100  | 100            | 100    |
+| `/search`                    | 100  | 100  | 100            | **66** |
+
+`/search` scoring 66 on SEO is correct and is deliberately not fixed. The page
+sets `robots: { index: false, follow: true }`, and Lighthouse fails any noindex
+page regardless of intent. A search results page _should_ be noindex — faceted
+queries generate unbounded near-duplicate URLs — and `follow: true` still lets a
+crawler walk through to the profiles. Making it indexable to satisfy the audit
+would be a real SEO mistake traded for a number.
+
+Three defects the run found, all fixed:
+
+| Found                                                                                       | Fix                                                                                                                                                                                                                     |
+| ------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Contrast 3.05:1 on muted body text (`#8E8E8E` on `#F7F7F7`), against the 4.5:1 AA threshold | Swapped to the palette's existing `greyText` `#6F6F6F` — 4.69:1. An existing token, so no new style was introduced                                                                                                      |
+| `favicon.ico` 404 on every page                                                             | Added `icon.svg` in brand colours to both apps                                                                                                                                                                          |
+| Heading order skipped `<h2>` on the city and search pages                                   | The card's heading level is now a prop, defaulting to `3` (correct beneath the home page's section `<h2>`) and set to `2` where cards follow the `<h1>` directly. Visual size is unchanged — it is a class, not the tag |
 
 ## 8. What closes the gate
 

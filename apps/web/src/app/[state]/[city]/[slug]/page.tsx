@@ -80,7 +80,7 @@ export default async function ProfilePage({ params }: ProfileParams) {
       />
 
       <main className="mx-auto w-full max-w-5xl px-6 pb-16 pt-12">
-        <nav aria-label="Breadcrumb" className="text-sm text-text-muted">
+        <nav aria-label="Breadcrumb" className="text-sm text-text-secondary">
           <Link href={`/${params.state}/${params.city}`} className="hover:text-brand-secondary">
             {profile.city}, {profile.state}
           </Link>
@@ -109,7 +109,7 @@ export default async function ProfilePage({ params }: ProfileParams) {
             {profile.headline ? (
               <p className="text-ds-18 text-text-secondary">{profile.headline}</p>
             ) : null}
-            <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-text-muted">
+            <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-text-secondary">
               {profile.city && profile.state ? (
                 <span>
                   {profile.city}, {profile.state}
@@ -162,7 +162,7 @@ export default async function ProfilePage({ params }: ProfileParams) {
               <CardContent className="flex flex-wrap gap-8 p-6 pt-6">
                 {profile.incall_price ? (
                   <div>
-                    <p className="text-xs uppercase tracking-wide text-text-muted">Incall</p>
+                    <p className="text-xs uppercase tracking-wide text-text-secondary">Incall</p>
                     <p className="font-stat text-ds-24 font-bold text-text-primary">
                       ${profile.incall_price}
                     </p>
@@ -170,7 +170,7 @@ export default async function ProfilePage({ params }: ProfileParams) {
                 ) : null}
                 {profile.outcall_price ? (
                   <div>
-                    <p className="text-xs uppercase tracking-wide text-text-muted">Outcall</p>
+                    <p className="text-xs uppercase tracking-wide text-text-secondary">Outcall</p>
                     <p className="font-stat text-ds-24 font-bold text-text-primary">
                       ${profile.outcall_price}
                     </p>

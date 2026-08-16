@@ -73,7 +73,7 @@ export default async function CityPage({ params }: CityParams) {
           {therapists.map((therapist, index) => (
             <StaggerItem as="li" key={therapist.id}>
               {/* First card is above the fold on mobile: load its image eagerly. */}
-              <TherapistCard therapist={therapist} priority={index === 0} />
+              <TherapistCard therapist={therapist} priority={index === 0} headingLevel={2} />
             </StaggerItem>
           ))}
         </StaggerList>

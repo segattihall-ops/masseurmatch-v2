@@ -116,7 +116,7 @@ export default async function SearchPage({ searchParams }: SearchParams) {
       >
         {results.map((therapist) => (
           <StaggerItem as="li" key={therapist.id}>
-            <TherapistCard therapist={therapist} />
+            <TherapistCard therapist={therapist} headingLevel={2} />
           </StaggerItem>
         ))}
       </StaggerList>

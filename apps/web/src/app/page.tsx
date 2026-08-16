@@ -93,7 +93,7 @@ export default async function HomePage() {
                         {city.name}
                       </p>
                       <p className="mt-1 text-sm text-text-secondary">{city.state}</p>
-                      <p className="mt-3 text-xs text-text-muted">
+                      <p className="mt-3 text-xs text-text-secondary">
                         {city.therapistCount}{" "}
                         {city.therapistCount === 1 ? "therapist" : "therapists"}
                       </p>

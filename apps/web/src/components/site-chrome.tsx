@@ -51,7 +51,7 @@ export function SiteFooter() {
   return (
     <footer className="mt-20 border-t border-border bg-bg-subtle">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-6 py-10 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-text-muted">
+        <p className="text-sm text-text-secondary">
           © {new Date().getFullYear()} {SITE_NAME}. All rights reserved.
         </p>
         <ul className="flex list-none flex-wrap gap-5 p-0 text-sm">
