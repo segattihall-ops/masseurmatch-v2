@@ -63,6 +63,27 @@ does not mean for `profiles`. The public-read policy it would create,
 migration would still add is the cleanup of the legacy duplicates, the
 `keyword_trends` read policy drop, and the deny-all backstop.
 
+### 🔴 Live incident, 2026-08-16 ~05:20Z — anon reads of `profiles` are failing
+
+```
+GET /rest/v1/profiles  ->  401
+{"code":"42501","message":"permission denied for function is_admin"}
+```
+
+`anon` lost `EXECUTE` on `public.is_admin()` between 04:35Z (anon reads working,
+suite green) and 05:20Z. Because `profiles_public_read_active` calls that
+function in its `USING` clause, the whole read errors instead of the branch
+evaluating false — so **no profile is readable anonymously**, including rows
+that satisfy the public predicate. `profile_photos` is unaffected.
+
+Consequences: `pnpm build` for `apps/web` fails, and a Vercel deploy **with**
+Supabase credentials will fail the same way. Deploys without credentials still
+pass, because the access layer short-circuits to an empty directory — which is
+exactly why CI and the 05:10Z preview stayed green while the site was broken.
+
+Fix: `supabase/migrations/20260816010000_fix_is_admin_execute_grant.sql`.
+**Apply it before setting `NEXT_PUBLIC_SUPABASE_*` on Vercel.**
+
 ### Known gaps, confirmed against production
 
 - `keyword_trends` — carries **two** overlapping read policies:
@@ -80,6 +101,18 @@ migration would still add is the cleanup of the legacy duplicates, the
 - `search_public_therapists` — the ranking RPC **errors** against production:
   `column tp.slug does not exist`. The public site therefore reads `profiles`
   directly rather than going through it.
+
+### Migrations, and what to apply when
+
+The RLS work is split in two so the safe half is not held hostage by the risky
+half. Neither is applied yet.
+
+| Migration                               | Contents                                                                                                 | Recommendation                                                                                                                                                                                  |
+| --------------------------------------- | -------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `20260816000000_rls_safe_hardening.sql` | Drops the `using (true)` read policy on `keyword_trends`; sets `security_invoker` on `public_therapists` | **Apply now** (branch → staging → production). Closes two latent holes and cannot break a path that currently works.                                                                            |
+| `20260815000000_rls_baseline.sql`       | Deny-all backstop across all 118 tables, legacy `profiles` policy cleanup, `profiles` policy rewrite     | **Defer** until `apps/dashboard` exists. It enforces rules against flows nobody has exercised, and the `profiles` rewrite is redundant — the live policy already carries the correct predicate. |
+
+Neither migration touches data. Both are policy and view definitions only.
 
 Re-run the policy-coverage audit any time:
 

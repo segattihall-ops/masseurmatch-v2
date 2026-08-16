@@ -215,7 +215,22 @@ step of its own. Without it the build fails resolving `@masseurmatch/ui` and
 Each app needs its own Vercel project: the dashboard requires a second one with
 Root Directory `apps/dashboard`.
 
-Set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` in the
-project's environment variables. Without them the build still succeeds, but
-`packages/db` logs a warning and the directory renders empty — no cities, no
-profiles, no sitemap entries. See `.env.example` for the full list.
+### Environment variables to set on the project
+
+| Variable                            | Where      | If unset                                                                   |
+| ----------------------------------- | ---------- | -------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`          | all envs   | Directory renders empty — no cities, no profiles, no sitemap entries       |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY`     | all envs   | Same as above                                                              |
+| `NEXT_PUBLIC_SITE_URL`              | production | Falls back to `VERCEL_PROJECT_PRODUCTION_URL`, then `VERCEL_URL`           |
+| `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` | all envs   | Images bypass Cloudinary — originals served, no `f_auto` / `q_auto` / `w_` |
+
+Both Supabase values are safe in every environment: the anon key is public by
+design and ships in the browser bundle regardless. A build without them still
+succeeds — `packages/db` logs a warning and the site renders as a shell.
+
+`NEXT_PUBLIC_SITE_URL` is the one worth being deliberate about. It drives every
+canonical, OpenGraph URL and sitemap entry, and **Lighthouse does not validate
+the canonical host** — so a wrong value scores SEO 100 while publishing a
+sitemap search engines cannot use. `apps/web/src/lib/site.ts` falls back to
+Vercel's own variables so a missing setting degrades to the deployment origin
+rather than `localhost`, but set it explicitly for the real domain.
