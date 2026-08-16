@@ -4,29 +4,56 @@ Every table in the `public` schema, the access rule it should carry, and why.
 
 ## Status of this document
 
-The rules below are the **target state**, established by
-[`supabase/migrations/20260815000000_rls_baseline.sql`](../../supabase/migrations/20260815000000_rls_baseline.sql).
+Audited against the production database on 2026-08-16 with `execute_sql`, and
+verified end-to-end with the anon key over PostgREST.
 
-Two of them — `profiles` and `keyword_trends` — are written out explicitly in
-that migration. Every other table is brought to a safe floor by the migration's
-backstop block: RLS on, and a deny-all policy for any operation not already
-covered. A table showing `_deny_default` policies in the audit output is a
-table that still needs a deliberate rule; it is safe, not finished.
+| Check                                   | Result                                  |
+| --------------------------------------- | --------------------------------------- |
+| Tables in `public`                      | 118                                     |
+| **RLS disabled**                        | **0** — every table has RLS on          |
+| RLS on, but no policies at all          | 25 (deny-all for anon/authenticated)    |
+| RLS on, missing ≥1 per-operation policy | 40                                      |
+| Anonymous read of `profiles`            | Returns only `approved` + `public` rows |
 
-**The live policy state has not been verified against the production database.**
-The Supabase connector was unavailable when this was written, so the rules here
-are derived from the schema and from the previous repo's migration history
-(notably `20260322000000_rls_audit_fix.sql` and
-`20260720192214_fix_rls_policies_launch_v3.sql`). Run the audit to get ground
-truth:
+**Grants matter as much as policies.** Several tables carry permissive
+policies that are unreachable because `anon` holds no `SELECT` grant —
+`keyword_trends` has a `USING (true)` read policy but PostgREST returns
+`42501`, and the same is true of `cities` and the `public_therapists` view.
+A policy-only audit reads those as leaks; they are not. The audit script in
+`scripts/audit-rls.sql` inspects `pg_policy` only, so treat its output as a
+policy-coverage report, not an access report.
+
+What `anon` can actually read today: **`profiles` and `profile_photos`, and
+nothing else.**
+
+### Correction to an earlier draft
+
+The first version of the baseline migration gated `profiles` on
+`status IN ('active','approved') AND (is_active = true OR is_active IS NULL)`,
+copied from the previous repo's March 2026 migration. That is **not** the live
+gate. The deployed policy uses `profile_status`, `visibility_status`,
+`is_suspended` and `is_banned`. Both old columns still exist, so the wrong
+predicate would have applied cleanly and silently — matching 14 rows where the
+real policy matched 27, delisting 13 live profiles. The migration now carries
+the correct predicate. It has still **not been applied**.
+
+### Known gaps, confirmed against production
+
+- `keyword_trends` — has a `USING (true)` public read policy. Not reachable
+  today (no grant), but it should not exist; the migration drops it.
+- `public_therapists` — `security_invoker` is **not set**, so the view runs as
+  definer and does not inherit RLS from `profiles`. Anon has no grant on it, so
+  it is not currently exposed, but the view is one `GRANT` away from bypassing
+  every rule below.
+- `search_public_therapists` — the ranking RPC **errors** against production:
+  `column tp.slug does not exist`. The public site therefore reads `profiles`
+  directly rather than going through it.
+
+Re-run the policy-coverage audit any time:
 
 ```bash
 SUPABASE_DB_URL=postgresql://… pnpm db:audit-rls
 ```
-
-It reports every table with RLS disabled, with no policies, or missing a
-policy for one of select/insert/update/delete, and exits non-zero if any gap
-exists — so it can gate CI.
 
 ## Principles
 

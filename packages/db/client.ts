@@ -11,6 +11,16 @@ import type { Database } from "./types";
  */
 export type Client = SupabaseClient<Database>;
 
+/**
+ * True when both public Supabase variables are present.
+ *
+ * The public site calls this before querying so a build without credentials
+ * (CI, a fresh clone) produces the site shell instead of failing outright.
+ */
+export function hasSupabaseCredentials(): boolean {
+  return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+}
+
 function requireEnv(name: string): string {
   const value = process.env[name];
   if (!value) {

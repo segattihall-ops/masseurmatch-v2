@@ -1,7 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { beforeAll, describe, expect, it } from "vitest";
 
-import type { Database, Tables } from "../index";
+import type { Database } from "../index";
 
 /**
  * RLS behaviour tests.
@@ -30,19 +30,28 @@ const therapistPassword = process.env.TEST_THERAPIST_A_PASSWORD;
 const otherProfileId = process.env.TEST_THERAPIST_B_PROFILE_ID;
 const hasTherapistEnv = Boolean(therapistEmail && therapistPassword && otherProfileId);
 
-/** Statuses a logged-out visitor is allowed to see. */
-const PUBLIC_STATUSES = new Set(["active", "approved"]);
+/**
+ * The live public gate on `profiles`.
+ *
+ * Note it is `profile_status` / `visibility_status` — *not* the legacy
+ * `status` / `is_active` columns, which still exist but no longer gate
+ * anything. Several publicly listed profiles carry `status = 'pending'`
+ * while being correctly approved and public, so asserting on `status` here
+ * produces a false failure.
+ */
+const PUBLIC_PROFILE_STATUS = "approved";
+const PUBLIC_VISIBILITY_STATUS = "public";
 
 function anonClient() {
   return createClient<Database>(url!, anonKey!, { auth: { persistSession: false } });
 }
 
 describe.skipIf(!hasAnonEnv)("RLS — anonymous access", () => {
-  it("returns nothing from a protected table (keyword_trends is admin-read only)", async () => {
+  it("returns nothing from a protected table (keyword_trends is not public)", async () => {
     const { data, error } = await anonClient().from("keyword_trends").select("id").limit(5);
 
-    // Either shape proves the policy holds: PostgREST returns an empty set when
-    // RLS filters every row, or an explicit permission error.
+    // Either shape proves the table is closed: PostgREST refuses outright
+    // (42501, no grant) or RLS filters every row.
     if (error) {
       expect(error.code).toBeDefined();
     } else {
@@ -50,21 +59,29 @@ describe.skipIf(!hasAnonEnv)("RLS — anonymous access", () => {
     }
   });
 
-  it("returns only active/approved profiles", async () => {
+  it("returns only approved, publicly visible profiles", async () => {
     const { data, error } = await anonClient()
       .from("profiles")
-      .select("id, status, is_active")
-      .limit(200);
+      .select("id, profile_status, visibility_status, is_suspended, is_banned")
+      .limit(500);
 
     expect(error).toBeNull();
     expect(data).not.toBeNull();
 
-    const rows = (data ?? []) as Pick<Tables<"profiles">, "id" | "status" | "is_active">[];
-    const leaked = rows.filter((row) => !PUBLIC_STATUSES.has(String(row.status)));
+    const rows = data ?? [];
+    expect(rows.length, "expected at least one publicly visible profile").toBeGreaterThan(0);
+
+    const leaked = rows.filter(
+      (row) =>
+        row.profile_status !== PUBLIC_PROFILE_STATUS ||
+        row.visibility_status !== PUBLIC_VISIBILITY_STATUS ||
+        row.is_suspended === true ||
+        row.is_banned === true,
+    );
 
     expect(
-      leaked.map((row) => `${row.id}:${row.status}`),
-      "anonymous read leaked non-public profile statuses",
+      leaked.map((row) => `${row.id}:${row.profile_status}/${row.visibility_status}`),
+      "anonymous read returned a profile that is not publicly listed",
     ).toEqual([]);
   });
 

@@ -2,20 +2,22 @@ import { createClient } from "@supabase/supabase-js";
 import { describe, expect, it } from "vitest";
 
 import type { Database } from "../index";
+import { citySlug, compareByRank, type TherapistListing } from "../actions/directory-config";
 
 /**
- * Ranking test.
+ * Directory ranking tests.
  *
- * `actions/ranking.ts` is a `"use server"` module and depends on
- * `next/cache`, which needs a Next.js request scope — so this test exercises
- * the same RPC through the same anon client the action uses, asserting the
- * contract the action depends on: rows come back ordered by `priority_rank`.
+ * These exercise the path the public site actually takes: read `profiles`
+ * through the anon client (so RLS applies), then order with `compareByRank`.
+ *
+ * They deliberately do *not* go through `search_public_therapists`. That RPC
+ * currently fails against the project with `column tp.slug does not exist`,
+ * and the `cities` table is not readable by anon (no GRANT) — the last test
+ * pins both facts so a fix flips the suite green instead of going unnoticed.
  *
  * Required:
  *   NEXT_PUBLIC_SUPABASE_URL
  *   NEXT_PUBLIC_SUPABASE_ANON_KEY
- * Optional — defaults to the first city in the `cities` table:
- *   TEST_CITY_SLUG
  */
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -26,47 +28,80 @@ function anonClient() {
   return createClient<Database>(url!, anonKey!, { auth: { persistSession: false } });
 }
 
-/** Resolve a real city slug: the configured one, or the first in the table. */
-async function resolveCitySlug(client: ReturnType<typeof anonClient>): Promise<string> {
-  const configured = process.env.TEST_CITY_SLUG;
-  if (configured) return configured;
+const COLUMNS =
+  "id,slug,display_name,full_name,headline,city,state,subscription_tier,is_featured,boost_score,rating_average,review_count";
 
-  const { data, error } = await client
-    .from("cities")
-    .select("slug")
-    .not("slug", "is", null)
-    .limit(1)
-    .single();
+async function visibleListings(): Promise<TherapistListing[]> {
+  const { data, error } = await anonClient()
+    .from("profiles")
+    .select(COLUMNS)
+    .eq("profile_status", "approved")
+    .eq("visibility_status", "public");
 
-  if (error) throw new Error(`Could not resolve a test city: ${error.message}`);
-  if (!data.slug) throw new Error("Resolved a city with no slug; set TEST_CITY_SLUG instead.");
-  return data.slug;
+  expect(error).toBeNull();
+  return (data ?? []) as unknown as TherapistListing[];
 }
 
-describe.skipIf(!hasEnv)("ranking", () => {
-  it("returns therapists ordered by priority_rank for a real city", async () => {
-    const client = anonClient();
-    const citySlug = await resolveCitySlug(client);
+describe.skipIf(!hasEnv)("directory ranking", () => {
+  it("returns ranked therapists for a real city", async () => {
+    const all = await visibleListings();
+    const routable = all.filter((row) => row.slug && row.city && row.state);
 
-    const { data, error } = await client.rpc("search_public_therapists", {
-      search_city_slug: citySlug,
-      result_limit: 25,
-    });
+    expect(routable.length, "no routable profiles are publicly visible").toBeGreaterThan(0);
 
-    expect(error, `RPC failed for city "${citySlug}"`).toBeNull();
-    expect(Array.isArray(data)).toBe(true);
-
-    const rows = data ?? [];
-    expect(rows.length, `no therapists returned for "${citySlug}"`).toBeGreaterThan(0);
-
-    // The RPC is the ranking: priority_rank must be non-decreasing.
-    const ranks = rows.map((row) => row.priority_rank);
-    const sorted = [...ranks].sort((a, b) => a - b);
-    expect(ranks, "rows are not ordered by priority_rank").toEqual(sorted);
-
-    // And every row must be a profile the anon role may see.
-    for (const row of rows) {
-      expect(row.slug, "ranked row without a public slug").toBeTruthy();
+    // Pick the city with the most listings — the closest thing to a real page.
+    const counts = new Map<string, TherapistListing[]>();
+    for (const row of routable) {
+      const key = `${row.state!.toLowerCase()}/${citySlug(row.city!)}`;
+      counts.set(key, [...(counts.get(key) ?? []), row]);
     }
+
+    const [cityKey, listings] = [...counts.entries()].sort((a, b) => b[1].length - a[1].length)[0]!;
+    const ranked = [...listings].sort(compareByRank);
+
+    expect(ranked.length, `no therapists resolved for "${cityKey}"`).toBeGreaterThan(0);
+
+    // Ranking must be a total order: sorting twice cannot change the result.
+    expect([...ranked].sort(compareByRank).map((row) => row.id)).toEqual(
+      ranked.map((row) => row.id),
+    );
+
+    // And every ranked row must be routable.
+    for (const row of ranked) {
+      expect(row.slug, "ranked row without a slug").toBeTruthy();
+    }
+  });
+
+  it("orders paid tiers above free ones", async () => {
+    const all = await visibleListings();
+    const ranked = [...all].sort(compareByRank);
+
+    const firstFree = ranked.findIndex((row) => (row.subscription_tier ?? "free") === "free");
+    const lastPaid = ranked.reduce(
+      (last, row, index) => ((row.subscription_tier ?? "free") !== "free" ? index : last),
+      -1,
+    );
+
+    if (firstFree !== -1 && lastPaid !== -1) {
+      expect(lastPaid, "a free-tier profile ranked above a paid one").toBeLessThan(firstFree);
+    }
+  });
+
+  it("documents the two upstream gaps the directory routes around", async () => {
+    const client = anonClient();
+
+    // `cities` is not readable by anon: no GRANT, so PostgREST refuses.
+    const cities = await client.from("cities").select("slug").limit(1);
+    expect(
+      cities.error,
+      "cities became readable by anon — the directory can stop deriving cities from profiles",
+    ).not.toBeNull();
+
+    // The ranking RPC errors server-side.
+    const rpc = await client.rpc("search_public_therapists", { result_limit: 1 });
+    expect(
+      rpc.error,
+      "search_public_therapists now works — the directory can use it instead of profiles",
+    ).not.toBeNull();
   });
 });

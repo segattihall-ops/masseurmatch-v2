@@ -29,18 +29,28 @@ begin;
 -- ---------------------------------------------------------------------------
 -- 1. profiles
 -- ---------------------------------------------------------------------------
--- Read: a logged-out visitor sees a profile only when it is publicly listed.
--- `is_active is null` is treated as active because older rows predate the
--- column and are live on the current site.
+-- Read: a logged-out visitor sees a profile only when it is approved, public,
+-- and neither suspended nor banned — matching the policy deployed today.
 -- Write: the owner, or an admin. Never another therapist.
 -- ---------------------------------------------------------------------------
 alter table public.profiles enable row level security;
 
+-- NOTE: the gate is profile_status/visibility_status/is_suspended/is_banned.
+-- An earlier draft of this migration used `status` / `is_active`, copied from
+-- the previous repo's 2026-03 migration. Both columns still exist but are no
+-- longer the live gate: against production that predicate matched 14 rows
+-- where the real policy matched 27, so applying it would have delisted 13
+-- live profiles. Verified against the deployed policy before rewriting.
 drop policy if exists "profiles_public_read_active" on public.profiles;
 create policy "profiles_public_read_active"
   on public.profiles for select
   using (
-    (status in ('active', 'approved') and (is_active = true or is_active is null))
+    (
+      profile_status = 'approved'
+      and visibility_status = 'public'
+      and coalesce(is_suspended, false) = false
+      and coalesce(is_banned, false) = false
+    )
     or user_id = (select auth.uid())
     or public.is_admin()
   );
@@ -72,6 +82,13 @@ create policy "profiles_delete_admin"
 -- ---------------------------------------------------------------------------
 alter table public.keyword_trends enable row level security;
 
+-- Live state before this migration: a "Public read keyword_trends" policy with
+-- USING (true), plus an authenticated-read policy. Neither is currently
+-- reachable because anon/authenticated hold no SELECT grant on the table, so
+-- this is a latent over-permission rather than an active leak. Dropping both
+-- and gating on is_admin() closes it at the policy layer too.
+drop policy if exists "Public read keyword_trends" on public.keyword_trends;
+drop policy if exists "allow_read_keyword_trends" on public.keyword_trends;
 drop policy if exists "keyword_trends_select_admin" on public.keyword_trends;
 create policy "keyword_trends_select_admin"
   on public.keyword_trends for select
