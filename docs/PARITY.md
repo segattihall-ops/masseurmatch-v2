@@ -14,11 +14,11 @@ and the mechanics of the domain switch; this file holds the audit.
 **The gate is not met.** Phase 8's stop criterion is that it does not close
 while any row lacks a status, any test fails, CI is red, or Lighthouse is below 90. Statuses are complete and the suite is green, but three things are open:
 
-| Blocker                             | Detail                                                                                                                                   |
-| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| 68 indexed URLs would 404           | Guides, comparisons, blog, most legal, marketing, index hubs. Not built.                                                                 |
-| `apps/dashboard` is not deployed    | One Vercel project exists, rooted at `apps/web`. Everything from phases 5–7 is unreachable in production, including the billing webhook. |
-| Lighthouse not run on the dashboard | `apps/web` scores 97–100 across all four categories (§7). The dashboard cannot be measured until it is deployed.                         |
+| Blocker                                     | Detail                                                                                                                                                  |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 68 indexed URLs would 404                   | Guides, comparisons, blog, most legal, marketing, index hubs. Not built.                                                                                |
+| `apps/dashboard` is not deployed            | One Vercel project exists, rooted at `apps/web`. Everything from phases 5–7 is unreachable in production, including the billing webhook.                |
+| Lighthouse and smoke unrun on the dashboard | `apps/web` scores 97–100 across all four categories and 32 smoke tests pass (§7). The dashboard cannot be measured or signed into until it is deployed. |
 
 Nothing below hides these. The status columns say so per row.
 
@@ -154,16 +154,55 @@ that implements it.
 
 ## 7. Test and CI state
 
-| Check                                                             | Status                                                                          |
-| ----------------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| `pnpm -r test`                                                    | ✅ 147 passing, 1 skipped (the RLS test needing credentials)                    |
-| `pnpm lint`                                                       | ✅ Clean, `--max-warnings 0`                                                    |
-| `pnpm -r exec tsc --noEmit`                                       | ✅ Clean                                                                        |
-| `pnpm build`                                                      | ✅ Both apps                                                                    |
-| CI: `format`, `lint`, `typecheck`, `test`, `build`, `secret-scan` | ✅ Green                                                                        |
-| Lighthouse ≥ 90, `apps/web`                                       | ✅ Done — see below                                                             |
-| Lighthouse ≥ 90, `apps/dashboard`                                 | 🚧 Blocked — no deployment, and every page needs a session                      |
-| End-to-end smoke test                                             | 🚧 Blocked — the therapist and admin flows live in the app that is not deployed |
+| Check                                                             | Status                                                       |
+| ----------------------------------------------------------------- | ------------------------------------------------------------ |
+| `pnpm -r test`                                                    | ✅ 147 passing, 1 skipped (the RLS test needing credentials) |
+| `pnpm smoke`                                                      | ✅ 32 passing against a production build of both apps        |
+| `pnpm lint`                                                       | ✅ Clean, `--max-warnings 0`                                 |
+| `pnpm -r exec tsc --noEmit`                                       | ✅ Clean                                                     |
+| `pnpm build`                                                      | ✅ Both apps                                                 |
+| CI: `format`, `lint`, `typecheck`, `test`, `build`, `secret-scan` | ✅ Green                                                     |
+| Lighthouse ≥ 90, `apps/web`                                       | ✅ Done — see below                                          |
+| Lighthouse ≥ 90, `apps/dashboard`                                 | 🚧 Blocked — no deployment, and every page needs a session   |
+| End-to-end smoke test                                             | ✅ Done — see below                                          |
+
+### Smoke tests
+
+32 Playwright tests (`pnpm smoke`) against a **production build** of both apps,
+not `next dev` — dev mode has different error handling, no route caching and no
+`headers()` output, so a dev-mode pass says nothing about what ships.
+
+Covered: the home → city → therapist journey; all 11 legacy redirects; that the
+bare-city rule does not shadow `/about`, `/faq`, `/search`, `/terms`, `/privacy`
+or `/`; that dead URLs return a real 404 rather than a soft one; the security
+headers on both apps; sitemap and robots; that every profile in the sitemap is
+actually reachable; that all six protected dashboard routes bounce an anonymous
+visitor and preserve where they were going; that the upload endpoint refuses an
+anonymous caller; and that the billing webhook refuses an unsigned request.
+
+**Not covered: anything behind a session.** Signing in needs a real account and
+password, which this environment does not have, so the signed-in therapist and
+admin flows are untested end to end. The guards around them are tested; what
+they guard is not.
+
+Not part of `pnpm test` and not run in CI: it needs Supabase credentials, and a
+smoke test that passes against an empty database is not a smoke test.
+
+**Verifying the verifier.** The first run of this suite passed all 32 tests
+against a deliberately broken CSP. Two causes, both now fixed:
+
+1. `reuseExistingServer: true` let Playwright answer from a server left running
+   by an earlier run, serving the build it started with. Now `false`.
+2. `packages/config` was imported by relative path rather than as a workspace
+   package, so **Turbo did not know it was an input.** Editing the security
+   headers produced `FULL TURBO — 2 cached` and a build still containing the old
+   policy. It is now a real workspace package, and the same edit correctly
+   produces `0 cached`.
+
+The second one mattered well beyond the tests: anyone changing the security
+headers would have shipped a cached build without their change. Re-running the
+break after both fixes fails the header assertion in both apps, which is what a
+working smoke test looks like.
 
 ### Lighthouse
 

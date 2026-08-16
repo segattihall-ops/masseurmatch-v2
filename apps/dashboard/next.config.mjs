@@ -1,4 +1,4 @@
-import { contentSecurityPolicy, securityHeaders } from "../../packages/config/security-headers.mjs";
+import { contentSecurityPolicy, securityHeaders } from "@masseurmatch/config/security-headers";
 
 // The dashboard posts directly to Cloudinary's upload endpoint and sends the
 // therapist to PayPal to approve a subscription, so both are allowed as form

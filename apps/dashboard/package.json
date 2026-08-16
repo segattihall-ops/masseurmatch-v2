@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@masseurmatch/billing": "workspace:*",
+    "@masseurmatch/config": "workspace:*",
     "@masseurmatch/db": "workspace:*",
     "@masseurmatch/ui": "workspace:*",
     "next": "^14.2.23",

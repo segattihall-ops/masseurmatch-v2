@@ -1,8 +1,10 @@
-import { contentSecurityPolicy, securityHeaders } from "../../packages/config/security-headers.mjs";
+import { contentSecurityPolicy, securityHeaders } from "@masseurmatch/config/security-headers";
 
-// Imported by relative path rather than as a workspace package: `next.config`
-// is evaluated by Node before any bundler resolution, and two exported
-// functions do not justify a package.json.
+// A real workspace package, not a relative import. That distinction is not
+// tidiness: Turbo hashes each task's inputs from the workspace graph, so a file
+// reached by `../../packages/...` is invisible to it. Editing the headers
+// produced a FULL TURBO cache hit and a build that still contained the old
+// policy — verified, not theorised.
 const csp = contentSecurityPolicy({
   supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
 });

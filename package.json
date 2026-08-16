@@ -16,9 +16,11 @@
     "db:audit-rls": "pnpm --filter @masseurmatch/db db:audit-rls",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,mjs,cjs,json,css,md}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,mjs,cjs,json,css,md}\"",
-    "clean": "turbo run clean && rm -rf node_modules"
+    "clean": "turbo run clean && rm -rf node_modules",
+    "smoke": "set -a; [ -f apps/web/.env.local ] && . apps/web/.env.local; set +a; playwright test"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@types/node": "^20.19.9",
     "prettier": "^3.4.2",
     "turbo": "^2.3.3",
