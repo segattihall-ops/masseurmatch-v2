@@ -6,57 +6,16 @@ import { createServiceClient } from "@masseurmatch/db/client";
 /**
  * The idempotency ledger.
  *
- * **This file is the one place that reaches `billing_events` untyped, and it is
- * temporary.** The table is defined in
- * `supabase/migrations/20260816040000_billing_events.sql`, which has not been
- * applied, so it is absent from the generated `Database` type and the typed
- * client rejects every reference to it.
- *
- * Rather than sprinkle `as never` through the webhook route, the casts are
- * confined here behind a small typed API. When the migration is applied and
- * `pnpm db:types` is re-run, delete `untyped()` and the four call sites become
- * ordinary typed queries — nothing outside this file changes.
- *
- * Everything runs as `service_role`: the caller is a payment processor with no
- * user session, so RLS cannot be the boundary. The webhook signature is.
+ * Everything here runs as `service_role`: the caller is a payment processor
+ * with no user session, so RLS cannot be the boundary. The webhook signature
+ * is. `billing_events` is readable by admins and writable by nobody else —
+ * see `supabase/migrations/20260816040000_billing_events.sql`.
  */
-
-const TABLE = "billing_events";
-
-/**
- * The service client with the table typing dropped.
- *
- * Narrow on purpose — `from()` only, so the escape hatch cannot spread.
- */
-function untyped() {
-  return createServiceClient() as unknown as {
-    from: (table: string) => {
-      select: (columns: string) => {
-        eq: (
-          column: string,
-          value: string,
-        ) => {
-          eq: (
-            column: string,
-            value: string,
-          ) => { maybeSingle: () => Promise<{ data: { id: string } | null }> };
-        };
-      };
-      insert: (values: Record<string, unknown>) => Promise<{ error: { code?: string } | null }>;
-      update: (values: Record<string, unknown>) => {
-        eq: (
-          column: string,
-          value: string,
-        ) => { eq: (column: string, value: string) => Promise<{ error: unknown }> };
-      };
-    };
-  };
-}
 
 /** True when this exact event has already been recorded. */
 export async function alreadyProcessed(provider: ProviderId, eventId: string): Promise<boolean> {
-  const { data } = await untyped()
-    .from(TABLE)
+  const { data } = await createServiceClient()
+    .from("billing_events")
     .select("id")
     .eq("provider", provider)
     .eq("event_id", eventId)
@@ -75,7 +34,7 @@ export type ClaimResult = "claimed" | "duplicate" | "failed";
  * is success, not failure — the other delivery is handling it.
  */
 export async function claimEvent(provider: ProviderId, event: BillingEvent): Promise<ClaimResult> {
-  const { error } = await untyped().from(TABLE).insert({
+  const { error } = await createServiceClient().from("billing_events").insert({
     provider,
     event_id: event.eventId,
     kind: event.kind,
@@ -94,8 +53,8 @@ export async function annotateEvent(
   eventId: string,
   error: string | null,
 ): Promise<void> {
-  await untyped()
-    .from(TABLE)
+  await createServiceClient()
+    .from("billing_events")
     .update({ error, processed_at: new Date().toISOString() })
     .eq("provider", provider)
     .eq("event_id", eventId);

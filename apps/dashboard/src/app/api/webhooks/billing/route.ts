@@ -6,6 +6,7 @@ import {
   type SubscriptionState,
 } from "@masseurmatch/billing";
 import { createServiceClient } from "@masseurmatch/db/client";
+import { PAUSED, PUBLIC } from "@masseurmatch/db/visibility";
 import { NextResponse, type NextRequest } from "next/server";
 
 import { alreadyProcessed, annotateEvent, claimEvent } from "@/lib/billing-events";
@@ -129,17 +130,30 @@ export async function POST(request: NextRequest) {
     .eq("id", row.id);
 
   if (row.profile_id) {
+    await supabase
+      .from("profiles")
+      .update({ subscription_status: next.status, updated_at: new Date().toISOString() })
+      .eq("id", row.profile_id);
+
     // Only ever *removes* visibility. Restoring a listing is the moderation
     // queue's decision, not billing's — paying again must never silently
     // republish a profile that was suspended for its content.
-    await supabase
-      .from("profiles")
-      .update({
-        subscription_status: next.status,
-        ...(listed ? {} : { visibility_status: "private" }),
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", row.profile_id);
+    //
+    // The `.eq(PUBLIC)` is the other half of that: it means billing can unlist
+    // a live profile and nothing else. Without it, a lapsed subscription on an
+    // admin-suspended profile would overwrite `suspended` with `paused` and
+    // quietly downgrade a moderation decision to a billing one.
+    //
+    // `paused`, not `hidden`: the profile was not withdrawn and was not
+    // moderated: it is unpaid. Keeping those apart means "why am I not
+    // listed?" has a truthful answer.
+    if (!listed) {
+      await supabase
+        .from("profiles")
+        .update({ visibility_status: PAUSED, updated_at: new Date().toISOString() })
+        .eq("id", row.profile_id)
+        .eq("visibility_status", PUBLIC);
+    }
   }
 
   await annotateEvent(provider, event.eventId, null);

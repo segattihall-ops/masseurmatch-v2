@@ -41,6 +41,53 @@ export function isProfileStatus(value: unknown): value is ProfileStatus {
 }
 
 /**
+ * States the old application writes, mapped onto ours.
+ *
+ * The live CHECK constraint permits **eight** values, not five:
+ *
+ *   draft, pending, pending_approval, under_review,
+ *   approved, suspended, rejected, changes_requested
+ *
+ * No row currently uses the extra three — but the old application is still
+ * running against this same database until cutover completes, so it can write
+ * one at any moment. Without these aliases such a row would fall through to
+ * `draft`, which is the dangerous direction: a profile its owner submitted for
+ * review would never appear in the moderation queue and would show its owner
+ * "Draft" while it waited for a reviewer who could not see it.
+ *
+ * Mapping is deliberately conservative — an unreviewed profile stays
+ * unreviewed, never approved.
+ */
+const LEGACY_ALIASES: Record<string, ProfileStatus> = {
+  pending_approval: "pending",
+  under_review: "pending",
+  changes_requested: "rejected",
+};
+
+/**
+ * The raw column values that mean "a reviewer needs to look at this", including
+ * the legacy spellings. This is what the moderation queue must filter on — the
+ * query runs in Postgres against the stored text, so it cannot use the
+ * normalisation above.
+ */
+export const QUEUEABLE_COLUMN_VALUES = ["pending", "pending_approval", "under_review"] as const;
+
+/**
+ * Every raw column value that normalises to each status.
+ *
+ * Counting or filtering by status has to go through this: the query runs in
+ * Postgres against stored text, so `.eq("profile_status", "pending")` silently
+ * excludes the legacy spellings that `toProfileStatus` folds in.
+ */
+export const COLUMN_VALUES_FOR: Record<ProfileStatus, readonly string[]> = {
+  draft: ["draft"],
+  pending: QUEUEABLE_COLUMN_VALUES,
+  approved: ["approved"],
+  rejected: ["rejected", "changes_requested"],
+  suspended: ["suspended"],
+};
+
+/**
  * Narrow a raw column value to a `ProfileStatus`.
  *
  * Rows predating the current lifecycle carry `null` or a legacy value. Those
@@ -57,7 +104,12 @@ export function isProfileStatus(value: unknown): value is ProfileStatus {
  * value governs visibility regardless of how it is displayed here.
  */
 export function toProfileStatus(value: unknown): ProfileStatus {
-  return isProfileStatus(value) ? value : "draft";
+  if (isProfileStatus(value)) return value;
+  if (typeof value === "string") {
+    const alias = LEGACY_ALIASES[value];
+    if (alias) return alias;
+  }
+  return "draft";
 }
 
 /** Only `approved` profiles are eligible for the public directory. */

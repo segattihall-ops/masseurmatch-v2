@@ -1,7 +1,12 @@
 import "server-only";
 
 import { createSessionClient } from "@masseurmatch/db/auth";
-import { toProfileStatus, type ProfileStatus } from "@masseurmatch/db/profile-status";
+import {
+  COLUMN_VALUES_FOR,
+  QUEUEABLE_COLUMN_VALUES,
+  toProfileStatus,
+  type ProfileStatus,
+} from "@masseurmatch/db/profile-status";
 
 /**
  * Admin data layer.
@@ -67,7 +72,13 @@ export async function getModerationQueue(limit = 50): Promise<QueueItem[]> {
   const { data, error } = await supabase
     .from("profiles")
     .select(QUEUE_COLUMNS)
-    .or("profile_status.eq.pending,moderation_status.eq.pending_review")
+    // `in.(...)` rather than `eq.pending`: the live CHECK constraint permits
+    // `pending_approval` and `under_review` too, and the old application — still
+    // running against this database until cutover — writes them. A profile
+    // submitted under those spellings must not be invisible to a reviewer.
+    .or(
+      `profile_status.in.(${QUEUEABLE_COLUMN_VALUES.join(",")}),moderation_status.eq.pending_review`,
+    )
     .order("updated_at", { ascending: true })
     .limit(limit);
 
@@ -125,11 +136,16 @@ export type AdminMetrics = {
 export async function getAdminMetrics(): Promise<AdminMetrics> {
   const supabase = createSessionClient();
 
+  // Counts the *column* values that normalise to `status`, not the status name
+  // alone. `pending` covers the legacy `pending_approval` / `under_review`
+  // spellings, so the card on /admin and the queue behind it agree — a badge
+  // that disagrees with the list it links to is worse than no badge.
   const statusCount = async (status: ProfileStatus) => {
+    const values = COLUMN_VALUES_FOR[status];
     const { count, error } = await supabase
       .from("profiles")
       .select("id", { count: "exact", head: true })
-      .eq("profile_status", status);
+      .in("profile_status", values);
     if (error) throw new Error(`Could not count ${status} profiles: ${error.message}`);
     return count ?? 0;
   };

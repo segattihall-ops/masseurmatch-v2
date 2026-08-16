@@ -1,7 +1,46 @@
 -- ============================================================================
 -- profiles.profile_status : text  ->  enum
 -- ============================================================================
--- NOT APPLIED. Read the risk section before running this anywhere.
+-- NOT APPLIED, AND SUPERSEDED. Do not run this as written. See below.
+--
+-- ---------------------------------------------------------------------------
+-- STATUS, verified against production 2026-08-16
+-- ---------------------------------------------------------------------------
+-- The column is `text`, nullable, default 'draft'::text, and it already carries
+-- a CHECK constraint — which predates this repository and permits EIGHT values,
+-- not the five this migration declares:
+--
+--   profiles_profile_status_check:
+--     CHECK (profile_status = ANY (ARRAY[
+--       'draft','pending','pending_approval','under_review',
+--       'approved','suspended','rejected','changes_requested']))
+--
+-- `profiles.status` carries the identical constraint. Live data uses only two
+-- of the eight (28 approved, 11 draft), but the OLD APPLICATION IS STILL
+-- RUNNING against this same database until cutover completes, so it may write
+-- any of them at any time.
+--
+-- Consequences, both already handled in the application layer:
+--
+--   * Running this migration as written would narrow an eight-value domain to
+--     five while the old application can still write the other three. Step 1's
+--     guard would NOT catch it — it inspects existing rows, and no existing row
+--     uses them. The failure would arrive later, as a write from the old app
+--     rejected by the new enum.
+--
+--   * `packages/db/profile-status.ts` therefore maps the three extra values
+--     rather than ignoring them: `pending_approval`/`under_review` → `pending`,
+--     `changes_requested` → `rejected`, and `COLUMN_VALUES_FOR` drives the
+--     queue filter and the admin counts so both see the legacy spellings.
+--
+-- The constraint the phase 5 request wanted ("profile_status as an enum, because
+-- the phase 6 queue consumes exactly those states") is already enforced by the
+-- CHECK above plus the application-level narrowing. Converting to a real enum
+-- is worth revisiting AFTER cutover, when this database has exactly one writer
+-- and the extra three values can be retired in the same change.
+--
+-- ---------------------------------------------------------------------------
+-- Original notes follow.
 --
 -- Requested so the phase 6 moderation queue consumes a real enum rather than
 -- free text. The application-level equivalent already exists and is safe:

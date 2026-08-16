@@ -1,6 +1,7 @@
 "use server";
 
 import { createSessionClient, getViewer } from "@masseurmatch/db/auth";
+import { HIDDEN, PUBLIC, SUSPENDED } from "@masseurmatch/db/visibility";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -39,17 +40,19 @@ async function requireAdminId(): Promise<string> {
 const OUTCOMES: Record<ModerationAction, Record<string, unknown>> = {
   approve: {
     profile_status: "approved",
-    visibility_status: "public",
+    visibility_status: PUBLIC,
     moderation_status: "approved",
   },
   reject: {
     profile_status: "rejected",
-    visibility_status: "private",
+    visibility_status: HIDDEN,
     moderation_status: "rejected",
   },
   suspend: {
     profile_status: "suspended",
-    visibility_status: "private",
+    // The schema has a dedicated value for this. Using it keeps an admin
+    // removal distinguishable from an ordinary unlisting.
+    visibility_status: SUSPENDED,
     moderation_status: "suspended",
   },
 };

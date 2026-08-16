@@ -1109,6 +1109,42 @@ export type Database = {
         }
         Relationships: []
       }
+      billing_events: {
+        Row: {
+          error: string | null
+          event_id: string
+          id: string
+          kind: string
+          occurred_at: string | null
+          payload: Json
+          processed_at: string
+          provider: string
+          subscription_id: string
+        }
+        Insert: {
+          error?: string | null
+          event_id: string
+          id?: string
+          kind: string
+          occurred_at?: string | null
+          payload?: Json
+          processed_at?: string
+          provider: string
+          subscription_id: string
+        }
+        Update: {
+          error?: string | null
+          event_id?: string
+          id?: string
+          kind?: string
+          occurred_at?: string | null
+          payload?: Json
+          processed_at?: string
+          provider?: string
+          subscription_id?: string
+        }
+        Relationships: []
+      }
       blog_posts: {
         Row: {
           body: string | null

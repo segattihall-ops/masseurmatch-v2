@@ -1,6 +1,7 @@
 "use server";
 
 import { getViewer } from "@masseurmatch/db/auth";
+import { HIDDEN } from "@masseurmatch/db/visibility";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -20,7 +21,7 @@ import type { StepState } from "./form-state";
 async function requireTherapistId(): Promise<string> {
   const viewer = await getViewer();
   if (!viewer) redirect("/sign-in?next=%2Fonboarding");
-  if (viewer.role !== "therapist" && viewer.role !== "admin") redirect("/not-authorized");
+  if (viewer.role !== "provider" && viewer.role !== "admin") redirect("/not-authorized");
   return viewer.user.id;
 }
 
@@ -100,7 +101,7 @@ export async function saveServices(_prev: StepState, formData: FormData): Promis
  *
  * Re-checks completeness on the server: the button is hidden when steps are
  * missing, but a hidden button is not a control. Sets `pending`, which is what
- * the phase 6 moderation queue reads, and keeps visibility private until a
+ * the phase 6 moderation queue reads, and keeps visibility `hidden` until a
  * reviewer approves — so submitting can never itself publish a profile.
  */
 export async function submitForReview(_prev: StepState): Promise<StepState> {
@@ -116,7 +117,7 @@ export async function submitForReview(_prev: StepState): Promise<StepState> {
 
   const written = await updateMyProfile(userId, {
     profile_status: "pending",
-    visibility_status: "private",
+    visibility_status: HIDDEN,
   });
   if (written === 0) return { error: "Could not submit. Please sign in again." };
 

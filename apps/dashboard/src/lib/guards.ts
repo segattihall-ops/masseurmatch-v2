@@ -33,8 +33,15 @@ export async function requireRole(role: Role, returnTo = "/"): Promise<Viewer> {
   return viewer;
 }
 
+/**
+ * A therapist.
+ *
+ * The name is the product's word; `provider` is the database's. See the `Role`
+ * doc in `packages/db/auth.ts` — passing `"therapist"` here matched nothing and
+ * locked out every therapist on the site.
+ */
 export function requireTherapist(returnTo = "/"): Promise<Viewer> {
-  return requireRole("therapist", returnTo);
+  return requireRole("provider", returnTo);
 }
 
 /** Admin only — `requireRole` would let an admin through either way, but this reads clearly at call sites. */

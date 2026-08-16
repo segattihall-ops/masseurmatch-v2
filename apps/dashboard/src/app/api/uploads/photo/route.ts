@@ -25,7 +25,7 @@ export async function POST() {
   if (!viewer) {
     return NextResponse.json({ error: "Sign in to upload photos." }, { status: 401 });
   }
-  if (viewer.role !== "therapist" && viewer.role !== "admin") {
+  if (viewer.role !== "provider" && viewer.role !== "admin") {
     return NextResponse.json({ error: "Not authorized." }, { status: 403 });
   }
 

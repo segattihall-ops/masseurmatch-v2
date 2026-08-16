@@ -2,6 +2,7 @@ import "server-only";
 
 import { createSessionClient } from "@masseurmatch/db/auth";
 import { toProfileStatus, type ProfileStatus } from "@masseurmatch/db/profile-status";
+import { HIDDEN } from "@masseurmatch/db/visibility";
 
 import type { OnboardingSnapshot } from "./onboarding";
 
@@ -95,7 +96,7 @@ export async function getOrCreateMyProfile(userId: string): Promise<MyProfileVie
         // production database already distinguished these, which is how the bug
         // surfaced.
         profile_status: "draft",
-        visibility_status: "private",
+        visibility_status: HIDDEN,
       })
       .select(PROFILE_COLUMNS)
       .single();

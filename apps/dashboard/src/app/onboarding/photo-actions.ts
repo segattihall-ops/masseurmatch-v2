@@ -12,7 +12,7 @@ import type { StepState } from "./form-state";
 async function requireTherapistId(): Promise<string> {
   const viewer = await getViewer();
   if (!viewer) redirect("/sign-in?next=%2Fonboarding");
-  if (viewer.role !== "therapist" && viewer.role !== "admin") redirect("/not-authorized");
+  if (viewer.role !== "provider" && viewer.role !== "admin") redirect("/not-authorized");
   return viewer.user.id;
 }
 

@@ -30,14 +30,28 @@ export type SubscriptionRef = {
 export type BillingEventKind =
   "payment_succeeded" | "payment_failed" | "subscription_canceled" | "subscription_expired";
 
+/**
+ * A JSON value.
+ *
+ * Declared here rather than imported from `@masseurmatch/db` so this package
+ * keeps its one-way dependency: billing knows nothing about the database.
+ */
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
+
 export type BillingEvent = {
   /** Provider's event id — the idempotency key. Must be stable across retries. */
   eventId: string;
   kind: BillingEventKind;
   subscriptionId: string;
   occurredAt: string;
-  /** Raw payload, retained for the audit trail. */
-  raw: unknown;
+  /**
+   * Raw payload, retained for the audit trail.
+   *
+   * `Json`, not `unknown`: this lands in a `jsonb` column, and every adapter
+   * produces it by `JSON.parse`-ing the request body, so it is JSON by
+   * construction. Typing it `unknown` only moved the cast to the insert.
+   */
+  raw: Json;
 };
 
 export type WebhookResult =

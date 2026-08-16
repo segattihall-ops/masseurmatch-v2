@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  COLUMN_VALUES_FOR,
   isProfileStatus,
   isPubliclyListable,
   PROFILE_STATUS_LABELS,
   PROFILE_STATUSES,
+  QUEUEABLE_COLUMN_VALUES,
   REVIEWABLE_STATUSES,
   toProfileStatus,
 } from "@masseurmatch/db/profile-status";
@@ -69,6 +71,65 @@ describe("narrowing unknown values", () => {
     for (const status of PROFILE_STATUSES) {
       expect(toProfileStatus(status)).toBe(status);
     }
+  });
+});
+
+/**
+ * The live CHECK constraint permits eight values, read from `pg_constraint` on
+ * 2026-08-16:
+ *
+ *   draft, pending, pending_approval, under_review,
+ *   approved, suspended, rejected, changes_requested
+ *
+ * The old application still runs against this database until cutover, so it can
+ * write any of them. Folding the extra three to `draft` — the old behaviour —
+ * would have hidden a submitted profile from the moderation queue while telling
+ * its owner it was still a draft.
+ */
+describe("legacy spellings the old application can still write", () => {
+  it("treats pending_approval and under_review as pending, not draft", () => {
+    expect(toProfileStatus("pending_approval")).toBe("pending");
+    expect(toProfileStatus("under_review")).toBe("pending");
+  });
+
+  it("treats changes_requested as rejected", () => {
+    expect(toProfileStatus("changes_requested")).toBe("rejected");
+  });
+
+  it("never folds an unreviewed state to approved", () => {
+    for (const value of ["pending_approval", "under_review", "changes_requested"]) {
+      expect(isPubliclyListable(value)).toBe(false);
+    }
+  });
+
+  it("queues every column value that means 'awaiting review'", () => {
+    expect([...QUEUEABLE_COLUMN_VALUES]).toEqual(["pending", "pending_approval", "under_review"]);
+  });
+
+  it("maps every status to the column values that normalise to it", () => {
+    // Whatever a status covers, `toProfileStatus` must agree — otherwise the
+    // admin count and the queue disagree about the same rows.
+    for (const status of PROFILE_STATUSES) {
+      for (const raw of COLUMN_VALUES_FOR[status]) {
+        expect(toProfileStatus(raw)).toBe(status);
+      }
+    }
+  });
+
+  it("covers all eight values the constraint permits", () => {
+    const covered = new Set(PROFILE_STATUSES.flatMap((s) => [...COLUMN_VALUES_FOR[s]]));
+    expect([...covered].sort()).toEqual(
+      [
+        "approved",
+        "changes_requested",
+        "draft",
+        "pending",
+        "pending_approval",
+        "rejected",
+        "suspended",
+        "under_review",
+      ].sort(),
+    );
   });
 });
 

@@ -18,7 +18,24 @@ import type { Database } from "./types";
  * issued for. Nothing a browser sends can influence it.
  */
 
-export type Role = "admin" | "therapist" | "client";
+/**
+ * Roles, in the database's vocabulary.
+ *
+ * The stored word is **`provider`**, not `therapist`. `user_roles.role` carries
+ *
+ *   CHECK (role = ANY (ARRAY['admin','provider','client']))
+ *
+ * and holds 41 `provider` rows against 2 `admin`. `profiles.role` has the same
+ * constraint.
+ *
+ * This type previously read `"admin" | "therapist" | "client"`, which meant the
+ * narrowing below matched no stored provider row and fell through to `client` —
+ * so `requireTherapist()` denied every real therapist on the site. The product
+ * word is "therapist" and the UI still says so; the wire value is `provider`.
+ * Where the two must differ, the database wins, because it is shared with the
+ * old application and cannot be renamed from here.
+ */
+export type Role = "admin" | "provider" | "client";
 
 function requireEnv(name: string): string {
   const value = process.env[name];
@@ -100,7 +117,7 @@ export async function getRole(): Promise<Role | null> {
   if (error) throw new Error(`Could not resolve role: ${error.message}`);
 
   const role = data?.role;
-  return role === "admin" || role === "therapist" || role === "client" ? role : "client";
+  return role === "admin" || role === "provider" || role === "client" ? role : "client";
 }
 
 /** Signed-in user and role together, in one round trip's worth of intent. */
