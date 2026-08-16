@@ -118,4 +118,12 @@ export const LIMITS = {
   webhook: { limit: 120, windowMs: 60_000 },
   /** Billing actions — each one reaches a payment provider. */
   billingAction: { limit: 10, windowMs: 60_000 },
+  /**
+   * Sign-in attempts, per address.
+   *
+   * Tight on purpose: this is the one endpoint where an unbounded caller is
+   * guessing passwords. Ten is well above a person mistyping and far below
+   * anything useful for brute force.
+   */
+  signIn: { limit: 10, windowMs: 60_000 },
 } as const;

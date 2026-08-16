@@ -1,5 +1,6 @@
 "use client";
 
+import { reportError } from "@masseurmatch/config/observability";
 import { Button, buttonVariants } from "@masseurmatch/ui";
 import Link from "next/link";
 import { useEffect } from "react";
@@ -24,9 +25,7 @@ export default function Error({
   reset: () => void;
 }) {
   useEffect(() => {
-    // Reaches Sentry when a DSN is configured; otherwise this is the only
-    // record that the boundary fired at all.
-    console.error("Unhandled error", error);
+    reportError(error, { digest: error.digest, where: "web/error-boundary" });
   }, [error]);
 
   return (

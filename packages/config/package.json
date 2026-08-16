@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "exports": {
-    "./security-headers": "./security-headers.mjs"
+    "./security-headers": "./security-headers.mjs",
+    "./observability": "./observability.ts"
   }
 }

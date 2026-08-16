@@ -30,7 +30,7 @@
  *   - a bounded `connect-src`/`img-src` allowlist, so an injected script cannot
  *     freely exfiltrate to an arbitrary host.
  *
- * @param {{ supabaseUrl?: string, extraConnect?: string[], extraFrame?: string[] }} options
+ * @param {{ supabaseUrl?: string, extraConnect?: string[], extraFrame?: string[], extraScript?: string[] }} options
  */
 export function contentSecurityPolicy(options = {}) {
   const supabase = options.supabaseUrl ? [options.supabaseUrl] : ["https://*.supabase.co"];
@@ -38,7 +38,7 @@ export function contentSecurityPolicy(options = {}) {
   const directives = {
     "default-src": ["'self'"],
     // See the note above: Next's hydration bootstrap is inline.
-    "script-src": ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+    "script-src": ["'self'", "'unsafe-inline'", "'unsafe-eval'", ...(options.extraScript ?? [])],
     // Tailwind emits a stylesheet, but styled-jsx and Next's font loader inline
     // style attributes, so 'unsafe-inline' is required for styles too.
     "style-src": ["'self'", "'unsafe-inline'"],

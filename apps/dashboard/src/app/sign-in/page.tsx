@@ -1,3 +1,4 @@
+import { turnstileSiteKey } from "@masseurmatch/config/observability";
 import { Card } from "@masseurmatch/ui";
 import type { Metadata } from "next";
 
@@ -23,7 +24,7 @@ export default function SignInPage({
       <Card className="w-full p-8">
         <h1 className="text-2xl font-semibold text-ink">Sign in</h1>
         <p className="mt-1 mb-6 text-sm text-ink/60">Manage your MasseurMatch listing.</p>
-        <SignInForm next={safeNext(searchParams.next)} />
+        <SignInForm next={safeNext(searchParams.next)} turnstileSiteKey={turnstileSiteKey()} />
       </Card>
     </main>
   );

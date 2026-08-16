@@ -3,6 +3,8 @@
 import { Button, Input } from "@masseurmatch/ui";
 import { useFormState, useFormStatus } from "react-dom";
 
+import { Turnstile } from "@/components/turnstile";
+
 import { signIn } from "./actions";
 import { EMPTY_SIGN_IN_STATE } from "./form-state";
 
@@ -15,7 +17,13 @@ function Submit() {
   );
 }
 
-export function SignInForm({ next }: { next: string }) {
+export function SignInForm({
+  next,
+  turnstileSiteKey,
+}: {
+  next: string;
+  turnstileSiteKey: string | null;
+}) {
   const [state, formAction] = useFormState(signIn, EMPTY_SIGN_IN_STATE);
 
   return (
@@ -41,6 +49,8 @@ export function SignInForm({ next }: { next: string }) {
           required
         />
       </div>
+
+      <Turnstile siteKey={turnstileSiteKey} />
 
       {state.error ? (
         <p role="alert" className="text-sm text-wine">
