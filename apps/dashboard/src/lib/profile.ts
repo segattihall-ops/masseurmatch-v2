@@ -89,7 +89,12 @@ export async function getOrCreateMyProfile(userId: string): Promise<MyProfileVie
       .insert({
         id: userId,
         user_id: userId,
-        profile_status: "pending",
+        // `draft`, not `pending`. A profile exists from the first sign-in, long
+        // before anyone asks for it to be reviewed. Creating it as `pending`
+        // put empty profiles straight into the admin moderation queue — the
+        // production database already distinguished these, which is how the bug
+        // surfaced.
+        profile_status: "draft",
         visibility_status: "private",
       })
       .select(PROFILE_COLUMNS)

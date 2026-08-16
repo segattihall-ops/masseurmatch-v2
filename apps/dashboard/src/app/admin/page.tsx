@@ -28,6 +28,7 @@ export default async function AdminPage() {
   const cards = [
     { label: "Approved", value: metrics.approved },
     { label: "Pending review", value: metrics.pending },
+    { label: "Draft", value: metrics.draft },
     { label: "Rejected", value: metrics.rejected },
     { label: "Suspended", value: metrics.suspended },
     { label: "Signups, last 30 days", value: metrics.signupsLast30Days },

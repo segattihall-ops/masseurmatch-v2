@@ -5,9 +5,15 @@
 --
 -- Requested so the phase 6 moderation queue consumes a real enum rather than
 -- free text. The application-level equivalent already exists and is safe:
--- `packages/db/profile-status.ts` defines the same four states and narrows the
+-- `packages/db/profile-status.ts` defines the same five states and narrows the
 -- generated `string | null` at the boundary. Phase 5 and 6 can be written
 -- against that today, with or without this migration.
+--
+-- HISTORY: the first version of this migration declared four states and was
+-- refused by its own guard in step 1, which found `draft` in production. That
+-- was the guard working — and it exposed a real application bug, since new
+-- profiles were being created as `pending` and so landed in the moderation
+-- queue before their owner had submitted anything. Both are fixed.
 --
 -- ---------------------------------------------------------------------------
 -- Why this one is riskier than it looks
@@ -38,9 +44,9 @@
 begin;
 
 -- ---------------------------------------------------------------------------
--- 1. Abort if any existing value falls outside the four states
+-- 1. Abort if any existing value falls outside the five states
 -- ---------------------------------------------------------------------------
--- Nulls are allowed through and become 'pending' in step 3.
+-- Nulls are allowed through and become 'draft' in step 3.
 do $$
 declare
   offending text;
@@ -49,7 +55,7 @@ begin
     into offending
   from public.profiles
   where profile_status is not null
-    and profile_status not in ('pending', 'approved', 'rejected', 'suspended');
+    and profile_status not in ('draft', 'pending', 'approved', 'rejected', 'suspended');
 
   if offending is not null then
     raise exception
@@ -61,21 +67,29 @@ end $$;
 -- ---------------------------------------------------------------------------
 -- 2. Create the type
 -- ---------------------------------------------------------------------------
+-- `draft` is first: it is the initial state, and enum ordering is also the
+-- sort order, so lifecycle order costs nothing to get right now and cannot be
+-- changed later without recreating the type.
 do $$
 begin
   if not exists (select 1 from pg_type where typname = 'profile_status') then
-    create type public.profile_status as enum ('pending', 'approved', 'rejected', 'suspended');
+    create type public.profile_status as enum
+      ('draft', 'pending', 'approved', 'rejected', 'suspended');
   end if;
 end $$;
 
 -- ---------------------------------------------------------------------------
 -- 3. Backfill nulls before the column becomes typed
 -- ---------------------------------------------------------------------------
--- 'pending' is the conservative direction: an unclassified profile should be
--- reviewed, not published. NOTE: this is the one statement here that writes
--- data. Check how many rows it affects first:
+-- 'draft' is the right default, not 'pending'. A null-status row was never
+-- submitted for review, and backfilling it as 'pending' would sweep every one
+-- of them into the moderation queue as though its owner had asked. Draft is
+-- equally unpublishable and creates no work for a human.
+--
+-- NOTE: this is the one statement here that writes data. Check the blast
+-- radius first:
 --   select count(*) from public.profiles where profile_status is null;
-update public.profiles set profile_status = 'pending' where profile_status is null;
+update public.profiles set profile_status = 'draft' where profile_status is null;
 
 -- ---------------------------------------------------------------------------
 -- 4. Swap the type, dropping and restoring the dependent policy
@@ -90,7 +104,7 @@ alter table public.profiles
   alter column profile_status drop default,
   alter column profile_status type public.profile_status
     using profile_status::public.profile_status,
-  alter column profile_status set default 'pending'::public.profile_status,
+  alter column profile_status set default 'draft'::public.profile_status,
   alter column profile_status set not null;
 
 create policy "profiles_public_read_active"
@@ -134,9 +148,9 @@ commit;
 -- wanted for the type generator's benefit.
 --
 -- begin;
--- update public.profiles set profile_status = 'pending' where profile_status is null;
+-- update public.profiles set profile_status = 'draft' where profile_status is null;
 -- alter table public.profiles
 --   add constraint profiles_profile_status_check
---   check (profile_status in ('pending','approved','rejected','suspended'));
+--   check (profile_status in ('draft','pending','approved','rejected','suspended'));
 -- commit;
 -- ============================================================================

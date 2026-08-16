@@ -112,6 +112,8 @@ export async function getModerationQueue(limit = 50): Promise<QueueItem[]> {
 
 export type AdminMetrics = {
   approved: number;
+  /** Started but never submitted. Not in the queue, and not a reviewer's problem. */
+  draft: number;
   pending: number;
   rejected: number;
   suspended: number;
@@ -134,8 +136,9 @@ export async function getAdminMetrics(): Promise<AdminMetrics> {
 
   const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
-  const [approved, pending, rejected, suspended] = await Promise.all([
+  const [approved, draft, pending, rejected, suspended] = await Promise.all([
     statusCount("approved"),
+    statusCount("draft"),
     statusCount("pending"),
     statusCount("rejected"),
     statusCount("suspended"),
@@ -167,6 +170,7 @@ export async function getAdminMetrics(): Promise<AdminMetrics> {
 
   return {
     approved,
+    draft,
     pending,
     rejected,
     suspended,
