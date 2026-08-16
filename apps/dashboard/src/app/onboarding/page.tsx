@@ -2,10 +2,12 @@ import { Card } from "@masseurmatch/ui";
 import { PROFILE_STATUS_LABELS } from "@masseurmatch/db/profile-status";
 import type { Metadata } from "next";
 
+import { photoLimitFor } from "@/lib/cloudinary";
 import { requireTherapist } from "@/lib/guards";
 import { currentStep, stepProgress, STEP_LABELS, type OnboardingStep } from "@/lib/onboarding";
-import { getOrCreateMyProfile } from "@/lib/profile";
+import { getOrCreateMyProfile, listMyPhotos } from "@/lib/profile";
 
+import { PhotosStep } from "./photos-step";
 import { BasicsStep, ReviewStep, ServicesStep, StepShell, Stepper } from "./steps";
 
 export const metadata: Metadata = {
@@ -43,6 +45,7 @@ export default async function OnboardingPage({
 }) {
   const viewer = await requireTherapist("/onboarding");
   const { profile, snapshot, status } = await getOrCreateMyProfile(viewer.user.id);
+  const photos = await listMyPhotos(profile.id);
 
   const progress = stepProgress(snapshot);
   const resumeAt = currentStep(snapshot);
@@ -96,10 +99,10 @@ export default async function OnboardingPage({
           ) : null}
 
           {step === "photos" ? (
-            <p className="text-sm text-ink/70">
-              Photo upload is wired up in the next commit of this phase. Your progress so far is
-              saved.
-            </p>
+            <PhotosStep
+              photos={photos}
+              limit={photoLimitFor(profile.subscription_tier, profile.photo_limit)}
+            />
           ) : null}
 
           {step === "review" ? <ReviewStep ready={progress.review} /> : null}

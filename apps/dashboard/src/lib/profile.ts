@@ -130,6 +130,26 @@ export async function getOrCreateMyProfile(userId: string): Promise<MyProfileVie
   };
 }
 
+export type MyPhoto = {
+  id: string;
+  url: string | null;
+  moderation_status: string | null;
+  is_primary: boolean | null;
+  sort_order: number | null;
+};
+
+/** The caller's photos, in display order. RLS scopes this to their own rows. */
+export async function listMyPhotos(profileId: string): Promise<MyPhoto[]> {
+  const { data, error } = await createSessionClient()
+    .from("profile_photos")
+    .select("id,url,moderation_status,is_primary,sort_order")
+    .eq("profile_id", profileId)
+    .order("sort_order", { ascending: true });
+
+  if (error) throw new Error(`Could not load your photos: ${error.message}`);
+  return (data ?? []) as unknown as MyPhoto[];
+}
+
 /**
  * Apply a partial update to the caller's own profile.
  *
