@@ -73,7 +73,11 @@ plans)
   # are environment variables. Match by PRICE: 39 -> STANDARD, 79 -> PRO,
   # 99 -> ELITE. A price with no plan needs one created.
   WANT='{"39":"PAYPAL_PLAN_STANDARD","79":"PAYPAL_PLAN_PRO","99":"PAYPAL_PLAN_ELITE"}'
-  api GET "/v1/billing/plans?page_size=20&total_required=true" |
+  # The list endpoint omits billing_cycles, so every plan would look priceless
+  # and the mapping would tell you to create plans that already exist. Ask for
+  # the full representation.
+  api GET "/v1/billing/plans?page_size=20&total_required=true" \
+    -H "Prefer: return=representation" |
     WANT="$WANT" python3 -c '
 import sys, json, os
 want = json.loads(os.environ["WANT"])
@@ -86,24 +90,42 @@ for p in plans:
     status = p["status"]
     name = p.get("name", "")
     price = ""
+    trial = ""
+    # These plans lead with a 14-day $0.00 TRIAL cycle. Reading the first cycle
+    # would price every plan at zero and match nothing, so use REGULAR.
     for c in p.get("billing_cycles") or []:
         fp = (c.get("pricing_scheme") or {}).get("fixed_price")
-        if fp:
-            value = fp["value"]
-            currency = fp["currency_code"]
-            price = f"{value} {currency}"
-            whole = value.split(".")[0]
-            if whole in want and status == "ACTIVE":
-                seen.setdefault(whole, pid)
-            break
-    print(f"{pid}  {status:<8} {price:<12} {name}")
+        if not fp:
+            continue
+        value = fp["value"]
+        currency = fp["currency_code"]
+        if c.get("tenure_type") == "TRIAL":
+            freq = c.get("frequency") or {}
+            count = freq.get("interval_count")
+            unit = freq.get("interval_unit")
+            if float(value) == 0:
+                trial = f"  (+{count} {unit} free trial)"
+            continue
+        price = f"{value} {currency}"
+        whole = value.split(".")[0]
+        if whole in want and status == "ACTIVE":
+            seen.setdefault(whole, []).append((pid, name))
+    print(f"{pid}  {status:<8} {price:<12} {name}{trial}")
 print()
 print("Set these on the DASHBOARD project (masseurmatch-v2-kftd):")
 for whole, var in want.items():
-    if whole in seen:
-        print(f"  {var}={seen[whole]}")
-    else:
+    matches = seen.get(whole, [])
+    if not matches:
         print(f"  {var}=<no active ${whole}.00 plan — create one>")
+        continue
+    pid, name = matches[0]
+    print(f"  {var}={pid}   # {name}")
+    if len(matches) > 1:
+        # Price alone does not identify a plan when two share one. Say so
+        # rather than pick silently — the wrong id bills the wrong product.
+        others = ", ".join(f"{p} ({n})" for p, n in matches[1:])
+        print(f"      ^ AMBIGUOUS: ${whole}.00 also matches {others}")
+        print(f"        Confirm by name before using this id.")
 '
   ;;
 
