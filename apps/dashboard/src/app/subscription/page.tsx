@@ -1,9 +1,12 @@
+import { PAID_PLAN_IDS, PLANS } from "@masseurmatch/billing";
 import { Card } from "@masseurmatch/ui";
 import type { Metadata } from "next";
 
-import { photoLimitFor } from "@/lib/cloudinary";
 import { requireTherapist } from "@/lib/guards";
 import { getOrCreateMyProfile } from "@/lib/profile";
+import { buildView, getMySubscription } from "@/lib/subscription";
+
+import { CancelForm, PlanPicker } from "./plan-forms";
 
 export const metadata: Metadata = {
   title: "Subscription",
@@ -13,86 +16,84 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 /**
- * Subscription status — read-only in this phase.
+ * Subscription.
  *
- * Everything below is read straight from `profiles`. Phase 7 introduces
- * `packages/billing` with a `PaymentProvider` abstraction and real subscribe /
- * change-plan / cancel actions.
+ * Status and dates come from `therapist_subscriptions`, which the webhook owns,
+ * rather than from `profiles.subscription_status` — the profile carries a cached
+ * copy and the two can lag. Prices and limits come from `plans.ts`.
  *
- * The component is shaped to take that without rework: it renders a plain
- * `SubscriptionView` object rather than reaching into the profile row itself,
- * so phase 7 only has to change where that object is built — from the billing
- * provider instead of the database — and add the action buttons. No JSX here
- * needs to move.
+ * Note what this page cannot do: nothing here, and nothing in the actions it
+ * calls, can mark a therapist as paid. Every path to `active` runs through
+ * `/api/webhooks/billing`.
  */
-
-type SubscriptionView = {
-  tier: string;
-  statusLabel: string;
-  isActive: boolean;
-  photoLimit: number;
-  /** Phase 7 fills this from the provider; the database has no billing date. */
-  nextChargeOn: string | null;
-};
-
-const TIER_LABELS: Record<string, string> = {
-  free: "Free",
-  standard: "Standard",
-  pro: "Pro",
-  elite: "Elite",
-};
-
-const ACTIVE_STATUSES = new Set(["active", "trialing", "past_due"]);
-
 export default async function SubscriptionPage() {
   const viewer = await requireTherapist("/subscription");
   const { profile } = await getOrCreateMyProfile(viewer.user.id);
+  const subscription = await getMySubscription(profile.id);
+  const view = buildView(profile.subscription_tier, subscription);
 
-  const tier = (profile.subscription_tier ?? "free").toLowerCase();
-  const status = (profile.subscription_status ?? "none").toLowerCase();
+  const plans = PAID_PLAN_IDS.map((id) => ({
+    id,
+    name: PLANS[id].name,
+    priceCents: PLANS[id].priceCents,
+    photoLimit: PLANS[id].photoLimit,
+    blurb: PLANS[id].blurb,
+  }));
 
-  const view: SubscriptionView = {
-    tier: TIER_LABELS[tier] ?? tier,
-    statusLabel: status === "none" ? "No active subscription" : status.replace(/_/g, " "),
-    isActive: ACTIVE_STATUSES.has(status),
-    photoLimit: photoLimitFor(profile.subscription_tier, profile.photo_limit),
-    nextChargeOn: null,
-  };
+  const nextCharge = view.nextChargeOn
+    ? new Date(view.nextChargeOn).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      })
+    : null;
 
   return (
-    <main className="mx-auto w-full max-w-2xl px-6 py-12">
+    <main className="mx-auto w-full max-w-4xl px-6 py-12">
       <h1 className="text-3xl font-semibold text-ink">Subscription</h1>
       <p className="mt-1 mb-8 text-sm text-ink/60">Your current plan and what it includes.</p>
 
       <Card className="p-6">
-        <dl className="grid gap-4 sm:grid-cols-2">
+        <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div>
             <dt className="text-sm text-ink/60">Plan</dt>
-            <dd className="text-lg font-semibold text-ink">{view.tier}</dd>
+            <dd className="text-lg font-semibold text-ink">{view.planName}</dd>
           </div>
           <div>
             <dt className="text-sm text-ink/60">Status</dt>
-            <dd className="text-lg font-semibold capitalize text-ink">{view.statusLabel}</dd>
+            <dd className="text-lg font-semibold text-ink">{view.statusLabel}</dd>
           </div>
           <div>
             <dt className="text-sm text-ink/60">Photos included</dt>
             <dd className="text-lg font-semibold text-ink">{view.photoLimit}</dd>
           </div>
           <div>
-            <dt className="text-sm text-ink/60">Next charge</dt>
+            <dt className="text-sm text-ink/60">
+              {view.cancelAtPeriodEnd ? "Access until" : "Next charge"}
+            </dt>
             <dd className="text-lg font-semibold text-ink">
-              {view.nextChargeOn ?? <span className="text-ink/40">—</span>}
+              {nextCharge ?? <span className="text-ink/40">—</span>}
             </dd>
           </div>
         </dl>
+
+        {view.status === "past_due" ? (
+          <p className="mt-4 border-t border-ink/10 pt-4 text-sm text-wine">
+            A payment did not go through. Your listing stays live for a short grace period — update
+            your payment method at PayPal to keep it up.
+          </p>
+        ) : null}
       </Card>
 
-      <p className="mt-4 text-sm text-ink/50">
-        Changing or cancelling a plan is not available yet — billing is connected in a later phase.
-        {view.isActive
-          ? " Your current plan stays active in the meantime."
-          : " Listings remain free while this is being set up."}
-      </p>
+      <PlanPicker
+        plans={plans}
+        currentPlanId={view.planId}
+        hasSubscription={view.hasProviderSubscription && view.status !== "canceled"}
+      />
+
+      {view.isActive && view.hasProviderSubscription ? (
+        <CancelForm cancelAtPeriodEnd={view.cancelAtPeriodEnd} />
+      ) : null}
     </main>
   );
 }
