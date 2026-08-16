@@ -54,9 +54,9 @@ step 4 needs the URL that step 2 produces.
 
 Verified in the build logs for commit `5801c3b` on 2026-08-16 at 21:24 UTC:
 
-| Project                | Root Directory   | Build log says                  |
-| ---------------------- | ---------------- | ------------------------------- |
-| `masseurmatch-v2`      | `apps/web`       | `@masseurmatch/web:build` ✅     |
+| Project                | Root Directory   | Build log says                     |
+| ---------------------- | ---------------- | ---------------------------------- |
+| `masseurmatch-v2`      | `apps/web`       | `@masseurmatch/web:build` ✅       |
 | `masseurmatch-v2-kftd` | `apps/dashboard` | `@masseurmatch/dashboard:build` ✅ |
 
 Both deployments reached **Ready**. Nothing further to do here.
@@ -82,10 +82,10 @@ Set these under **Settings** → **Environment Variables** on each project, for
 >
 > Two consequences, both confirmed in the same log:
 >
-> 1. **The public site renders an empty directory.** The build printed
->    `NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY are not set —
->    the directory will render empty`. The preview deploy has no therapists on
->    it. These two are the only variables the site cannot start without.
+> 1. **The public site renders an empty directory.** The build warned that
+>    `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are not
+>    set, so the directory renders empty. The preview deploy has no therapists
+>    on it. These two are the only variables the site cannot start without.
 > 2. **The PayPal plan ids are on the wrong project.** They are set on
 >    `masseurmatch-v2` (the public site, which reads no PayPal variable at all)
 >    and absent from `masseurmatch-v2-kftd`, which is the app that bills. Move
