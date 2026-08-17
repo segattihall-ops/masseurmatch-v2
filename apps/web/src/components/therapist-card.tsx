@@ -93,7 +93,11 @@ export function TherapistCard({
             {name}
           </Heading>
           {therapist.city && therapist.state ? (
-            <p className={isHome ? "text-sm font-medium text-brand-secondary" : "text-sm text-text-secondary"}>
+            <p
+              className={
+                isHome ? "text-sm font-medium text-brand-secondary" : "text-sm text-text-secondary"
+              }
+            >
               {therapist.city}, {therapist.state}
               {therapist.neighborhood ? ` · ${therapist.neighborhood}` : ""}
             </p>
@@ -101,7 +105,9 @@ export function TherapistCard({
         </div>
 
         {therapist.headline ? (
-          <p className={`${isHome ? "mt-3" : ""} line-clamp-2 text-sm leading-6 text-text-secondary`}>
+          <p
+            className={`${isHome ? "mt-3" : ""} line-clamp-2 text-sm leading-6 text-text-secondary`}
+          >
             {therapist.headline}
           </p>
         ) : null}

@@ -21,7 +21,10 @@ export function HomeFeaturedTherapists({ therapists }: { therapists: TherapistLi
   return (
     <section className="border-y border-border-subtle bg-gradient-to-b from-bg-subtle to-background py-20 sm:py-24 lg:py-28">
       <div className="mx-auto w-full max-w-7xl px-6">
-        <FadeIn whileInView className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+        <FadeIn
+          whileInView
+          className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between"
+        >
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-brand-secondary">
               Featured profiles
@@ -32,10 +35,7 @@ export function HomeFeaturedTherapists({ therapists }: { therapists: TherapistLi
               rates before contacting a therapist directly.
             </p>
           </div>
-          <Link
-            href="/search"
-            className={buttonVariants({ size: "lg", variant: "outline" })}
-          >
+          <Link href="/search" className={buttonVariants({ size: "lg", variant: "outline" })}>
             Browse all
           </Link>
         </FadeIn>
@@ -142,7 +142,10 @@ export function HomeCityDiscovery({ cities }: { cities: CityListing[] }) {
   return (
     <section className="border-y border-border-subtle bg-bg-subtle py-20 sm:py-24 lg:py-28">
       <div className="mx-auto w-full max-w-7xl px-6">
-        <FadeIn whileInView className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+        <FadeIn
+          whileInView
+          className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between"
+        >
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-brand-secondary">
               Browse by city
@@ -228,7 +231,12 @@ const howItWorksSteps = [
     title: "Contact directly",
     description:
       "Reach out to the independent therapist and arrange timing, location, pricing, and session details directly.",
-    features: ["Direct contact", "No booking middleman", "No session commission", "Independent provider"],
+    features: [
+      "Direct contact",
+      "No booking middleman",
+      "No session commission",
+      "Independent provider",
+    ],
   },
 ] as const;
 
@@ -260,12 +268,13 @@ export function HomeHowItWorks() {
                   <h3 className="font-display text-ds-24 font-bold text-text-primary">
                     {step.title}
                   </h3>
-                  <p className="mt-3 max-w-3xl leading-7 text-text-secondary">
-                    {step.description}
-                  </p>
+                  <p className="mt-3 max-w-3xl leading-7 text-text-secondary">{step.description}</p>
                   <ul className="mt-5 grid list-none gap-2 p-0 sm:grid-cols-2">
                     {step.features.map((feature) => (
-                      <li key={feature} className="flex items-center gap-2 text-sm font-medium text-text-primary">
+                      <li
+                        key={feature}
+                        className="flex items-center gap-2 text-sm font-medium text-text-primary"
+                      >
                         <span className="h-1.5 w-1.5 rounded-full bg-brand-secondary" />
                         {feature}
                       </li>
@@ -325,10 +334,7 @@ export function HomeTrustSection() {
 
         <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {trustPillars.map(([title, description], index) => (
-            <article
-              key={title}
-              className="rounded-[1.5rem] border border-white/10 bg-white/5 p-7"
-            >
+            <article key={title} className="rounded-[1.5rem] border border-white/10 bg-white/5 p-7">
               <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10 text-sm font-bold text-brand-electric">
                 {String(index + 1).padStart(2, "0")}
               </span>
@@ -350,21 +356,28 @@ export function HomeTrustSection() {
           </div>
           <div className="mt-7 grid gap-5 sm:grid-cols-3">
             <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
-              <p className="text-xs uppercase tracking-[0.14em] text-text-inverse/55">Profile review</p>
+              <p className="text-xs uppercase tracking-[0.14em] text-text-inverse/55">
+                Profile review
+              </p>
               <p className="mt-3 font-display text-ds-18 font-semibold">Before publication</p>
               <p className="mt-2 text-sm leading-6 text-text-inverse/65">
                 New profiles are reviewed before they become publicly visible.
               </p>
             </div>
             <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
-              <p className="text-xs uppercase tracking-[0.14em] text-text-inverse/55">Identity badges</p>
+              <p className="text-xs uppercase tracking-[0.14em] text-text-inverse/55">
+                Identity badges
+              </p>
               <p className="mt-3 font-display text-ds-18 font-semibold">Identity only</p>
               <p className="mt-2 text-sm leading-6 text-text-inverse/65">
-                A badge is not professional licensing, certification, or a service-quality guarantee.
+                A badge is not professional licensing, certification, or a service-quality
+                guarantee.
               </p>
             </div>
             <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
-              <p className="text-xs uppercase tracking-[0.14em] text-text-inverse/55">Directory model</p>
+              <p className="text-xs uppercase tracking-[0.14em] text-text-inverse/55">
+                Directory model
+              </p>
               <p className="mt-3 font-display text-ds-18 font-semibold">Independent providers</p>
               <p className="mt-2 text-sm leading-6 text-text-inverse/65">
                 Therapists manage their own services, appointments, qualifications, and payments.
@@ -418,7 +431,10 @@ export function HomeProviderGrowth() {
           </p>
           <ul className="mt-8 grid list-none gap-3 p-0 sm:grid-cols-2">
             {providerBenefits.map((benefit) => (
-              <li key={benefit} className="flex items-center gap-2 text-sm font-semibold text-text-primary">
+              <li
+                key={benefit}
+                className="flex items-center gap-2 text-sm font-semibold text-text-primary"
+              >
                 <span className="h-1.5 w-1.5 rounded-full bg-brand-secondary" />
                 {benefit}
               </li>
