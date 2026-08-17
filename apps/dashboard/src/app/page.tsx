@@ -6,6 +6,7 @@ import {
   planFor,
   PLANS,
 } from "@masseurmatch/billing";
+import { scoreProfile } from "@masseurmatch/db/profile-score";
 import { PROFILE_STATUS_LABELS } from "@masseurmatch/db/profile-status";
 import { spikeBlockedMessage } from "@masseurmatch/db/spikes";
 import { resolveTier } from "@masseurmatch/db/tier-grants";
@@ -31,6 +32,7 @@ import { getOrCreateMyProfile } from "@/lib/profile";
 import { publicProfileUrl } from "@/lib/public-site";
 import { getSpikeStatus } from "@/lib/spikes";
 
+import { ProfileScoreCard } from "./profile-score-card";
 import { SignOutButton } from "./sign-out-button";
 import { SpikeCard } from "./spike-card";
 
@@ -81,6 +83,20 @@ export default async function DashboardPage() {
   const spikeUpgrade = spikeUpgradeTier
     ? { name: PLANS[spikeUpgradeTier].name, price: formatPrice(PLANS[spikeUpgradeTier]) }
     : null;
+
+  // Derived on every read rather than stored. `profiles` already carries four
+  // columns claiming to be this number and nothing computes any of them; see
+  // packages/db/profile-score.ts. The photo allowance is passed in because the
+  // db package must not reach into billing.
+  const score = scoreProfile({
+    headline: profile.headline,
+    bio: profile.bio,
+    service_categories: profile.service_categories,
+    incall_price: profile.incall_price,
+    outcall_price: profile.outcall_price,
+    photoCount,
+    photoLimit,
+  });
   const name = profile.display_name ?? profile.full_name ?? viewer.user.email ?? "there";
 
   const facts = [
@@ -142,7 +158,16 @@ export default async function DashboardPage() {
           ))}
         </StaggerList>
 
-        <div className="mt-6">
+        {/* Score first: it is what makes a listing work at all, and a Spike on a
+            thin profile just shows more people a thin profile. Side by side on
+            wide screens so the page does not become a column of cards. */}
+        <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+          {/* Held back until onboarding is done. Someone still filling in the
+              basics already has one instruction on this page — "Next step:
+              About you" — and answering it with a second, lower number is
+              piling on. Onboarding guides until the profile can be submitted;
+              the score guides after. */}
+          {complete ? <ProfileScoreCard score={score} /> : null}
           <SpikeCard
             access={spikeAccess}
             previewNote={featureById("visibility-spikes")?.previewNote ?? null}
