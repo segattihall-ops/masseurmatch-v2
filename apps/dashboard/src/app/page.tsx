@@ -11,6 +11,7 @@ import {
   availableNowRemaining,
   isAvailableNow,
 } from "@masseurmatch/db/available-now";
+import { coachAdvice, type CoachSignals } from "@masseurmatch/db/coach";
 import { scoreProfile } from "@masseurmatch/db/profile-score";
 import { PROFILE_STATUS_LABELS } from "@masseurmatch/db/profile-status";
 import { spikeBlockedMessage } from "@masseurmatch/db/spikes";
@@ -37,9 +38,12 @@ import { canSubmit, currentStep, STEP_LABELS } from "@/lib/onboarding";
 import { getOrCreateMyProfile } from "@/lib/profile";
 import { publicProfileUrl } from "@/lib/public-site";
 import { ANALYTICS_WINDOW_DAYS, getMyViewAnalytics } from "@/lib/analytics";
+import { getCityDemand } from "@/lib/demand";
 import { getSpikeStatus } from "@/lib/spikes";
 
 import { AnalyticsCard } from "./analytics-card";
+import { CoachCard } from "./coach-card";
+import { DemandCard } from "./demand-card";
 import { AvailableNowCard } from "./available-now-card";
 import { ProfileScoreCard } from "./profile-score-card";
 import { SignOutButton } from "./sign-out-button";
@@ -55,9 +59,14 @@ import { TravelCard } from "./travel-card";
  * Everything shown is read from the database. The previous version of this page
  * displayed invented figures ("1,284 profile views, +12% vs last week"); those
  * are gone rather than kept as placeholders, because a number on a dashboard
- * reads as a fact. Real analytics exist in `profile_view_analytics`, which the
- * therapist's own role cannot currently read — worth wiring up deliberately
- * rather than faking in the meantime.
+ * reads as a fact.
+ *
+ * The real ones are now wired up: views come from `profile_view_analytics`,
+ * demand from `demand_scores` and `keyword_trends`. All three are read
+ * server-side through the service client, because none of them is readable by
+ * a browser-reachable role — and two of them hold data that should stay that
+ * way. Where a figure would be too thin to mean anything, the card says so
+ * rather than printing it.
  */
 
 export const dynamic = "force-dynamic";
@@ -78,9 +87,10 @@ export default async function DashboardPage() {
       (profile as { tier_granted_until?: string | null }).tier_granted_until ?? null,
     spike_until: (profile as { spike_until?: string | null }).spike_until ?? null,
   };
-  const [spikes, viewStats] = await Promise.all([
+  const [spikes, viewStats, demand] = await Promise.all([
     getSpikeStatus(spikeProfile),
     getMyViewAnalytics(profile.id),
+    getCityDemand(profile.city, profile.state, profile.id),
   ]);
 
   // The entitled tier, read once. Everything below branches on this and never
@@ -122,6 +132,27 @@ export default async function DashboardPage() {
     photoCount,
     photoLimit,
   });
+  // Only signals that exist in this database. See packages/db/coach.ts for what
+  // the old AI Coach read that is empty here.
+  const coachSignals: CoachSignals = {
+    scoreTotal: score.total,
+    scoreActions: score.todo.map((check) => ({
+      id: check.id,
+      action: check.action,
+      href: check.href,
+      gap: check.possible - check.earned,
+    })),
+    views: viewStats.total,
+    previousViews: viewStats.previous,
+    demand: demand.reading
+      ? { score: demand.reading.score, direction: demand.reading.direction }
+      : null,
+    keywords: demand.keywords,
+    cityPeers: demand.peers,
+    canSpike: spikes.canSpend,
+    availableNow: isAvailableNow(availability),
+  };
+
   const name = profile.display_name ?? profile.full_name ?? viewer.user.email ?? "there";
 
   const facts = [
@@ -194,6 +225,10 @@ export default async function DashboardPage() {
               the score guides after. */}
           {complete ? <ProfileScoreCard score={score} /> : null}
           <AnalyticsCard stats={viewStats} windowDays={ANALYTICS_WINDOW_DAYS} />
+          {complete ? (
+            <CoachCard advice={coachAdvice(coachSignals)} signals={coachSignals} />
+          ) : null}
+          <DemandCard city={profile.city} reading={demand.reading} keywords={demand.keywords} />
           <SpikeCard
             access={spikeAccess}
             previewNote={featureById("visibility-spikes")?.previewNote ?? null}

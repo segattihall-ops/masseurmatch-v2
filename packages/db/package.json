@@ -21,7 +21,9 @@
     "./profile-score": "./profile-score.ts",
     "./travel": "./travel.ts",
     "./available-now": "./available-now.ts",
-    "./analytics": "./analytics.ts"
+    "./analytics": "./analytics.ts",
+    "./demand": "./demand.ts",
+    "./coach": "./coach.ts"
   },
   "files": [
     "index.ts",
