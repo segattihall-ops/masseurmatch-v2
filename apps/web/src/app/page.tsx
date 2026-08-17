@@ -15,6 +15,8 @@ import { TherapistCard } from "@/components/therapist-card";
 import { jsonLdScript, siteJsonLd } from "@/lib/jsonld";
 import { absoluteUrl, SITE_DESCRIPTION, SITE_NAME } from "@/lib/site";
 
+import { KnottyChat } from "./knotty-chat";
+
 export const revalidate = DIRECTORY_REVALIDATE_SECONDS;
 
 export const metadata: Metadata = {
@@ -128,6 +130,12 @@ export default async function HomePage() {
           </StaggerList>
         </section>
       ) : null}
+
+      {/* Below the listings on purpose: someone who already found who they
+          wanted should not be asked whether they need help finding someone. */}
+      <section className="mx-auto w-full max-w-6xl px-6 pb-4">
+        <KnottyChat />
+      </section>
 
       <section className="mx-auto w-full max-w-6xl px-6 py-16">
         <Card>

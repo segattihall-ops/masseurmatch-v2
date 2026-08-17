@@ -23,7 +23,8 @@
     "./available-now": "./available-now.ts",
     "./analytics": "./analytics.ts",
     "./demand": "./demand.ts",
-    "./coach": "./coach.ts"
+    "./coach": "./coach.ts",
+    "./concierge": "./concierge.ts"
   },
   "files": [
     "index.ts",
