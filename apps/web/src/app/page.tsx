@@ -56,9 +56,7 @@ function usableImage(value: string | null | undefined): value is string {
   return typeof value === "string" && value.trim().length > 0;
 }
 
-async function hydrateFeaturedPhotos(
-  therapists: TherapistListing[],
-): Promise<TherapistListing[]> {
+async function hydrateFeaturedPhotos(therapists: TherapistListing[]): Promise<TherapistListing[]> {
   const results = await Promise.allSettled(
     therapists.map(async (therapist) => {
       if (usableImage(therapist.avatar_url) || usableImage(therapist.photo_url)) {
@@ -101,7 +99,10 @@ export default async function HomePage() {
         aria-labelledby="home-hero-title"
         className="relative flex min-h-[calc(100svh-4rem)] w-full flex-col overflow-hidden px-5 pb-5 sm:px-8 sm:pb-7 lg:px-12 xl:px-16 2xl:px-24"
       >
-        <div aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-0 hidden w-1/2 lg:block">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-y-0 right-0 hidden w-1/2 lg:block"
+        >
           <ScrollParallax distance={24} className="absolute right-[-8%] top-[11%] h-[58%] w-[72%]">
             <div className="h-full w-full rounded-full bg-brand-soft/70 blur-3xl" />
           </ScrollParallax>

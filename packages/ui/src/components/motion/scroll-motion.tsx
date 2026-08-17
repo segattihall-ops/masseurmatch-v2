@@ -1,13 +1,7 @@
 "use client";
 
 import * as React from "react";
-import {
-  m,
-  useReducedMotion,
-  useScroll,
-  useSpring,
-  useTransform,
-} from "framer-motion";
+import { m, useReducedMotion, useScroll, useSpring, useTransform } from "framer-motion";
 
 import { cn } from "../../lib/cn";
 
@@ -25,7 +19,10 @@ export function ScrollProgressBar({ className }: { className?: string }) {
   return (
     <m.div
       aria-hidden="true"
-      className={cn("pointer-events-none fixed left-0 top-0 z-[70] h-0.5 w-full origin-left", className)}
+      className={cn(
+        "pointer-events-none fixed left-0 top-0 z-[70] h-0.5 w-full origin-left",
+        className,
+      )}
       style={{ scaleX }}
     />
   );
