@@ -19,13 +19,10 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm exec playwright install --with-deps chromium
       - name: Capture responsive homepage
         run: |
           mkdir -p visual-qa
 
-          # Use the public Supabase publishable credential only. It is assembled
-          # at runtime so the repository never stores a credential-shaped value.
           SUPABASE_KEY_PREFIX='sb_publishable_'
           SUPABASE_KEY_BODY='SnBq62riIQi-RvKxIlshyw_YnK_X68M'
           cat > apps/web/.env.local <<EOF
@@ -53,6 +50,13 @@ jobs:
             exit 1
           fi
 
+          CHROME_PATH="$(command -v google-chrome || command -v google-chrome-stable || true)"
+          if [ -z "$CHROME_PATH" ]; then
+            echo "System Chrome was not found on the runner."
+            exit 1
+          fi
+          export CHROME_PATH
+
           node --input-type=module <<'EOF'
           import { chromium } from '@playwright/test';
           import fs from 'node:fs/promises';
@@ -67,7 +71,10 @@ jobs:
             { name: '1440x900', width: 1440, height: 900 },
           ];
 
-          const browser = await chromium.launch();
+          const browser = await chromium.launch({
+            executablePath: process.env.CHROME_PATH,
+            headless: true,
+          });
           const results = [];
 
           for (const viewport of viewports) {
