@@ -35,9 +35,8 @@ export function TherapistCard({
    */
   headingLevel?: 2 | 3;
   /**
-   * Homepage cards use a portrait-forward ratio for better placement of real
-   * therapist photography. Directory/search cards retain the established 4:3
-   * presentation to avoid changing unrelated surfaces.
+   * Homepage cards use the larger editorial composition from the featured
+   * profile reference. Directory/search cards retain their established layout.
    */
   variant?: "directory" | "home";
 }) {
@@ -45,20 +44,20 @@ export function TherapistCard({
   const name = therapistName(therapist);
   const href = profilePath(therapist);
   const photo = [therapist.avatar_url, therapist.photo_url].find(hasImage);
-  const services = (therapist.service_categories ?? []).slice(0, variant === "home" ? 2 : 3);
   const isHome = variant === "home";
+  const services = (therapist.service_categories ?? []).slice(0, 3);
 
   const body = (
     <Card
       className={`h-full overflow-hidden ${
         isHome
-          ? "border-border-subtle bg-gradient-to-b from-bg-surface to-bg-subtle shadow-ds-sm transition duration-300 hover:-translate-y-1 hover:shadow-ds-md"
+          ? "rounded-[2rem] border-border-subtle bg-bg-surface shadow-ds-sm transition duration-300 hover:-translate-y-1 hover:shadow-ds-md"
           : ""
       }`}
     >
       <div
         className={`relative overflow-hidden bg-bg-subtle ${
-          isHome ? "aspect-[3/4]" : "aspect-[4/3] rounded-t-3xl"
+          isHome ? "aspect-[4/3]" : "aspect-[4/3] rounded-t-3xl"
         }`}
       >
         {hasImage(photo) ? (
@@ -75,29 +74,31 @@ export function TherapistCard({
             priority={priority}
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center">
+          <div className="flex h-full w-full items-center justify-center bg-gradient-to-b from-bg-surface to-bg-subtle">
             <Avatar size="2xl" name={name} />
           </div>
         )}
-
-        {isHome && therapist.is_verified_identity ? (
-          <span className="absolute left-4 top-4 rounded-full bg-text-primary/80 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-text-inverse backdrop-blur-sm">
-            ID verified
-          </span>
-        ) : null}
       </div>
 
-      <CardContent className={isHome ? "flex min-h-[220px] flex-col p-5 pt-5" : "space-y-3 p-6"}>
-        <div className="space-y-1">
-          <Heading className="font-display text-ds-18 font-semibold tracking-tight text-text-primary">
+      <CardContent
+        className={
+          isHome
+            ? "flex min-h-[238px] flex-col bg-bg-surface p-6 pt-6 sm:min-h-[250px] sm:p-7 sm:pt-7"
+            : "space-y-3 p-6"
+        }
+      >
+        <div className={isHome ? "space-y-2" : "space-y-1"}>
+          <Heading
+            className={
+              isHome
+                ? "font-display text-ds-24 font-semibold tracking-tight text-text-primary"
+                : "font-display text-ds-18 font-semibold tracking-tight text-text-primary"
+            }
+          >
             {name}
           </Heading>
           {therapist.city && therapist.state ? (
-            <p
-              className={
-                isHome ? "text-sm font-medium text-brand-secondary" : "text-sm text-text-secondary"
-              }
-            >
+            <p className={isHome ? "text-base text-text-secondary" : "text-sm text-text-secondary"}>
               {therapist.city}, {therapist.state}
               {therapist.neighborhood ? ` · ${therapist.neighborhood}` : ""}
             </p>
@@ -106,18 +107,24 @@ export function TherapistCard({
 
         {therapist.headline ? (
           <p
-            className={`${isHome ? "mt-3" : ""} line-clamp-2 text-sm leading-6 text-text-secondary`}
+            className={`${
+              isHome ? "mt-5 text-base leading-7" : "text-sm leading-6"
+            } line-clamp-2 text-text-secondary`}
           >
             {therapist.headline}
           </p>
         ) : null}
 
         {services.length > 0 ? (
-          <ul className={`${isHome ? "mt-4" : ""} flex list-none flex-wrap gap-1.5 p-0`}>
+          <ul className={`${isHome ? "mt-5" : ""} flex list-none flex-wrap gap-2 p-0`}>
             {services.map((service) => (
               <li
                 key={service}
-                className="rounded-full bg-brand-soft px-2.5 py-1 text-xs font-medium text-brand-secondary"
+                className={
+                  isHome
+                    ? "rounded-full bg-brand-soft px-3 py-1.5 text-sm font-medium leading-none text-brand-secondary"
+                    : "rounded-full bg-brand-soft px-2.5 py-1 text-xs font-medium text-brand-secondary"
+                }
               >
                 {service}
               </li>
@@ -127,19 +134,15 @@ export function TherapistCard({
 
         <p
           className={`${
-            isHome ? "mt-auto border-t border-border-subtle pt-4" : ""
-          } flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-text-secondary`}
+            isHome ? "mt-auto pt-5 text-sm" : "text-xs"
+          } flex flex-wrap items-center gap-x-4 gap-y-2 text-text-secondary`}
         >
-          {!isHome && therapist.is_verified_identity ? (
+          {therapist.is_verified_identity ? (
             <span className="font-semibold text-badge-verified">ID verified</span>
           ) : null}
           {therapist.offers_incall ? <span>Incall</span> : null}
           {therapist.offers_outcall ? <span>Outcall</span> : null}
-          {therapist.incall_price ? (
-            <span className={isHome ? "font-semibold text-brand-secondary" : ""}>
-              from ${therapist.incall_price}
-            </span>
-          ) : null}
+          {therapist.incall_price ? <span>from ${therapist.incall_price}</span> : null}
         </p>
       </CardContent>
     </Card>
@@ -151,7 +154,7 @@ export function TherapistCard({
     <Link
       href={href}
       className={`block h-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
-        isHome ? "rounded-[1.5rem]" : "rounded-3xl"
+        isHome ? "rounded-[2rem]" : "rounded-3xl"
       }`}
     >
       {body}
