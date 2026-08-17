@@ -18,7 +18,8 @@
     "./actions/blog": "./actions/blog.ts",
     "./tier-grants": "./tier-grants.ts",
     "./spikes": "./spikes.ts",
-    "./profile-score": "./profile-score.ts"
+    "./profile-score": "./profile-score.ts",
+    "./travel": "./travel.ts"
   },
   "files": [
     "index.ts",

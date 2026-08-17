@@ -10,6 +10,7 @@ import { scoreProfile } from "@masseurmatch/db/profile-score";
 import { PROFILE_STATUS_LABELS } from "@masseurmatch/db/profile-status";
 import { spikeBlockedMessage } from "@masseurmatch/db/spikes";
 import { resolveTier } from "@masseurmatch/db/tier-grants";
+import { parseTravelSchedule } from "@masseurmatch/db/travel";
 import {
   Avatar,
   buttonVariants,
@@ -35,6 +36,7 @@ import { getSpikeStatus } from "@/lib/spikes";
 import { ProfileScoreCard } from "./profile-score-card";
 import { SignOutButton } from "./sign-out-button";
 import { SpikeCard } from "./spike-card";
+import { TravelCard } from "./travel-card";
 
 /**
  * Dashboard home.
@@ -70,15 +72,20 @@ export default async function DashboardPage() {
   };
   const spikes = await getSpikeStatus(spikeProfile);
 
+  // The entitled tier, read once. Everything below branches on this and never
+  // on `subscription_tier`: a lapsed courtesy grant is Free.
+  const tier = resolveTier(spikeProfile);
+  const travelEntries = parseTravelSchedule(
+    (profile as { travel_schedule?: unknown }).travel_schedule,
+  );
+  const tourTier = cheapestTierWith("tour-pages");
+
   // What the therapist is entitled to comes from the entitlement table, not
   // from `spikesPerMonth === 0`. The two agree today, and inferring it from the
   // number is how they stop agreeing: a tier with an allowance of zero that is
   // nonetheless meant to preview the tool would silently render as a dead
   // counter. The table is the contract; this reads it.
-  //
-  // `resolveTier`, not `subscription_tier` — a lapsed courtesy grant is Free,
-  // and Free previews rather than spends.
-  const spikeAccess = accessTo("visibility-spikes", resolveTier(spikeProfile));
+  const spikeAccess = accessTo("visibility-spikes", tier);
   const spikeUpgradeTier = cheapestTierWith("visibility-spikes");
   const spikeUpgrade = spikeUpgradeTier
     ? { name: PLANS[spikeUpgradeTier].name, price: formatPrice(PLANS[spikeUpgradeTier]) }
@@ -113,7 +120,7 @@ export default async function DashboardPage() {
       // and a plan label that disagrees with what the plan does is worse than
       // no label. It also renders whatever junk the free-text column holds.
       label: "Plan",
-      value: planFor(resolveTier(spikeProfile)).name,
+      value: planFor(tier).name,
       note: null,
     },
   ];
@@ -178,6 +185,17 @@ export default async function DashboardPage() {
             canSpend={spikes.canSpend}
             blockedMessage={spikeBlockedMessage(spikes.blockedBecause)}
             available={spikes.available}
+          />
+        </div>
+
+        <div className="mt-6">
+          <TravelCard
+            entries={travelEntries}
+            canHaveTourPage={accessTo("tour-pages", tier) === "full"}
+            previewNote={featureById("tour-pages")?.previewNote ?? null}
+            upgrade={
+              tourTier ? { name: PLANS[tourTier].name, price: formatPrice(PLANS[tourTier]) } : null
+            }
           />
         </div>
 

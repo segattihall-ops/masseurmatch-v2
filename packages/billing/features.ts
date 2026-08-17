@@ -51,6 +51,13 @@ export const FEATURES: readonly Feature[] = [
     previewNote: null,
     access: { free: "locked", standard: "locked", pro: "full", elite: "full" },
   },
+  {
+    id: "tour-pages",
+    label: "Tour pages — your own page in every city you visit",
+    previewNote:
+      "Free puts a Visiting badge on your listing. The dedicated city page, which search engines index, needs Standard.",
+    access: { free: "preview", standard: "full", pro: "full", elite: "full" },
+  },
 ] as const;
 
 const BY_ID = new Map(FEATURES.map((f) => [f.id, f]));

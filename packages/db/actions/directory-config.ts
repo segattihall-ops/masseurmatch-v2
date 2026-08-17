@@ -45,6 +45,8 @@ export interface TherapistListing {
   offers_outcall: boolean | null;
   incall_price: number | null;
   outcall_price: number | null;
+  /** Raw `jsonb`. Read it through `parseTravelSchedule` — never index it directly. */
+  travel_schedule: unknown;
   updated_at: string | null;
 }
 
