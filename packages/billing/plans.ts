@@ -50,6 +50,15 @@ export type Plan = {
   spikesPerMonth: number;
   /** Eligible for the featured rotation on city pages. */
   featured: boolean;
+  /**
+   * Hours an "Available Now" window lasts on this tier. Zero means the tier
+   * cannot start one.
+   *
+   * Here rather than in the route that writes it, for the same reason
+   * `photoLimit` is: a per-tier number kept next to the request handler is a
+   * second price list, and the two drift.
+   */
+  availableNowHours: number;
   blurb: string;
 };
 
@@ -61,6 +70,7 @@ export const PLANS: Record<PlanId, Plan> = {
     photoLimit: 3,
     spikesPerMonth: 0,
     featured: false,
+    availableNowHours: 0,
     blurb: "A listing in the directory.",
   },
   standard: {
@@ -70,6 +80,7 @@ export const PLANS: Record<PlanId, Plan> = {
     photoLimit: 6,
     spikesPerMonth: 2,
     featured: false,
+    availableNowHours: 1,
     blurb: "More photos and a fuller profile.",
   },
   pro: {
@@ -79,6 +90,7 @@ export const PLANS: Record<PlanId, Plan> = {
     photoLimit: 9,
     spikesPerMonth: 6,
     featured: true,
+    availableNowHours: 2,
     blurb: "Featured placement on your city page.",
   },
   elite: {
@@ -93,6 +105,7 @@ export const PLANS: Record<PlanId, Plan> = {
     photoLimit: 12,
     spikesPerMonth: 12,
     featured: true,
+    availableNowHours: 3,
     blurb: "Top placement and the highest photo limit.",
   },
 };

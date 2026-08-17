@@ -6,6 +6,11 @@ import {
   planFor,
   PLANS,
 } from "@masseurmatch/billing";
+import {
+  availableNowLapsed,
+  availableNowRemaining,
+  isAvailableNow,
+} from "@masseurmatch/db/available-now";
 import { scoreProfile } from "@masseurmatch/db/profile-score";
 import { PROFILE_STATUS_LABELS } from "@masseurmatch/db/profile-status";
 import { spikeBlockedMessage } from "@masseurmatch/db/spikes";
@@ -33,6 +38,7 @@ import { getOrCreateMyProfile } from "@/lib/profile";
 import { publicProfileUrl } from "@/lib/public-site";
 import { getSpikeStatus } from "@/lib/spikes";
 
+import { AvailableNowCard } from "./available-now-card";
 import { ProfileScoreCard } from "./profile-score-card";
 import { SignOutButton } from "./sign-out-button";
 import { SpikeCard } from "./spike-card";
@@ -79,6 +85,13 @@ export default async function DashboardPage() {
     (profile as { travel_schedule?: unknown }).travel_schedule,
   );
   const tourTier = cheapestTierWith("tour-pages");
+
+  const availability = {
+    available_now: (profile as { available_now?: boolean | null }).available_now ?? null,
+    available_now_expires:
+      (profile as { available_now_expires?: string | null }).available_now_expires ?? null,
+  };
+  const availableTier = cheapestTierWith("available-now");
 
   // What the therapist is entitled to comes from the entitlement table, not
   // from `spikesPerMonth === 0`. The two agree today, and inferring it from the
@@ -188,7 +201,20 @@ export default async function DashboardPage() {
           />
         </div>
 
-        <div className="mt-6">
+        <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <AvailableNowCard
+            access={accessTo("available-now", tier)}
+            previewNote={featureById("available-now")?.previewNote ?? null}
+            upgrade={
+              availableTier
+                ? { name: PLANS[availableTier].name, price: formatPrice(PLANS[availableTier]) }
+                : null
+            }
+            active={isAvailableNow(availability)}
+            remaining={availableNowRemaining(availability)}
+            hours={planFor(tier).availableNowHours}
+            lapsed={availableNowLapsed(availability)}
+          />
           <TravelCard
             entries={travelEntries}
             canHaveTourPage={accessTo("tour-pages", tier) === "full"}

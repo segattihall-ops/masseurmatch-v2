@@ -112,6 +112,8 @@ const LISTING_COLUMNS = [
   "offers_outcall",
   "incall_price",
   "outcall_price",
+  "available_now",
+  "available_now_expires",
   // Free-form jsonb. Parsed defensively in `travel.ts` rather than trusted:
   // the dashboard, an admin CMS and (in the old system) a voice agent all
   // write to it, and this value reaches public pages.

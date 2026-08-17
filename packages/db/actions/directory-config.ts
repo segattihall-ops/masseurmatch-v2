@@ -45,6 +45,9 @@ export interface TherapistListing {
   offers_outcall: boolean | null;
   incall_price: number | null;
   outcall_price: number | null;
+  available_now: boolean | null;
+  /** Read through `isAvailableNow` — the flag alone is not the answer. */
+  available_now_expires: string | null;
   /** Raw `jsonb`. Read it through `parseTravelSchedule` — never index it directly. */
   travel_schedule: unknown;
   updated_at: string | null;

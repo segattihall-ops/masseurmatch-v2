@@ -52,6 +52,12 @@ export const FEATURES: readonly Feature[] = [
     access: { free: "locked", standard: "locked", pro: "full", elite: "full" },
   },
   {
+    id: "available-now",
+    label: "Available Now — tell clients you can take someone today",
+    previewNote: "Free shows how it works and where the badge appears, but cannot switch it on.",
+    access: { free: "preview", standard: "full", pro: "full", elite: "full" },
+  },
+  {
     id: "tour-pages",
     label: "Tour pages — your own page in every city you visit",
     previewNote:
