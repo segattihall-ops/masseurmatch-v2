@@ -19,14 +19,20 @@ select
   p.is_featured,
   -- What they actually lose, so the email can be specific rather than vague.
   --
-  -- These MUST match packages/billing/plans.ts (3 / 6 / 9 / 12 photos, featured
-  -- on Pro and Elite). They previously quoted the old 10/15/20 ladder, which
-  -- would have told an Elite grantee they were losing twenty photo slots when
-  -- the account only has twelve — a promise the site would immediately
-  -- contradict, in the one message where being wrong costs the most trust.
+  -- Photo counts MUST match packages/billing/plans.ts (3 / 6 / 9 / 12). They
+  -- previously quoted the old 10/15/20 ladder, which would have told an Elite
+  -- grantee they were losing twenty slots on an account that has twelve.
+  --
+  -- Featured placement is deliberately NOT mentioned. The entitlement table
+  -- lists it under Pro and Elite, but the directory ranks on the `is_featured`
+  -- column and nothing in the codebase writes that column from a tier — it is
+  -- a hand-set admin flag, and this wind-down does not touch it. So nobody
+  -- loses featured placement here. Saying otherwise would tell 17 people they
+  -- are losing something they never had, and the other 9 something they are
+  -- in fact keeping.
   case p.subscription_tier
-    when 'elite'    then '12 fotos + destaque -> 3 fotos'
-    when 'pro'      then '9 fotos + destaque -> 3 fotos'
+    when 'elite'    then '12 fotos -> 3 fotos'
+    when 'pro'      then '9 fotos -> 3 fotos'
     when 'standard' then '6 fotos -> 3 fotos'
     else '-> 3 fotos'
   end as o_que_muda

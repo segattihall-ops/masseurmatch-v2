@@ -114,6 +114,17 @@ Where that resolved tier is already honoured: photo upload limits, the
 dashboard Plan card, the subscription page, Visibility Spike allowance, and
 directory ranking.
 
-`is_featured` is **not** touched. It is an independent admin flag, and 9 of
-the 26 have it. Decide separately whether those stay featured — winding down
-a tier is not the same decision as removing a hand-picked placement.
+`is_featured` is **not** touched, and this is why the email must not mention
+featured placement at all.
+
+The entitlement table lists featured placement under Pro and Elite, but the
+directory ranks on the `is_featured` column, and **nothing in the codebase
+writes that column from a tier** — it is a hand-set admin flag. So a lapsed
+grant does not remove featured placement from anyone. An earlier draft of the
+notice said "12 photos + featured → 3 photos", which would have told the 17
+grantees without the flag that they were losing something they never had, and
+the 9 who have it something they are in fact keeping.
+
+Whether those 9 stay featured is a separate decision, made by editing the flag
+— winding down a tier is not the same thing as removing a hand-picked
+placement.
