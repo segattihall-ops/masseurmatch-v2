@@ -69,25 +69,19 @@
 > nothing was charged for it, but any `PAYMENT.SALE.COMPLETED` would have failed
 > delivery in exactly the same way.
 >
-> Two things follow, both needing a decision:
+> Both consequences are now closed:
 >
-> 1. **The 26 paid tiers have nothing behind them.** 25 profiles marked `elite`
->    with no subscription record looks seeded rather than earned. v2 grants photo
->    limits and featured placement from `profiles.subscription_tier`, so this
->    decides what those therapists get.
-> 2. **Existing PayPal subscribers have no row in `therapist_subscriptions`.**
->    The webhook matches on `provider_subscription_id`; with the table empty,
->    every event for an existing subscription is filed as "No matching
->    subscription" and ignored. They need backfilling from PayPal's subscription
->    list before v2 takes over billing.
+> 1. **The 26 paid tiers had nothing behind them.** Resolved by the courtesy
+>    wind-down — each carries a 2026-09-16 deadline and `resolveTier()` returns
+>    `free` after it. See `docs/COURTESY-GRANT-WINDDOWN.md`. Note that photo
+>    limits come from the tier but **featured placement does not**: the directory
+>    ranks on the hand-set `is_featured` column, which no tier writes.
+> 2. **No backfill is needed.** `therapist_subscriptions` is empty because nobody
+>    has ever paid — confirmed by the account owner. There are no existing
+>    subscribers to reconcile, so the webhook's "No matching subscription" branch
+>    has nothing to catch up on.
 
 > ## Migrations
->
-> Both are additive, nullable and safe to re-run. The code ships without them:
-> the directory and the dashboard detect each missing column **individually**,
-> fall back to the previous behaviour for that column alone, and warn once naming
-> the file. **CI cannot catch a missing migration** — it has no database
-> credentials and skips those queries — so this list is the only record.
 >
 > **Both are applied.** Nothing here is outstanding.
 >
