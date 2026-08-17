@@ -55,6 +55,32 @@
 >    subscription" and ignored. They need backfilling from PayPal's subscription
 >    list before v2 takes over billing.
 
+> ## Migrations waiting to be applied
+>
+> Both are additive, nullable and safe to re-run. The code ships without them:
+> the directory and the dashboard detect the missing columns, fall back to the
+> previous behaviour, and warn once naming the file. **CI cannot catch a missing
+> migration** — it has no database credentials and skips those queries — so this
+> list is the only record.
+>
+> ```sh
+> psql "$SUPABASE_DB_URL" -f packages/db/migrations/courtesy_tier_grants.sql
+> psql "$SUPABASE_DB_URL" -f packages/db/migrations/visibility_spikes.sql
+> ```
+>
+> | Migration                  | Until it runs                                        |
+> | -------------------------- | ---------------------------------------------------- |
+> | `courtesy_tier_grants.sql` | Hand-set paid tiers never expire                     |
+> | `visibility_spikes.sql`    | The Spike card is hidden and no Spike can be started |
+>
+> After applying, regenerate the database types and delete the `UntypedForSpikes`
+> alias in `apps/dashboard/src/lib/spikes.ts` — it exists only because
+> `profile_spikes` is not in the generated types yet.
+>
+> Run `courtesy_tier_grants.sql` on the **same day** the notice email goes out:
+> it stamps `now() + 30 days`, so the clock starts when it runs, not when the
+> email is sent.
+
 Everything that has to be done in the Vercel and PayPal dashboards, in order.
 None of it can be done from the repository.
 

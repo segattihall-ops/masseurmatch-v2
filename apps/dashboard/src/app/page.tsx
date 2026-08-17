@@ -1,4 +1,5 @@
 import { PROFILE_STATUS_LABELS } from "@masseurmatch/db/profile-status";
+import { spikeBlockedMessage } from "@masseurmatch/db/spikes";
 import {
   Avatar,
   buttonVariants,
@@ -19,8 +20,10 @@ import { requireTherapist } from "@/lib/guards";
 import { canSubmit, currentStep, STEP_LABELS } from "@/lib/onboarding";
 import { getOrCreateMyProfile } from "@/lib/profile";
 import { publicProfileUrl } from "@/lib/public-site";
+import { getSpikeStatus } from "@/lib/spikes";
 
 import { SignOutButton } from "./sign-out-button";
+import { SpikeCard } from "./spike-card";
 
 /**
  * Dashboard home.
@@ -46,6 +49,14 @@ export default async function DashboardPage() {
   const complete = canSubmit(snapshot);
   const nextStep = currentStep(snapshot);
   const photoLimit = photoLimitForProfile(profile);
+  const spikes = await getSpikeStatus({
+    id: profile.id,
+    subscription_tier: profile.subscription_tier,
+    subscription_status: profile.subscription_status,
+    tier_granted_until:
+      (profile as { tier_granted_until?: string | null }).tier_granted_until ?? null,
+    spike_until: (profile as { spike_until?: string | null }).spike_until ?? null,
+  });
   const name = profile.display_name ?? profile.full_name ?? viewer.user.email ?? "there";
 
   const facts = [
@@ -101,6 +112,17 @@ export default async function DashboardPage() {
             </StaggerItem>
           ))}
         </StaggerList>
+
+        <div className="mt-6">
+          <SpikeCard
+            remaining={spikes.remaining}
+            perMonth={spikes.perMonth}
+            activeUntil={spikes.activeUntil}
+            canSpend={spikes.canSpend}
+            blockedMessage={spikeBlockedMessage(spikes.blockedBecause)}
+            available={spikes.available}
+          />
+        </div>
 
         {viewer.role === "admin" ? (
           <FadeIn delay={0.08} className="mt-6">

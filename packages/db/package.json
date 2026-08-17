@@ -16,7 +16,8 @@
     "./actions/directory": "./actions/directory.ts",
     "./actions/directory-config": "./actions/directory-config.ts",
     "./actions/blog": "./actions/blog.ts",
-    "./tier-grants": "./tier-grants.ts"
+    "./tier-grants": "./tier-grants.ts",
+    "./spikes": "./spikes.ts"
   },
   "files": [
     "index.ts",

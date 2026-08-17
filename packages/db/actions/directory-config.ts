@@ -5,6 +5,7 @@
  * pulling in `server-only` or the Supabase client.
  */
 
+import { spikeIsActive } from "../spikes";
 import { resolveTier, type TierGrantFields } from "../tier-grants";
 
 /** One hour, matching the ISR revalidate on the public pages. */
@@ -32,6 +33,8 @@ export interface TherapistListing {
   /** Set when the tier is a courtesy grant rather than a paid subscription. */
   subscription_status: string | null;
   tier_granted_until: string | null;
+  /** End of the current visibility Spike, or null. */
+  spike_until: string | null;
   is_featured: boolean | null;
   boost_score: number | null;
   rating_average: number | null;
@@ -126,6 +129,10 @@ function tierWeight(listing: TierGrantFields): number {
 export function compareByRank(a: TherapistListing, b: TherapistListing): number {
   return (
     tierWeight(b) - tierWeight(a) ||
+    // A running Spike lifts a listing above its peers, but never above a
+    // higher tier: someone paying $129 should not be overtaken by a $39
+    // listing spending a credit. Spikes buy position within your band.
+    Number(spikeIsActive(b)) - Number(spikeIsActive(a)) ||
     Number(b.is_featured ?? false) - Number(a.is_featured ?? false) ||
     (b.boost_score ?? 0) - (a.boost_score ?? 0) ||
     (b.rating_average ?? 0) - (a.rating_average ?? 0) ||

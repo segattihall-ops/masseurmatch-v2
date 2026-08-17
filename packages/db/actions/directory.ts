@@ -30,7 +30,8 @@ import {
  */
 
 /**
- * Columns that only exist once `migrations/courtesy_tier_grants.sql` has run.
+ * Columns that only exist once the tier-grant and Spike migrations have run
+ * (`migrations/courtesy_tier_grants.sql`, `migrations/visibility_spikes.sql`).
  *
  * Kept separate so the site does not require a particular deploy order. If the
  * code ships before the migration, every query would otherwise fail with
@@ -39,7 +40,7 @@ import {
  * and skips these queries entirely. That combination (green CI, broken
  * production build) is worth a few lines to avoid.
  */
-const GRANT_COLUMNS = ["subscription_status", "tier_granted_until"];
+const GRANT_COLUMNS = ["subscription_status", "tier_granted_until", "spike_until"];
 
 /**
  * Set once the database tells us the grant columns are not there.
@@ -78,6 +79,7 @@ const LISTING_COLUMNS = [
   "subscription_tier",
   "subscription_status",
   "tier_granted_until",
+  "spike_until",
   "is_featured",
   "boost_score",
   "rating_average",
@@ -172,9 +174,10 @@ async function selectProfiles<T>(
       if (!grantColumnsMissing) {
         grantColumnsMissing = true;
         console.warn(
-          "[@masseurmatch/db] profiles.tier_granted_until is missing — run " +
-            "migrations/courtesy_tier_grants.sql. Falling back to subscription_tier, " +
-            "so courtesy grants will not expire until it is applied.",
+          "[@masseurmatch/db] the tier-grant / spike columns are missing — run " +
+            "migrations/courtesy_tier_grants.sql and migrations/visibility_spikes.sql. " +
+            "Falling back to subscription_tier alone: courtesy grants will not expire " +
+            "and Spikes will not lift anything until both are applied.",
         );
       }
       continue;

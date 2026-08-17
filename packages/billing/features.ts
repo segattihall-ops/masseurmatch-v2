@@ -40,6 +40,12 @@ export type Feature = {
  */
 export const FEATURES: readonly Feature[] = [
   {
+    id: "visibility-spikes",
+    label: "Visibility Spikes — lift your listing for a day",
+    previewNote: "Free shows how Spikes work and what they did for others, but cannot start one.",
+    access: { free: "preview", standard: "full", pro: "full", elite: "full" },
+  },
+  {
     id: "featured-placement",
     label: "Featured placement on your city page",
     previewNote: null,

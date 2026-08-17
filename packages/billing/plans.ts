@@ -39,6 +39,15 @@ export type Plan = {
   /** Monthly price in **cents**, to keep money out of floating point. */
   priceCents: number;
   photoLimit: number;
+  /**
+   * Visibility Spikes included each calendar month.
+   *
+   * A Spike is distribution: the therapist spends one and their listing is
+   * lifted for a day. Not to be confused with a demand *spike score*, which is
+   * intelligence — "is this city heating up?". Two different products; keeping
+   * the words apart here is the cheapest place to do it.
+   */
+  spikesPerMonth: number;
   /** Eligible for the featured rotation on city pages. */
   featured: boolean;
   blurb: string;
@@ -50,6 +59,7 @@ export const PLANS: Record<PlanId, Plan> = {
     name: "Free",
     priceCents: 0,
     photoLimit: 3,
+    spikesPerMonth: 0,
     featured: false,
     blurb: "A listing in the directory.",
   },
@@ -58,6 +68,7 @@ export const PLANS: Record<PlanId, Plan> = {
     name: "Standard",
     priceCents: 3_900,
     photoLimit: 6,
+    spikesPerMonth: 2,
     featured: false,
     blurb: "More photos and a fuller profile.",
   },
@@ -66,6 +77,7 @@ export const PLANS: Record<PlanId, Plan> = {
     name: "Pro",
     priceCents: 7_900,
     photoLimit: 9,
+    spikesPerMonth: 6,
     featured: true,
     blurb: "Featured placement on your city page.",
   },
@@ -79,6 +91,7 @@ export const PLANS: Record<PlanId, Plan> = {
     // replaced, or a therapist is shown one price and billed another.
     priceCents: 12_900,
     photoLimit: 12,
+    spikesPerMonth: 12,
     featured: true,
     blurb: "Top placement and the highest photo limit.",
   },
