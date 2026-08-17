@@ -33,8 +33,18 @@ pnpm-debug.log*
 .pnpm-debug.log
 
 # env files — NEVER commit real values. Only .env.example is tracked.
+#
+# `.env*` is listed even though `.env` + `.env.*` already cover every real
+# case: `vercel link` appends that exact pattern to this file when it does not
+# find it, and it appends at the END — after the negation below. Git is
+# last-match-wins, so that append silently re-ignores .env.example and the one
+# file that documents every required variable stops being tracked. Keeping the
+# pattern here means the CLI finds it and leaves the file alone.
+#
+# The negation must stay LAST in this block for the same reason.
 .env
 .env.*
+.env*
 !.env.example
 
 # secrets / credentials
