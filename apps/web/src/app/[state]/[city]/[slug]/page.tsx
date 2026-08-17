@@ -14,6 +14,8 @@ import { hasImage } from "@/lib/cloudinary";
 import { jsonLdScript, therapistJsonLd } from "@/lib/jsonld";
 import { absoluteUrl, SITE_NAME } from "@/lib/site";
 
+import { ViewBeacon } from "../../../view-beacon";
+
 export const revalidate = DIRECTORY_REVALIDATE_SECONDS;
 
 interface ProfileParams {
@@ -74,6 +76,9 @@ export default async function ProfilePage({ params }: ProfileParams) {
 
   return (
     <>
+      {/* Client-side on purpose: this page is ISR-cached, so counting in the
+          server component would report cache misses rather than visitors. */}
+      <ViewBeacon profileId={profile.id} />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLdScript(therapistJsonLd(profile)) }}
