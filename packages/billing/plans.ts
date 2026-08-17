@@ -57,7 +57,7 @@ export const PLANS: Record<PlanId, Plan> = {
     id: "standard",
     name: "Standard",
     priceCents: 3_900,
-    photoLimit: 10,
+    photoLimit: 6,
     featured: false,
     blurb: "More photos and a fuller profile.",
   },
@@ -65,22 +65,20 @@ export const PLANS: Record<PlanId, Plan> = {
     id: "pro",
     name: "Pro",
     priceCents: 7_900,
-    // 15, not 20. Elite is 20, and two adjacent tiers with the same photo limit
-    // means the more expensive one buys nothing on this axis.
-    photoLimit: 15,
+    photoLimit: 9,
     featured: true,
     blurb: "Featured placement on your city page.",
   },
   elite: {
     id: "elite",
     name: "Elite",
-    // $99 / 20 photos, matching `subscription_plans` in production. The two
-    // disagreed — this file said $149 / 40 — and the database was confirmed
-    // correct. PayPal charges whatever its own plan says, so `PAYPAL_PLAN_ELITE`
-    // must be created at $99 too, or a therapist is shown one price and billed
-    // another.
-    priceCents: 9_900,
-    photoLimit: 20,
+    // $129, not $99. At $99 the gap to Pro was $20 for a step that is meant to
+    // be the largest in the ladder. PayPal charges whatever ITS plan says, so
+    // PAYPAL_PLAN_ELITE must point at a $129 plan — see docs/DEPLOY.md. The id
+    // configured today (P-9US760508D1062104NJ5TX7Y) is a $99 plan and must be
+    // replaced, or a therapist is shown one price and billed another.
+    priceCents: 12_900,
+    photoLimit: 12,
     featured: true,
     blurb: "Top placement and the highest photo limit.",
   },

@@ -176,11 +176,29 @@ and are easy to miss. They are declared in `turbo.json` — leave them there.
 **All three plans already exist and are ACTIVE**, at exactly the `plans.ts`
 prices. Verified against the live account on 2026-08-16:
 
-| Variable               | Plan id                      | Price          |
-| ---------------------- | ---------------------------- | -------------- |
-| `PAYPAL_PLAN_STANDARD` | `P-0LK9851678808213YNJ5TSKQ` | $39.00 / month |
-| `PAYPAL_PLAN_PRO`      | `P-6DG73865LJ933653NNJ5TU4Q` | $79.00 / month |
-| `PAYPAL_PLAN_ELITE`    | `P-9US760508D1062104NJ5TX7Y` | $99.00 / month |
+| Variable               | Plan id                      | Price           |
+| ---------------------- | ---------------------------- | --------------- |
+| `PAYPAL_PLAN_STANDARD` | `P-0LK9851678808213YNJ5TSKQ` | $39.00 / month  |
+| `PAYPAL_PLAN_PRO`      | `P-6DG73865LJ933653NNJ5TU4Q` | $79.00 / month  |
+| `PAYPAL_PLAN_ELITE`    | ⚠️ needs a new $129 plan     | $129.00 / month |
+
+> ### ⚠️ Elite moved to $129 — PayPal has not
+>
+> `plans.ts` now prices Elite at **$129**, but `P-9US760508D1062104NJ5TX7Y` is a
+> **$99** plan. Until a new plan exists, the site shows $129 and PayPal charges
+> $99.
+>
+> Create a NEW plan rather than editing that one — editing a live plan re-prices
+> its subscribers. Nothing is at risk here (nobody has ever subscribed), but the
+> habit is what keeps it safe later.
+>
+> ```sh
+> export PAYPAL_CLIENT_ID=... PAYPAL_CLIENT_SECRET=...
+> scripts/paypal-admin.sh plans        # confirm no $129 plan exists yet
+> ```
+>
+> Create it in the PayPal dashboard at $129.00 USD/month, then point
+> `PAYPAL_PLAN_ELITE` at the new id and redeploy the dashboard.
 
 Nothing needs creating. Set these three on the **dashboard** project.
 

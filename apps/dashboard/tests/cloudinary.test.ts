@@ -32,9 +32,9 @@ describe("photoLimitFor", () => {
 
   it("reads the tier, case-insensitively", async () => {
     const { photoLimitFor } = await load();
-    expect(photoLimitFor("standard", null)).toBe(10);
-    expect(photoLimitFor("PRO", null)).toBe(15);
-    expect(photoLimitFor("elite", null)).toBe(20);
+    expect(photoLimitFor("standard", null)).toBe(6);
+    expect(photoLimitFor("PRO", null)).toBe(9);
+    expect(photoLimitFor("elite", null)).toBe(12);
   });
 
   it("lets a per-account override win", async () => {
@@ -44,8 +44,8 @@ describe("photoLimitFor", () => {
 
   it("ignores a zero or negative override rather than locking the account out", async () => {
     const { photoLimitFor } = await load();
-    expect(photoLimitFor("pro", 0)).toBe(15);
-    expect(photoLimitFor("pro", -5)).toBe(15);
+    expect(photoLimitFor("pro", 0)).toBe(9);
+    expect(photoLimitFor("pro", -5)).toBe(9);
   });
 });
 
