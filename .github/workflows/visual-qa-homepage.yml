@@ -21,15 +21,43 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec playwright install --with-deps chromium
       - name: Capture responsive homepage
-        env:
-          PREVIEW_URL: https://masseurmatch-v2-git-feature-homepage-photo-mo-af13a4-mm-website.vercel.app
         run: |
           mkdir -p visual-qa
+
+          # Use the public Supabase publishable credential only. It is assembled
+          # at runtime so the repository never stores a credential-shaped value.
+          SUPABASE_KEY_PREFIX='sb_publishable_'
+          SUPABASE_KEY_BODY='SnBq62riIQi-RvKxIlshyw_YnK_X68M'
+          cat > apps/web/.env.local <<EOF
+          NEXT_PUBLIC_SITE_URL=http://127.0.0.1:3000
+          NEXT_PUBLIC_DASHBOARD_URL=http://127.0.0.1:3001
+          NEXT_PUBLIC_SUPABASE_URL=https://ijsdpozjfjjufjsoexod.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY=${SUPABASE_KEY_PREFIX}${SUPABASE_KEY_BODY}
+          EOF
+
+          pnpm --filter @masseurmatch/web dev > /tmp/masseurmatch-web.log 2>&1 &
+          WEB_PID=$!
+          trap 'kill ${WEB_PID} 2>/dev/null || true' EXIT
+
+          ready=0
+          for _ in $(seq 1 60); do
+            if curl --fail --silent --show-error http://127.0.0.1:3000/ >/dev/null; then
+              ready=1
+              break
+            fi
+            sleep 1
+          done
+
+          if [ "$ready" -ne 1 ]; then
+            cat /tmp/masseurmatch-web.log
+            exit 1
+          fi
+
           node --input-type=module <<'EOF'
           import { chromium } from '@playwright/test';
           import fs from 'node:fs/promises';
 
-          const url = process.env.PREVIEW_URL;
+          const url = 'http://127.0.0.1:3000';
           const viewports = [
             { name: '320x568', width: 320, height: 568 },
             { name: '375x667', width: 375, height: 667 },
@@ -80,7 +108,7 @@ jobs:
               };
             });
 
-            await page.locator('#explore-home').scrollIntoViewIfNeeded();
+            await page.locator('#explore-home').scrollIntoViewIfNeeded({ timeout: 15_000 });
             await page.waitForTimeout(1200);
             const photos = await page.evaluate(() => {
               const images = Array.from(document.querySelectorAll('#explore-home img'));
@@ -106,7 +134,8 @@ jobs:
             if (!result.layout.heroFitsViewport) messages.push(`${result.viewport.name}: hero exceeds viewport`);
             if (result.layout.horizontalOverflow) messages.push(`${result.viewport.name}: horizontal overflow`);
             if (result.layout.scrollBehavior !== 'smooth') messages.push(`${result.viewport.name}: smooth scroll missing`);
-            if (result.photos.imageCount > 0 && result.photos.loadedCount === 0) messages.push(`${result.viewport.name}: profile images did not load`);
+            if (result.photos.imageCount < 6) messages.push(`${result.viewport.name}: expected 6 profile images, found ${result.photos.imageCount}`);
+            if (result.photos.loadedCount < 6) messages.push(`${result.viewport.name}: expected 6 loaded profile images, found ${result.photos.loadedCount}`);
             if (result.errors.length > 0) messages.push(`${result.viewport.name}: browser errors: ${result.errors.join(' | ')}`);
             return messages;
           });
