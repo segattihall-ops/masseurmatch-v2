@@ -1,4 +1,4 @@
-import { PAID_PLAN_IDS, PLANS } from "@masseurmatch/billing";
+import { featuresFor, PAID_PLAN_IDS, PLANS } from "@masseurmatch/billing";
 import { Card } from "@masseurmatch/ui";
 import type { Metadata } from "next";
 
@@ -38,6 +38,12 @@ export default async function SubscriptionPage() {
     priceCents: PLANS[id].priceCents,
     photoLimit: PLANS[id].photoLimit,
     blurb: PLANS[id].blurb,
+    // Only what the plan actually gives. A locked row on a card the therapist
+    // is being asked to buy is just noise — the point of the card is what they
+    // get, not what they still would not.
+    unlocks: featuresFor(id)
+      .filter((entry) => entry.access === "full")
+      .map((entry) => entry.feature.label),
   }));
 
   const nextCharge = view.nextChargeOn

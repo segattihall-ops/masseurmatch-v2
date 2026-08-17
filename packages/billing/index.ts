@@ -10,6 +10,7 @@
  */
 
 export * from "./plans";
+export * from "./features";
 export * from "./provider";
 export * from "./transitions";
 export { getProvider } from "./providers/registry";
