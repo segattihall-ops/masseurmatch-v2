@@ -1,4 +1,5 @@
 import { featuresFor, PAID_PLAN_IDS, PLANS } from "@masseurmatch/billing";
+import { resolveTier } from "@masseurmatch/db/tier-grants";
 import { Card } from "@masseurmatch/ui";
 import type { Metadata } from "next";
 
@@ -30,7 +31,10 @@ export default async function SubscriptionPage() {
   const viewer = await requireTherapist("/subscription");
   const { profile } = await getOrCreateMyProfile(viewer.user.id);
   const subscription = await getMySubscription(profile.id);
-  const view = buildView(profile.subscription_tier, subscription);
+  // The entitled tier, not the column: a lapsed courtesy grant would otherwise
+  // be told it is on Elite with twelve photo slots on the very page it would go
+  // to in order to pay for them.
+  const view = buildView(resolveTier(profile), subscription, profile.photo_limit);
 
   const plans = PAID_PLAN_IDS.map((id) => ({
     id,

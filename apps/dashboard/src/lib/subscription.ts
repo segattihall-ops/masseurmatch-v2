@@ -1,6 +1,11 @@
 import "server-only";
 
-import { PLANS, planFor, type PlanId, type SubscriptionStatus } from "@masseurmatch/billing";
+import {
+  photoLimitFor,
+  planFor,
+  type PlanId,
+  type SubscriptionStatus,
+} from "@masseurmatch/billing";
 import { createSessionClient } from "@masseurmatch/db/auth";
 import { createServiceClient } from "@masseurmatch/db/client";
 
@@ -202,14 +207,23 @@ const STATUS_LABELS: Record<SubscriptionStatus, string> = {
 /**
  * What the page renders.
  *
- * Tier comes from `profiles.subscription_tier` and the money and limits from
- * `plans.ts`. Status and dates come from `therapist_subscriptions`, which the
- * webhook owns — so the page shows the provider's view of the account rather
- * than the profile's cached copy of it.
+ * Money and limits come from `plans.ts`. Status and dates come from
+ * `therapist_subscriptions`, which the webhook owns — so the page shows the
+ * provider's view of the account rather than the profile's cached copy of it.
+ *
+ * `tier` must be the **entitled** tier from `resolveTier()`, not
+ * `profiles.subscription_tier`. The two differ for a lapsed courtesy grant, and
+ * this page is where the difference is most expensive: it would name the plan
+ * "Elite" and promise twelve photos while the uploader, which already resolves
+ * the tier, refuses the fourth.
+ *
+ * `photoLimitOverride` is the per-account `photo_limit`, for the same reason —
+ * an account given extra slots by hand should see the number it actually gets.
  */
 export function buildView(
   tier: string | null,
   subscription: SubscriptionRow | null,
+  photoLimitOverride?: number | null,
 ): SubscriptionView {
   const plan = planFor(tier);
   const status = subscription?.status ?? "none";
@@ -218,7 +232,7 @@ export function buildView(
     planId: plan.id,
     planName: plan.name,
     priceCents: plan.priceCents,
-    photoLimit: PLANS[plan.id].photoLimit,
+    photoLimit: photoLimitFor(tier, photoLimitOverride),
     status,
     statusLabel: STATUS_LABELS[status],
     isActive: status === "active" || status === "trialing" || status === "past_due",
