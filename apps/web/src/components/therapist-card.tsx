@@ -44,7 +44,7 @@ export function TherapistCard({
   const Heading = `h${headingLevel}` as "h2" | "h3";
   const name = therapistName(therapist);
   const href = profilePath(therapist);
-  const photo = therapist.avatar_url ?? therapist.photo_url;
+  const photo = [therapist.avatar_url, therapist.photo_url].find(hasImage);
   const services = (therapist.service_categories ?? []).slice(0, variant === "home" ? 2 : 3);
   const isHome = variant === "home";
 
@@ -71,7 +71,7 @@ export function TherapistCard({
                 ? "(min-width: 1280px) 390px, (min-width: 1024px) 31vw, (min-width: 640px) 47vw, 92vw"
                 : "(min-width: 1024px) 320px, (min-width: 640px) 45vw, 90vw"
             }
-            className={`object-cover ${isHome ? "object-[center_24%]" : ""}`}
+            className={`object-cover ${isHome ? "object-[50%_24%]" : ""}`}
             priority={priority}
           />
         ) : (
