@@ -13,29 +13,27 @@ import { cityPath, DIRECTORY_REVALIDATE_SECONDS } from "@masseurmatch/db/actions
 
 import { TherapistCard } from "@/components/therapist-card";
 import { jsonLdScript, siteJsonLd } from "@/lib/jsonld";
-import { absoluteUrl, SITE_NAME } from "@/lib/site";
+import { absoluteUrl, SITE_DESCRIPTION, SITE_NAME } from "@/lib/site";
 
 export const revalidate = DIRECTORY_REVALIDATE_SECONDS;
 
-const HOME_TITLE = `${SITE_NAME} — Male Massage Therapist Directory`;
-const HOME_DESCRIPTION =
-  "Discover reviewed public profiles from independent male massage therapists. Browse by city and service, then contact therapists directly.";
+const HOME_TITLE = `${SITE_NAME} — Verified Male Massage Therapists`;
 
 export const metadata: Metadata = {
   title: HOME_TITLE,
-  description: HOME_DESCRIPTION,
+  description: SITE_DESCRIPTION,
   alternates: { canonical: absoluteUrl("/") },
   openGraph: {
     type: "website",
     url: absoluteUrl("/"),
     siteName: SITE_NAME,
     title: HOME_TITLE,
-    description: HOME_DESCRIPTION,
+    description: SITE_DESCRIPTION,
   },
   twitter: {
     card: "summary",
     title: HOME_TITLE,
-    description: HOME_DESCRIPTION,
+    description: SITE_DESCRIPTION,
   },
 };
 
@@ -70,12 +68,11 @@ export default async function HomePage() {
           </p>
 
           <h1 className="mt-7 max-w-[940px] font-display text-[clamp(3.25rem,5vw,5.25rem)] font-bold leading-[1.02] tracking-[-0.035em] text-text-primary">
-            Reviewed male massage therapist profiles, without the guesswork.
+            Verified male massage therapists, without the guesswork.
           </h1>
 
           <p className="mt-7 max-w-4xl text-ds-18 leading-8 text-text-secondary sm:text-[1.35rem] sm:leading-9">
-            A premium directory for discovering independent male massage therapists, comparing
-            public profile details, and contacting providers directly.
+            {SITE_DESCRIPTION}
           </p>
 
           <div className="mt-10 flex flex-wrap gap-4">
