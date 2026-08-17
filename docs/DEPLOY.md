@@ -89,26 +89,24 @@
 > the file. **CI cannot catch a missing migration** — it has no database
 > credentials and skips those queries — so this list is the only record.
 >
-> | Migration                  | State                 | Until it runs                    |
-> | -------------------------- | --------------------- | -------------------------------- |
-> | `visibility_spikes.sql`    | ✅ Applied 2026-08-17 | —                                |
-> | `courtesy_tier_grants.sql` | ⏸ Held, deliberately  | Hand-set paid tiers never expire |
+> **Both are applied.** Nothing here is outstanding.
 >
-> `visibility_spikes.sql` is verified in the live database: `profiles.spike_until`
-> present, `profile_spikes` present with RLS on, 1 policy and 2 indexes. The
-> generated types have been regenerated and the `UntypedForSpikes` alias is gone.
+> | Migration                  | State                 | Verified                                                              |
+> | -------------------------- | --------------------- | --------------------------------------------------------------------- |
+> | `visibility_spikes.sql`    | ✅ Applied 2026-08-17 | `spike_until` present; `profile_spikes` with RLS, 1 policy, 2 indexes |
+> | `courtesy_tier_grants.sql` | ✅ Applied 2026-08-17 | 26 rows carry a deadline, 0 missed; all at 2026-09-16                 |
 >
-> ```sh
-> psql "$SUPABASE_DB_URL" -f packages/db/migrations/courtesy_tier_grants.sql
-> ```
+> The `UntypedForSpikes` alias is gone and the generated types are current.
 >
-> `courtesy_tier_grants.sql` is held on purpose. Run it on the **same day** the
-> notice email goes out: it stamps `now() + 30 days`, so the clock starts when it
-> runs, not when the email is sent. The mailing list is
-> `packages/db/queries/courtesy-grant-notice.sql`.
+> `courtesy_tier_grants.sql` stamps `now() + 30 days`, so the deadline is
+> **2026-09-16** and the notice email had to go out the same day it ran. The
+> wind-down itself is documented in `docs/COURTESY-GRANT-WINDDOWN.md`, including
+> why the notice must not mention featured placement.
 >
-> Until it runs, the build prints one line naming that column and only that
-> column — Spikes are unaffected.
+> The per-column fallback in `packages/db/actions/directory.ts` stays regardless.
+> **CI cannot catch a missing migration** — it has no database credentials and
+> skips those queries — so a future column must be able to be absent without
+> taking the build down.
 
 Everything that has to be done in the Vercel and PayPal dashboards, in order.
 None of it can be done from the repository.
