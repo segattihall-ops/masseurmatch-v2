@@ -14,10 +14,12 @@
 #   scripts/paypal-admin.sh plans               # list plans with prices
 #   scripts/paypal-admin.sh subscriptions       # active subs, for backfill
 #   scripts/paypal-admin.sh fix-webhook <id>    # WRITES: apex -> www
+#   scripts/paypal-admin.sh create-webhook <url>  # WRITES: register v2's hook
 #
 # Sandbox: export PAYPAL_API_BASE=https://api-m.sandbox.paypal.com
 #
-# Only `fix-webhook` writes anything, and it prints the change and asks first.
+# Only `fix-webhook` and `create-webhook` write anything, and both print what
+# they are about to do and ask first.
 
 set -euo pipefail
 
@@ -153,6 +155,62 @@ print("custom_id:  ", s.get("custom_id"), " <- profiles.id")
 print("start_time: ", s.get("start_time"))
 b = s.get("billing_info") or {}
 print("next_bill:  ", b.get("next_billing_time"))
+'
+  ;;
+
+create-webhook)
+  # PayPal rejects a URL that is already registered ("Webhook URL already
+  # exists"), so this checks first and says so plainly rather than surfacing
+  # that as a raw API error. v2 listens on a different host AND a different
+  # path (/api/webhooks/billing, not /api/webhooks/paypal), so it does not
+  # collide with the old site's hook.
+  URL="${2:?usage: create-webhook https://<dashboard-host>/api/webhooks/billing}"
+
+  EXISTING="$(api GET /v1/notifications/webhooks |
+    python3 -c 'import sys,json;print("\n".join(w["url"] for w in json.load(sys.stdin).get("webhooks",[])))')"
+  if printf '%s\n' "$EXISTING" | grep -Fxq "$URL"; then
+    echo "That URL is already registered — nothing to do:"
+    echo "  $URL"
+    exit 0
+  fi
+
+  echo "Registering a NEW webhook (the existing ones are left alone):"
+  echo "  $URL"
+  echo "Already registered:"
+  printf '  %s\n' $EXISTING
+  read -r -p "Create? [y/N] " reply
+  [ "$reply" = "y" ] || { echo "Not created."; exit 0; }
+
+  # Only the events the handler understands. A wildcard would deliver hundreds
+  # of unrelated event types that all get filed as "unhandled".
+  api POST /v1/notifications/webhooks -d "{
+    \"url\": \"$URL\",
+    \"event_types\": [
+      {\"name\": \"BILLING.SUBSCRIPTION.ACTIVATED\"},
+      {\"name\": \"BILLING.SUBSCRIPTION.CANCELLED\"},
+      {\"name\": \"BILLING.SUBSCRIPTION.EXPIRED\"},
+      {\"name\": \"BILLING.SUBSCRIPTION.SUSPENDED\"},
+      {\"name\": \"BILLING.SUBSCRIPTION.PAYMENT.FAILED\"},
+      {\"name\": \"PAYMENT.SALE.COMPLETED\"},
+      {\"name\": \"PAYMENT.SALE.DENIED\"}
+    ]
+  }" | python3 -c '
+import sys, json
+d = json.load(sys.stdin)
+wid = d.get("id")
+if wid:
+    print()
+    print("Created. Set this on the dashboard project and redeploy:")
+    print("  PAYPAL_WEBHOOK_ID=" + wid)
+    print()
+    print("Use THIS id, not the old webhook id. Signature verification is")
+    print("per-webhook: v2 checking events against a different webhook id")
+    print("rejects every event it receives.")
+else:
+    name = d.get("name") or d.get("message") or "unknown error"
+    print("FAILED: " + str(name))
+    for det in d.get("details", []):
+        print("  " + str(det.get("issue","")) + " " + str(det.get("description","")))
 '
   ;;
 
