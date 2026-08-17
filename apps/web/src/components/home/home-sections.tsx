@@ -8,10 +8,7 @@ import {
   StaggerItem,
   StaggerList,
 } from "@masseurmatch/ui";
-import type {
-  CityListing,
-  TherapistListing,
-} from "@masseurmatch/db/actions/directory-config";
+import type { CityListing, TherapistListing } from "@masseurmatch/db/actions/directory-config";
 import { cityPath } from "@masseurmatch/db/actions/directory-config";
 
 import { TherapistCard } from "@/components/therapist-card";
@@ -42,8 +39,8 @@ export function HomeHero({
             Find the right massage therapist for you.
           </h1>
           <p className="mt-6 max-w-2xl text-ds-18 leading-8 text-text-secondary">
-            Explore public profiles, compare specialties, location and service details, then
-            contact independent therapists directly.
+            Explore public profiles, compare specialties, location and service details, then contact
+            independent therapists directly.
           </p>
 
           <form action="/search" method="get" className="mt-8 max-w-2xl" role="search">
@@ -87,8 +84,8 @@ export function HomeHero({
                 Profiles with useful details before you reach out.
               </p>
               <p className="mt-3 text-sm leading-6 text-text-secondary">
-                Review specialties, location, incall or outcall information and other public
-                profile details in one place.
+                Review specialties, location, incall or outcall information and other public profile
+                details in one place.
               </p>
             </CardContent>
           </Card>
@@ -119,8 +116,8 @@ export function HomeHero({
                   Direct contact, clear roles.
                 </p>
                 <p className="mt-2 text-sm leading-6 text-text-secondary">
-                  MasseurMatch is a directory. Therapists operate independently and manage their
-                  own appointments and payments.
+                  MasseurMatch is a directory. Therapists operate independently and manage their own
+                  appointments and payments.
                 </p>
               </CardContent>
             </Card>
@@ -168,9 +165,9 @@ export function FeaturedTherapistsSection({ therapists }: { therapists: Therapis
         as="ul"
         className="mt-9 grid list-none grid-cols-1 gap-6 p-0 sm:grid-cols-2 lg:grid-cols-3"
       >
-        {therapists.map((therapist, index) => (
+        {therapists.map((therapist) => (
           <StaggerItem as="li" key={therapist.id}>
-            <TherapistCard therapist={therapist} priority={index === 0} />
+            <TherapistCard therapist={therapist} />
           </StaggerItem>
         ))}
       </StaggerList>
@@ -197,8 +194,8 @@ export function CityDiscoverySection({ cities }: { cities: CityListing[] }) {
             Find massage therapists by city
           </h2>
           <p className="mt-3 text-text-secondary">
-            City pages are generated from therapists currently visible in the public directory,
-            so every count below comes from real listing data.
+            City pages are generated from therapists currently visible in the public directory, so
+            every count below comes from real listing data.
           </p>
         </FadeIn>
 
@@ -220,8 +217,7 @@ export function CityDiscoverySection({ cities }: { cities: CityListing[] }) {
                     </p>
                     <p className="mt-1 text-sm text-text-secondary">{city.state}</p>
                     <p className="mt-5 text-xs font-semibold uppercase tracking-[0.12em] text-brand-secondary">
-                      {city.therapistCount}{" "}
-                      {city.therapistCount === 1 ? "therapist" : "therapists"}
+                      {city.therapistCount} {city.therapistCount === 1 ? "therapist" : "therapists"}
                     </p>
                   </CardContent>
                 </Card>
@@ -361,10 +357,7 @@ export function TrustSection({
   cityCount: number;
 }) {
   return (
-    <section
-      className="mx-auto w-full max-w-6xl px-6 py-16 sm:py-20"
-      aria-labelledby="trust-title"
-    >
+    <section className="mx-auto w-full max-w-6xl px-6 py-16 sm:py-20" aria-labelledby="trust-title">
       <div className="grid gap-8 lg:grid-cols-[1fr_1.1fr] lg:items-center">
         <FadeIn whileInView>
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-secondary">
