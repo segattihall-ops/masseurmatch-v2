@@ -21,4 +21,19 @@
  * Safe to delete once PayPal is verified to be delivering to
  * `/api/webhooks/billing` and no other provider is registered here.
  */
-export { POST, runtime, dynamic } from "../billing/route";
+export { POST } from "../billing/route";
+
+/**
+ * Restated, not re-exported.
+ *
+ * Next.js reads route segment config statically, so a re-exported `runtime`
+ * is invisible to it — the build says so and silently falls back to the
+ * default. That would have left this path on a different runtime from the
+ * handler it shares, which is exactly the drift the alias exists to prevent:
+ * verification needs `node:crypto`.
+ *
+ * These two must stay in step with `../billing/route`. They are the only
+ * things in this file that can.
+ */
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
