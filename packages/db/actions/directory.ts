@@ -30,35 +30,57 @@ import {
  */
 
 /**
- * Columns that only exist once the tier-grant and Spike migrations have run
+ * Columns that only exist once their migration has run
  * (`migrations/courtesy_tier_grants.sql`, `migrations/visibility_spikes.sql`).
  *
- * Kept separate so the site does not require a particular deploy order. If the
- * code ships before the migration, every query would otherwise fail with
- * `column profiles.tier_granted_until does not exist` and take the whole build
- * with it — and CI would not catch it, because CI has no database credentials
- * and skips these queries entirely. That combination (green CI, broken
- * production build) is worth a few lines to avoid.
+ * Optional so the site does not require a particular deploy order. Shipping the
+ * code first would otherwise fail every query with `column profiles.… does not
+ * exist` and take the whole build with it — and CI would not catch it, because
+ * CI has no database credentials and skips these queries entirely. Green CI plus
+ * a broken production build is worth a few lines to avoid.
  */
-const GRANT_COLUMNS = ["subscription_status", "tier_granted_until", "spike_until"];
+const OPTIONAL_COLUMNS = ["subscription_status", "tier_granted_until", "spike_until"];
 
 /**
- * Set once the database tells us the grant columns are not there.
+ * Which optional columns the database has told us are absent.
  *
- * Process-lifetime, not per-request: one failed query is enough to know, and
- * retrying every request would double the load on a site that is already
- * degraded. A deploy after the migration starts a fresh process with this
- * cleared.
+ * Tracked one by one rather than as a group. The two migrations land
+ * independently, and dropping `spike_until` because `tier_granted_until` is
+ * missing would silently stop Spikes from ranking until an unrelated migration
+ * ran — a bug with no error message anywhere.
+ *
+ * Process-lifetime: one failed query is enough to know, and re-probing every
+ * request would double the load on a site that is already degraded. A deploy
+ * after the migration starts a fresh process with this cleared.
  */
-let grantColumnsMissing = false;
+const missingColumns = new Set<string>();
 
 function columnsFor(base: string[]): string {
-  return (grantColumnsMissing ? base.filter((c) => !GRANT_COLUMNS.includes(c)) : base).join(",");
+  return base.filter((c) => !missingColumns.has(c)).join(",");
 }
 
-/** True when an error is PostgREST reporting one of the grant columns absent. */
-function isMissingGrantColumn(message: string): boolean {
-  return GRANT_COLUMNS.some((c) => message.includes(c)) && message.includes("does not exist");
+/**
+ * The optional columns named in a PostgREST "does not exist" error.
+ *
+ * Empty when the error is about something else — a real failure must not be
+ * quietly retried into an empty directory.
+ *
+ * Deliberately does NOT skip columns already known missing. Static generation
+ * runs these concurrently, so by the time the second query fails the first has
+ * already recorded the column; filtering here made that second query find
+ * nothing to drop and throw. The set is for building the next SELECT, not for
+ * deciding whether to retry.
+ */
+function missingOptionalColumns(message: string): string[] {
+  if (!message.includes("does not exist")) return [];
+  return OPTIONAL_COLUMNS.filter((c) => message.includes(c));
+}
+
+/** What stops working while `column` is absent. */
+function consequenceOf(column: string): string {
+  return column === "spike_until"
+    ? "Spikes will not lift a listing"
+    : "courtesy tier grants will not expire";
 }
 
 /** Columns the public site needs. Explicit, so a schema change is visible. */
@@ -166,18 +188,20 @@ async function selectProfiles<T>(
     const { data, error } = await build(client, columnsFor(columns));
     if (!error) return (data ?? []) as unknown as T[];
 
-    // Deliberately NOT gated on `!grantColumnsMissing`. Static generation runs
-    // these queries concurrently: the first failure sets the flag, and every
-    // other in-flight query has already failed by then. Gating on the flag made
-    // exactly one call retry and the rest throw.
-    if (attempt === 0 && isMissingGrantColumn(error.message)) {
-      if (!grantColumnsMissing) {
-        grantColumnsMissing = true;
+    // Deliberately not gated on "have we already noticed?". Static generation
+    // runs these queries concurrently: the first failure records the column,
+    // and every other in-flight query has already failed by then. Gating on
+    // that made exactly one call retry and the rest throw.
+    const absent = attempt === 0 ? missingOptionalColumns(error.message) : [];
+    if (absent.length > 0) {
+      // Warn once per column, not once per concurrent query, or a 96-page
+      // build prints the same line ninety-six times.
+      for (const column of absent) {
+        if (missingColumns.has(column)) continue;
+        missingColumns.add(column);
         console.warn(
-          "[@masseurmatch/db] the tier-grant / spike columns are missing — run " +
-            "migrations/courtesy_tier_grants.sql and migrations/visibility_spikes.sql. " +
-            "Falling back to subscription_tier alone: courtesy grants will not expire " +
-            "and Spikes will not lift anything until both are applied.",
+          `[@masseurmatch/db] profiles.${column} not found — run the matching ` +
+            `migration in packages/db/migrations. Until then, ${consequenceOf(column)}.`,
         );
       }
       continue;

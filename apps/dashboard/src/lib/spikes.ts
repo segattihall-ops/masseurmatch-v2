@@ -24,27 +24,6 @@ import { resolveTier } from "@masseurmatch/db/tier-grants";
  * mint themselves unlimited lifts.
  */
 
-/**
- * The Spike schema is not in the generated types yet.
- *
- * `packages/db/types.ts` is generated from the live database, and
- * `migrations/visibility_spikes.sql` has not been applied — so `profile_spikes`
- * and `profiles.spike_until` do not exist as far as TypeScript is concerned.
- *
- * Rather than hand-edit a generated file (which the next regeneration would
- * silently revert) or reintroduce a project-wide `untyped()` escape hatch (which
- * was deliberately deleted), the gap is confined to this one alias, used only
- * by the three statements below. Delete it and use the client directly once the
- * migration has run and types have been regenerated.
- */
-type UntypedForSpikes = {
-  from: (table: string) => any;
-};
-
-function spikeClient(): UntypedForSpikes {
-  return createServiceClient() as unknown as UntypedForSpikes;
-}
-
 /** Profile fields these functions need. */
 export type SpikeProfile = {
   id: string;
@@ -70,7 +49,7 @@ function isMissingSchema(message: string): boolean {
 
 /** How many quota Spikes this profile has started since the 1st. */
 async function usedThisMonth(profileId: string, now: Date): Promise<number | null> {
-  const { count, error } = await spikeClient()
+  const { count, error } = await createServiceClient()
     .from("profile_spikes")
     .select("id", { count: "exact", head: true })
     .eq("profile_id", profileId)
@@ -155,7 +134,7 @@ export async function spendSpike(
     };
   }
 
-  const supabase = spikeClient();
+  const supabase = createServiceClient();
   const endsAt = spikeEndsAt(now);
 
   const { error: historyError } = await supabase.from("profile_spikes").insert({

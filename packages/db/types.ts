@@ -2879,7 +2879,7 @@ export type Database = {
           created_at: string | null
           id: string
           imported_at: string | null
-          is_public: boolean | null
+          is_public: boolean
           migration_id: string | null
           profile_id: string | null
           public_label: string
@@ -2899,7 +2899,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           imported_at?: string | null
-          is_public?: boolean | null
+          is_public?: boolean
           migration_id?: string | null
           profile_id?: string | null
           public_label?: string
@@ -2919,7 +2919,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           imported_at?: string | null
-          is_public?: boolean | null
+          is_public?: boolean
           migration_id?: string | null
           profile_id?: string | null
           public_label?: string
@@ -3651,6 +3651,7 @@ export type Database = {
           opted_out_at: string | null
           opted_out_reason: string | null
           phone_e164: string
+          profile_id: string | null
           profile_url: string | null
           source: string | null
           state: string | null
@@ -3673,6 +3674,7 @@ export type Database = {
           opted_out_at?: string | null
           opted_out_reason?: string | null
           phone_e164: string
+          profile_id?: string | null
           profile_url?: string | null
           source?: string | null
           state?: string | null
@@ -3695,6 +3697,7 @@ export type Database = {
           opted_out_at?: string | null
           opted_out_reason?: string | null
           phone_e164?: string
+          profile_id?: string | null
           profile_url?: string | null
           source?: string | null
           state?: string | null
@@ -3702,7 +3705,43 @@ export type Database = {
           updated_at?: string
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "messaging_contacts_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "ai_profile_coach_source"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "messaging_contacts_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messaging_contacts_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "provider_profiles_private"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messaging_contacts_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messaging_contacts_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapists"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       messaging_conversations: {
         Row: {
@@ -3759,6 +3798,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      messaging_imessage_bridge_workers: {
+        Row: {
+          bridge_version: string
+          created_at: string
+          last_cycle_at: string | null
+          last_error_at: string | null
+          last_error_code: string | null
+          last_inbound_at: string | null
+          last_outbound_at: string | null
+          last_seen_at: string
+          poll_ms: number
+          replay_history: boolean
+          started_at: string
+          updated_at: string
+          worker_id: string
+        }
+        Insert: {
+          bridge_version: string
+          created_at?: string
+          last_cycle_at?: string | null
+          last_error_at?: string | null
+          last_error_code?: string | null
+          last_inbound_at?: string | null
+          last_outbound_at?: string | null
+          last_seen_at?: string
+          poll_ms?: number
+          replay_history?: boolean
+          started_at: string
+          updated_at?: string
+          worker_id: string
+        }
+        Update: {
+          bridge_version?: string
+          created_at?: string
+          last_cycle_at?: string | null
+          last_error_at?: string | null
+          last_error_code?: string | null
+          last_inbound_at?: string | null
+          last_outbound_at?: string | null
+          last_seen_at?: string
+          poll_ms?: number
+          replay_history?: boolean
+          started_at?: string
+          updated_at?: string
+          worker_id?: string
+        }
+        Relationships: []
       }
       messaging_messages: {
         Row: {
@@ -3850,6 +3937,241 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "messaging_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messaging_profile_audit_log: {
+        Row: {
+          action: string
+          contact_id: string
+          conversation_id: string
+          created_at: string
+          details: Json
+          field_name: string | null
+          id: string
+          new_value: Json | null
+          previous_value: Json | null
+          profile_id: string
+          session_id: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          contact_id: string
+          conversation_id: string
+          created_at?: string
+          details?: Json
+          field_name?: string | null
+          id?: string
+          new_value?: Json | null
+          previous_value?: Json | null
+          profile_id: string
+          session_id?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          contact_id?: string
+          conversation_id?: string
+          created_at?: string
+          details?: Json
+          field_name?: string | null
+          id?: string
+          new_value?: Json | null
+          previous_value?: Json | null
+          profile_id?: string
+          session_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messaging_profile_audit_log_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "messaging_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messaging_profile_audit_log_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "messaging_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messaging_profile_audit_log_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "ai_profile_coach_source"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "messaging_profile_audit_log_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messaging_profile_audit_log_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "provider_profiles_private"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messaging_profile_audit_log_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messaging_profile_audit_log_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messaging_profile_audit_log_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "messaging_profile_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messaging_profile_sessions: {
+        Row: {
+          audit_version: string
+          contact_id: string
+          conversation_id: string
+          created_at: string
+          expires_at: string | null
+          id: string
+          last_inbound_message_id: string | null
+          last_outbound_message_id: string | null
+          last_prompted_field: string | null
+          metadata: Json
+          pending_field: string | null
+          pending_preview: string | null
+          pending_value: Json | null
+          profile_id: string
+          status: string
+          updated_at: string
+          user_id: string
+          verification_requested_at: string | null
+          verification_token_hash: string | null
+          verified_at: string | null
+        }
+        Insert: {
+          audit_version?: string
+          contact_id: string
+          conversation_id: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          last_inbound_message_id?: string | null
+          last_outbound_message_id?: string | null
+          last_prompted_field?: string | null
+          metadata?: Json
+          pending_field?: string | null
+          pending_preview?: string | null
+          pending_value?: Json | null
+          profile_id: string
+          status?: string
+          updated_at?: string
+          user_id: string
+          verification_requested_at?: string | null
+          verification_token_hash?: string | null
+          verified_at?: string | null
+        }
+        Update: {
+          audit_version?: string
+          contact_id?: string
+          conversation_id?: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          last_inbound_message_id?: string | null
+          last_outbound_message_id?: string | null
+          last_prompted_field?: string | null
+          metadata?: Json
+          pending_field?: string | null
+          pending_preview?: string | null
+          pending_value?: Json | null
+          profile_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+          verification_requested_at?: string | null
+          verification_token_hash?: string | null
+          verified_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messaging_profile_sessions_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "messaging_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messaging_profile_sessions_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: true
+            referencedRelation: "messaging_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messaging_profile_sessions_last_inbound_message_id_fkey"
+            columns: ["last_inbound_message_id"]
+            isOneToOne: false
+            referencedRelation: "messaging_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messaging_profile_sessions_last_outbound_message_id_fkey"
+            columns: ["last_outbound_message_id"]
+            isOneToOne: false
+            referencedRelation: "messaging_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messaging_profile_sessions_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "ai_profile_coach_source"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "messaging_profile_sessions_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messaging_profile_sessions_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "provider_profiles_private"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messaging_profile_sessions_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messaging_profile_sessions_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapists"
             referencedColumns: ["id"]
           },
         ]
@@ -4516,6 +4838,7 @@ export type Database = {
           moderation_status: string | null
           profile_id: string | null
           sort_order: number | null
+          storage_bucket: string
           storage_path: string | null
           updated_at: string
           url: string | null
@@ -4529,6 +4852,7 @@ export type Database = {
           moderation_status?: string | null
           profile_id?: string | null
           sort_order?: number | null
+          storage_bucket?: string
           storage_path?: string | null
           updated_at?: string
           url?: string | null
@@ -4542,6 +4866,7 @@ export type Database = {
           moderation_status?: string | null
           profile_id?: string | null
           sort_order?: number | null
+          storage_bucket?: string
           storage_path?: string | null
           updated_at?: string
           url?: string | null
@@ -4786,6 +5111,69 @@ export type Database = {
         }
         Relationships: []
       }
+      profile_spikes: {
+        Row: {
+          created_at: string
+          ends_at: string
+          id: string
+          profile_id: string
+          source: string
+          started_at: string
+        }
+        Insert: {
+          created_at?: string
+          ends_at: string
+          id?: string
+          profile_id: string
+          source?: string
+          started_at?: string
+        }
+        Update: {
+          created_at?: string
+          ends_at?: string
+          id?: string
+          profile_id?: string
+          source?: string
+          started_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_spikes_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "ai_profile_coach_source"
+            referencedColumns: ["profile_id"]
+          },
+          {
+            foreignKeyName: "profile_spikes_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profile_spikes_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "provider_profiles_private"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profile_spikes_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profile_spikes_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profile_status_debug_log: {
         Row: {
           attempted_value: string | null
@@ -5021,7 +5409,7 @@ export type Database = {
           products_used: string[] | null
           profile_completeness: number | null
           profile_completion_score: number | null
-          profile_status: string | null
+          profile_status: string
           profile_views: number | null
           promotions: Json | null
           rate_disclaimers: string[] | null
@@ -5053,6 +5441,7 @@ export type Database = {
           social_media: Json | null
           specialties: string[] | null
           specialty: string | null
+          spike_until: string | null
           start_date: string | null
           start_year: number | null
           starting_price: number | null
@@ -5203,7 +5592,7 @@ export type Database = {
           products_used?: string[] | null
           profile_completeness?: number | null
           profile_completion_score?: number | null
-          profile_status?: string | null
+          profile_status?: string
           profile_views?: number | null
           promotions?: Json | null
           rate_disclaimers?: string[] | null
@@ -5235,6 +5624,7 @@ export type Database = {
           social_media?: Json | null
           specialties?: string[] | null
           specialty?: string | null
+          spike_until?: string | null
           start_date?: string | null
           start_year?: number | null
           starting_price?: number | null
@@ -5385,7 +5775,7 @@ export type Database = {
           products_used?: string[] | null
           profile_completeness?: number | null
           profile_completion_score?: number | null
-          profile_status?: string | null
+          profile_status?: string
           profile_views?: number | null
           promotions?: Json | null
           rate_disclaimers?: string[] | null
@@ -5417,6 +5807,7 @@ export type Database = {
           social_media?: Json | null
           specialties?: string[] | null
           specialty?: string | null
+          spike_until?: string | null
           start_date?: string | null
           start_year?: number | null
           starting_price?: number | null
@@ -7313,6 +7704,10 @@ export type Database = {
           created_at: string | null
           email_enabled: boolean | null
           id: string
+          imessage_profile_assistant_consent_at: string | null
+          imessage_profile_assistant_consent_version: string | null
+          imessage_profile_assistant_enabled: boolean
+          imessage_profile_assistant_opted_out_at: string | null
           marketing_enabled: boolean | null
           phone_e164: string | null
           push_enabled: boolean | null
@@ -7327,6 +7722,10 @@ export type Database = {
           created_at?: string | null
           email_enabled?: boolean | null
           id?: string
+          imessage_profile_assistant_consent_at?: string | null
+          imessage_profile_assistant_consent_version?: string | null
+          imessage_profile_assistant_enabled?: boolean
+          imessage_profile_assistant_opted_out_at?: string | null
           marketing_enabled?: boolean | null
           phone_e164?: string | null
           push_enabled?: boolean | null
@@ -7341,6 +7740,10 @@ export type Database = {
           created_at?: string | null
           email_enabled?: boolean | null
           id?: string
+          imessage_profile_assistant_consent_at?: string | null
+          imessage_profile_assistant_consent_version?: string | null
+          imessage_profile_assistant_enabled?: boolean
+          imessage_profile_assistant_opted_out_at?: string | null
           marketing_enabled?: boolean | null
           phone_e164?: string | null
           push_enabled?: boolean | null
@@ -8521,7 +8924,7 @@ export type Database = {
           id?: string | null
           imported_at?: string | null
           profile_id?: string | null
-          public_label?: string | null
+          public_label?: never
           rating?: number | null
           review_date?: string | null
           review_text?: string | null
@@ -8532,7 +8935,7 @@ export type Database = {
           id?: string | null
           imported_at?: string | null
           profile_id?: string | null
-          public_label?: string | null
+          public_label?: never
           rating?: number | null
           review_date?: string | null
           review_text?: string | null
@@ -9129,6 +9532,21 @@ export type Database = {
         Args: { p_action_taken?: string; p_insight_id: string }
         Returns: boolean
       }
+      messaging_claim_next_imessage_queue: {
+        Args: { p_worker_id: string }
+        Returns: {
+          body: string
+          campaign_id: string
+          contact_id: string
+          contact_name: string
+          contact_timezone: string
+          conversation_id: string
+          idempotency_key: string
+          message_id: string
+          phone_e164: string
+          queue_id: string
+        }[]
+      }
       messaging_claim_next_queue: {
         Args: { p_worker_id: string }
         Returns: {
@@ -9156,6 +9574,15 @@ export type Database = {
           value_to_check: string
         }
         Returns: boolean
+      }
+      moderate_profile: {
+        Args: {
+          p_action: string
+          p_details?: Json
+          p_profile_id: string
+          p_reason: string
+        }
+        Returns: undefined
       }
       process_paid_referral: {
         Args: {
@@ -9283,7 +9710,7 @@ export type Database = {
           products_used: string[] | null
           profile_completeness: number | null
           profile_completion_score: number | null
-          profile_status: string | null
+          profile_status: string
           profile_views: number | null
           promotions: Json | null
           rate_disclaimers: string[] | null
@@ -9315,6 +9742,7 @@ export type Database = {
           social_media: Json | null
           specialties: string[] | null
           specialty: string | null
+          spike_until: string | null
           start_date: string | null
           start_year: number | null
           starting_price: number | null
