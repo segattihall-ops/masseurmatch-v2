@@ -36,8 +36,10 @@ import { requireTherapist } from "@/lib/guards";
 import { canSubmit, currentStep, STEP_LABELS } from "@/lib/onboarding";
 import { getOrCreateMyProfile } from "@/lib/profile";
 import { publicProfileUrl } from "@/lib/public-site";
+import { ANALYTICS_WINDOW_DAYS, getMyViewAnalytics } from "@/lib/analytics";
 import { getSpikeStatus } from "@/lib/spikes";
 
+import { AnalyticsCard } from "./analytics-card";
 import { AvailableNowCard } from "./available-now-card";
 import { ProfileScoreCard } from "./profile-score-card";
 import { SignOutButton } from "./sign-out-button";
@@ -76,7 +78,10 @@ export default async function DashboardPage() {
       (profile as { tier_granted_until?: string | null }).tier_granted_until ?? null,
     spike_until: (profile as { spike_until?: string | null }).spike_until ?? null,
   };
-  const spikes = await getSpikeStatus(spikeProfile);
+  const [spikes, viewStats] = await Promise.all([
+    getSpikeStatus(spikeProfile),
+    getMyViewAnalytics(profile.id),
+  ]);
 
   // The entitled tier, read once. Everything below branches on this and never
   // on `subscription_tier`: a lapsed courtesy grant is Free.
@@ -188,6 +193,7 @@ export default async function DashboardPage() {
               piling on. Onboarding guides until the profile can be submitted;
               the score guides after. */}
           {complete ? <ProfileScoreCard score={score} /> : null}
+          <AnalyticsCard stats={viewStats} windowDays={ANALYTICS_WINDOW_DAYS} />
           <SpikeCard
             access={spikeAccess}
             previewNote={featureById("visibility-spikes")?.previewNote ?? null}

@@ -20,7 +20,8 @@
     "./spikes": "./spikes.ts",
     "./profile-score": "./profile-score.ts",
     "./travel": "./travel.ts",
-    "./available-now": "./available-now.ts"
+    "./available-now": "./available-now.ts",
+    "./analytics": "./analytics.ts"
   },
   "files": [
     "index.ts",
