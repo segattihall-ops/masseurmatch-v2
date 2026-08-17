@@ -14,3 +14,4 @@ export {
   type PresenceProps,
   type PresenceItemProps,
 } from "./presence";
+export { ScrollCue, ScrollParallax, ScrollProgressBar } from "./scroll-motion";
