@@ -168,6 +168,7 @@ nothing at all.
 | `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` | for images | Without it, profile photos do not render                                                                                        |
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY`    | optional   |                                                                                                                                 |
 | `NEXT_PUBLIC_SENTRY_DSN`            | optional   |                                                                                                                                 |
+| `SUPABASE_SERVICE_ROLE_KEY`         | for views  | Server only. `/api/views` records profile views with it; without it the endpoint is inert and view counts stay flat             |
 
 ### `masseurmatch-v2-kftd` (the dashboard)
 
