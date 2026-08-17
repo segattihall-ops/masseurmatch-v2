@@ -1,17 +1,18 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import {
-  Card,
-  CardContent,
-  FadeIn,
-  StaggerItem,
-  StaggerList,
-  buttonVariants,
-} from "@masseurmatch/ui";
 import { getCities, getVisibleTherapists } from "@masseurmatch/db/actions/directory";
-import { cityPath, DIRECTORY_REVALIDATE_SECONDS } from "@masseurmatch/db/actions/directory-config";
+import { DIRECTORY_REVALIDATE_SECONDS } from "@masseurmatch/db/actions/directory-config";
 
-import { TherapistCard } from "@/components/therapist-card";
+import {
+  HomeCityDiscovery,
+  HomeDiscoverySection,
+  HomeFaq,
+  HomeFeaturedTherapists,
+  HomeFinalCta,
+  HomeHowItWorks,
+  HomeProviderGrowth,
+  HomeTrustSection,
+} from "@/components/home/home-showcase-sections";
 import { jsonLdScript, siteJsonLd } from "@/lib/jsonld";
 import { absoluteUrl, SITE_DESCRIPTION, SITE_NAME } from "@/lib/site";
 
@@ -113,89 +114,14 @@ export default async function HomePage() {
       </section>
 
       <div id="explore-home">
-        {cities.length > 0 ? (
-          <section className="mx-auto w-full max-w-6xl px-6 py-12">
-            <FadeIn whileInView className="space-y-2">
-              <h2 className="font-display text-ds-32 font-bold tracking-tight text-text-primary">
-                Browse by city
-              </h2>
-              <p className="text-text-secondary">
-                {cities.length} {cities.length === 1 ? "city" : "cities"} with therapists listed
-                today.
-              </p>
-            </FadeIn>
-
-            <StaggerList
-              whileInView
-              as="ul"
-              className="mt-8 grid list-none grid-cols-2 gap-4 p-0 sm:grid-cols-3 lg:grid-cols-4"
-            >
-              {cities.map((city) => (
-                <StaggerItem as="li" key={cityPath(city)}>
-                  <Link
-                    href={cityPath(city)}
-                    className="block rounded-3xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                  >
-                    <Card className="h-full">
-                      <CardContent className="p-5 pt-5">
-                        <p className="font-display text-ds-18 font-semibold text-text-primary">
-                          {city.name}
-                        </p>
-                        <p className="mt-1 text-sm text-text-secondary">{city.state}</p>
-                        <p className="mt-3 text-xs text-text-secondary">
-                          {city.therapistCount}{" "}
-                          {city.therapistCount === 1 ? "therapist" : "therapists"}
-                        </p>
-                      </CardContent>
-                    </Card>
-                  </Link>
-                </StaggerItem>
-              ))}
-            </StaggerList>
-          </section>
-        ) : null}
-
-        {featured.length > 0 ? (
-          <section className="mx-auto w-full max-w-6xl px-6 py-12">
-            <FadeIn whileInView className="space-y-2">
-              <h2 className="font-display text-ds-32 font-bold tracking-tight text-text-primary">
-                Featured therapists
-              </h2>
-              <p className="text-text-secondary">Reviewed public profiles, ranked by standing.</p>
-            </FadeIn>
-
-            <StaggerList
-              whileInView
-              as="ul"
-              className="mt-8 grid list-none grid-cols-1 gap-6 p-0 sm:grid-cols-2 lg:grid-cols-3"
-            >
-              {featured.map((therapist) => (
-                <StaggerItem as="li" key={therapist.id}>
-                  <TherapistCard therapist={therapist} />
-                </StaggerItem>
-              ))}
-            </StaggerList>
-          </section>
-        ) : null}
-
-        <section className="mx-auto w-full max-w-6xl px-6 py-16">
-          <Card>
-            <CardContent className="flex flex-col gap-5 p-10 pt-10 sm:flex-row sm:items-center sm:justify-between">
-              <div className="space-y-2">
-                <h2 className="font-display text-ds-24 font-bold tracking-tight text-text-primary">
-                  Are you a massage therapist?
-                </h2>
-                <p className="max-w-xl text-text-secondary">
-                  Create a reviewed public profile, improve local discovery, and let prospective
-                  clients contact you directly.
-                </p>
-              </div>
-              <Link href="/for-therapists" className={buttonVariants({ size: "lg" })}>
-                Join MasseurMatch
-              </Link>
-            </CardContent>
-          </Card>
-        </section>
+        <HomeFeaturedTherapists therapists={featured} />
+        <HomeDiscoverySection />
+        <HomeCityDiscovery cities={cities} />
+        <HomeHowItWorks />
+        <HomeTrustSection />
+        <HomeProviderGrowth />
+        <HomeFaq />
+        <HomeFinalCta />
       </div>
     </>
   );
