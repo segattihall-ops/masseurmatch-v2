@@ -18,10 +18,16 @@ select
   p.visibility_status,
   p.is_featured,
   -- What they actually lose, so the email can be specific rather than vague.
+  --
+  -- These MUST match packages/billing/plans.ts (3 / 6 / 9 / 12 photos, featured
+  -- on Pro and Elite). They previously quoted the old 10/15/20 ladder, which
+  -- would have told an Elite grantee they were losing twenty photo slots when
+  -- the account only has twelve — a promise the site would immediately
+  -- contradict, in the one message where being wrong costs the most trust.
   case p.subscription_tier
-    when 'elite'    then '20 fotos + destaque -> 3 fotos'
-    when 'pro'      then '15 fotos + destaque -> 3 fotos'
-    when 'standard' then '10 fotos -> 3 fotos'
+    when 'elite'    then '12 fotos + destaque -> 3 fotos'
+    when 'pro'      then '9 fotos + destaque -> 3 fotos'
+    when 'standard' then '6 fotos -> 3 fotos'
     else '-> 3 fotos'
   end as o_que_muda
 -- `profiles.email` is used rather than joining auth.users: the column is
