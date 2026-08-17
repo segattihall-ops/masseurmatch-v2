@@ -1,6 +1,7 @@
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@masseurmatch/ui";
+import Link from "next/link";
 import { useState, useTransition } from "react";
 
 import { startSpike } from "./spike-actions";
@@ -17,6 +18,9 @@ import { startSpike } from "./spike-actions";
  * control.
  */
 export function SpikeCard({
+  access,
+  previewNote,
+  upgrade,
   remaining,
   perMonth,
   activeUntil,
@@ -24,6 +28,12 @@ export function SpikeCard({
   blockedMessage,
   available,
 }: {
+  /** From the entitlement table, never inferred from the numbers below. */
+  access: "full" | "preview" | "locked";
+  /** What `preview` actually gives, in the table's own words. */
+  previewNote: string | null;
+  /** Cheapest tier that unlocks this, already priced. Null if none does. */
+  upgrade: { name: string; price: string } | null;
   remaining: number;
   perMonth: number;
   activeUntil: string | null;
@@ -37,6 +47,38 @@ export function SpikeCard({
   // Nothing to show until the migration has run. A card that explains it is
   // broken is worse than no card.
   if (!available) return null;
+
+  // `locked` features are listed on the subscription page, where they can be
+  // compared against a price. On the home page they would be clutter.
+  if (access === "locked") return null;
+
+  // Preview: show what the tool is and what it costs to have it, and nothing
+  // else. Deliberately no counter — "0 of 0 left" reads as something taken
+  // away from someone who never had it, which is the opposite of an invitation
+  // to try the product.
+  if (access === "preview") {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Visibility Spike</CardTitle>
+          <CardDescription>Lift your listing in your city for 24 hours.</CardDescription>
+        </CardHeader>
+
+        <CardContent className="space-y-3">
+          {previewNote ? <p className="text-sm text-text-secondary">{previewNote}</p> : null}
+
+          {upgrade ? (
+            <Link
+              href="/subscription"
+              className="inline-flex h-10 items-center rounded-md bg-brand-primary px-4 text-sm font-medium text-white transition hover:opacity-90"
+            >
+              Get Spikes with {upgrade.name} — {upgrade.price}/mo
+            </Link>
+          ) : null}
+        </CardContent>
+      </Card>
+    );
+  }
 
   const runningUntil = activeUntil
     ? new Date(activeUntil).toLocaleString(undefined, { hour: "numeric", minute: "2-digit" })

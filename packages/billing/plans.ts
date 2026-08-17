@@ -20,7 +20,7 @@
  * `max_photos` are ignored.
  *
  * Prices agree with it on every tier. Photo limits deliberately do not — the
- * database has 1/5/12/20 and this file has 3/10/15/20, which is the product
+ * database has 1/5/12/20 and this file has 3/6/9/12, which is the product
  * decision, made 2026-08-16.
  *
  * The number that actually gets charged is neither of these: PayPal bills

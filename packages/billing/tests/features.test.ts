@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { accessTo, cheapestTierWith, FEATURES, featuresFor } from "../features";
+import { accessTo, cheapestTierWith, featureById, FEATURES, featuresFor } from "../features";
 import { PLAN_IDS } from "../plans";
 
 /**
@@ -24,6 +24,38 @@ describe("accessTo", () => {
     expect(accessTo("featured-placement", "standard")).toBe("locked");
     expect(accessTo("featured-placement", "pro")).toBe("full");
     expect(accessTo("featured-placement", "elite")).toBe("full");
+  });
+
+  it("treats an unrecognised tier as free, not as the feature's best case", () => {
+    // The caller is `resolveTier()`, which returns whatever
+    // `profiles.subscription_tier` holds — free text, and null on old rows.
+    // Every one of these must land on the free row.
+    for (const tier of [null, undefined, "", "ELITE ", "platinum", "Pro "]) {
+      expect(accessTo("featured-placement", tier), JSON.stringify(tier)).toBe("locked");
+    }
+  });
+
+  it("normalises case the same way planFor does", () => {
+    // Same tier written differently must not mean different entitlements.
+    expect(accessTo("featured-placement", "PRO")).toBe("full");
+    expect(accessTo("visibility-spikes", "Standard")).toBe("full");
+  });
+});
+
+describe("featureById", () => {
+  it("returns null for an unknown id instead of throwing", () => {
+    // The dashboard reads `previewNote` from this; a throw would take out the
+    // whole page over a copy change.
+    expect(featureById("does-not-exist")).toBeNull();
+  });
+
+  it("carries a preview note wherever a tier previews the feature", () => {
+    // `preview` promises the therapist gets to see something. Without a note
+    // the card renders an empty invitation.
+    for (const feature of FEATURES) {
+      const previews = PLAN_IDS.some((tier) => feature.access[tier] === "preview");
+      if (previews) expect(feature.previewNote, feature.id).toBeTruthy();
+    }
   });
 });
 

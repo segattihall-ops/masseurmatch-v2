@@ -1,4 +1,4 @@
-import { PLAN_IDS, type PlanId } from "./plans";
+import { planFor, PLAN_IDS, type PlanId } from "./plans";
 
 /**
  * What each tier unlocks, in one table.
@@ -58,16 +58,29 @@ const BY_ID = new Map(FEATURES.map((f) => [f.id, f]));
 /**
  * What this tier gets for one feature.
  *
- * An unknown feature id is `locked`, not `full`: a typo must never hand out
- * something nobody paid for, and the same rule already governs `planFor`.
+ * Takes a loose string rather than a `PlanId` because the callers have one:
+ * `resolveTier()` returns whatever `profiles.subscription_tier` holds, which is
+ * free text. Normalising here — through `planFor`, so there is one definition
+ * of "unknown tier" and not two — keeps every call site from casting.
+ *
+ * Both unknowns fail closed. An unrecognised tier is `free`, and an unknown
+ * feature id is `locked`: a typo must never hand out something nobody paid for.
  */
-export function accessTo(featureId: string, tier: PlanId): Access {
-  return BY_ID.get(featureId)?.access[tier] ?? "locked";
+export function accessTo(featureId: string, tier: string | null | undefined): Access {
+  return BY_ID.get(featureId)?.access[planFor(tier).id] ?? "locked";
 }
 
 /** Every feature with this tier's level — for rendering the plan comparison. */
-export function featuresFor(tier: PlanId): { feature: Feature; access: Access }[] {
-  return FEATURES.map((feature) => ({ feature, access: feature.access[tier] }));
+export function featuresFor(
+  tier: string | null | undefined,
+): { feature: Feature; access: Access }[] {
+  const id = planFor(tier).id;
+  return FEATURES.map((feature) => ({ feature, access: feature.access[id] }));
+}
+
+/** One feature's row, or null if the id is unknown. */
+export function featureById(featureId: string): Feature | null {
+  return BY_ID.get(featureId) ?? null;
 }
 
 /**

@@ -1,5 +1,14 @@
+import {
+  accessTo,
+  cheapestTierWith,
+  featureById,
+  formatPrice,
+  planFor,
+  PLANS,
+} from "@masseurmatch/billing";
 import { PROFILE_STATUS_LABELS } from "@masseurmatch/db/profile-status";
 import { spikeBlockedMessage } from "@masseurmatch/db/spikes";
+import { resolveTier } from "@masseurmatch/db/tier-grants";
 import {
   Avatar,
   buttonVariants,
@@ -49,14 +58,29 @@ export default async function DashboardPage() {
   const complete = canSubmit(snapshot);
   const nextStep = currentStep(snapshot);
   const photoLimit = photoLimitForProfile(profile);
-  const spikes = await getSpikeStatus({
+  const spikeProfile = {
     id: profile.id,
     subscription_tier: profile.subscription_tier,
     subscription_status: profile.subscription_status,
     tier_granted_until:
       (profile as { tier_granted_until?: string | null }).tier_granted_until ?? null,
     spike_until: (profile as { spike_until?: string | null }).spike_until ?? null,
-  });
+  };
+  const spikes = await getSpikeStatus(spikeProfile);
+
+  // What the therapist is entitled to comes from the entitlement table, not
+  // from `spikesPerMonth === 0`. The two agree today, and inferring it from the
+  // number is how they stop agreeing: a tier with an allowance of zero that is
+  // nonetheless meant to preview the tool would silently render as a dead
+  // counter. The table is the contract; this reads it.
+  //
+  // `resolveTier`, not `subscription_tier` — a lapsed courtesy grant is Free,
+  // and Free previews rather than spends.
+  const spikeAccess = accessTo("visibility-spikes", resolveTier(spikeProfile));
+  const spikeUpgradeTier = cheapestTierWith("visibility-spikes");
+  const spikeUpgrade = spikeUpgradeTier
+    ? { name: PLANS[spikeUpgradeTier].name, price: formatPrice(PLANS[spikeUpgradeTier]) }
+    : null;
   const name = profile.display_name ?? profile.full_name ?? viewer.user.email ?? "there";
 
   const facts = [
@@ -67,8 +91,13 @@ export default async function DashboardPage() {
       note: photoCount === 0 ? "Add at least one to go live" : null,
     },
     {
+      // The entitled tier, not the raw column. Capitalising
+      // `subscription_tier` would show "Elite" to someone whose courtesy grant
+      // has lapsed, while every tool on this page already treats them as Free —
+      // and a plan label that disagrees with what the plan does is worse than
+      // no label. It also renders whatever junk the free-text column holds.
       label: "Plan",
-      value: (profile.subscription_tier ?? "Free").replace(/^\w/, (c) => c.toUpperCase()),
+      value: planFor(resolveTier(spikeProfile)).name,
       note: null,
     },
   ];
@@ -115,6 +144,9 @@ export default async function DashboardPage() {
 
         <div className="mt-6">
           <SpikeCard
+            access={spikeAccess}
+            previewNote={featureById("visibility-spikes")?.previewNote ?? null}
+            upgrade={spikeUpgrade}
             remaining={spikes.remaining}
             perMonth={spikes.perMonth}
             activeUntil={spikes.activeUntil}
