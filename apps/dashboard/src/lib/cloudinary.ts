@@ -2,6 +2,9 @@ import "server-only";
 
 import { createHash } from "node:crypto";
 
+import { photoLimitFor as photoLimit } from "@masseurmatch/billing";
+import { resolveTier } from "@masseurmatch/db/tier-grants";
+
 /**
  * Cloudinary signed uploads.
  *
@@ -34,6 +37,27 @@ export const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
  * existing call sites keep working and upload concerns stay in one module.
  */
 export { photoLimitFor } from "@masseurmatch/billing";
+
+/**
+ * Photo allowance for a profile, honouring courtesy-grant expiry.
+ *
+ * Prefer this over `photoLimitFor(profile.subscription_tier, …)`. The column
+ * says what a profile claims; `resolveTier` says what it is still entitled to.
+ * Some tiers were granted by hand with no payment behind them and are being
+ * wound down on a deadline, so reading the column directly keeps handing out
+ * twenty photo slots after the grant has lapsed.
+ *
+ * The per-account `photo_limit` override still wins — it is set deliberately
+ * and is not part of the wind-down.
+ */
+export function photoLimitForProfile(profile: {
+  subscription_tier?: string | null;
+  subscription_status?: string | null;
+  tier_granted_until?: string | Date | null;
+  photo_limit?: number | null;
+}): number {
+  return photoLimit(resolveTier(profile), profile.photo_limit);
+}
 
 function requireEnv(name: string): string {
   const value = process.env[name];

@@ -14,7 +14,7 @@ import {
 } from "@masseurmatch/ui";
 import Link from "next/link";
 
-import { photoLimitFor } from "@/lib/cloudinary";
+import { photoLimitForProfile } from "@/lib/cloudinary";
 import { requireTherapist } from "@/lib/guards";
 import { canSubmit, currentStep, STEP_LABELS } from "@/lib/onboarding";
 import { getOrCreateMyProfile } from "@/lib/profile";
@@ -45,7 +45,7 @@ export default async function DashboardPage() {
   const publicUrl = publicProfileUrl(profile);
   const complete = canSubmit(snapshot);
   const nextStep = currentStep(snapshot);
-  const photoLimit = photoLimitFor(profile.subscription_tier, profile.photo_limit);
+  const photoLimit = photoLimitForProfile(profile);
   const name = profile.display_name ?? profile.full_name ?? viewer.user.email ?? "there";
 
   const facts = [

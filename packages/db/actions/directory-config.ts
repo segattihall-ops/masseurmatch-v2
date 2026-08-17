@@ -5,6 +5,8 @@
  * pulling in `server-only` or the Supabase client.
  */
 
+import { resolveTier, type TierGrantFields } from "../tier-grants";
+
 /** One hour, matching the ISR revalidate on the public pages. */
 export const DIRECTORY_REVALIDATE_SECONDS = 3600;
 
@@ -27,6 +29,9 @@ export interface TherapistListing {
   massage_techniques: string[] | null;
   specialties: string[] | null;
   subscription_tier: string | null;
+  /** Set when the tier is a courtesy grant rather than a paid subscription. */
+  subscription_status: string | null;
+  tier_granted_until: string | null;
   is_featured: boolean | null;
   boost_score: number | null;
   rating_average: number | null;
@@ -101,8 +106,16 @@ export function therapistName(therapist: {
 /** Ranking weight per subscription tier. Higher sorts first. */
 const TIER_WEIGHT: Record<string, number> = { elite: 3, pro: 2, standard: 1, free: 0 };
 
-function tierWeight(tier: string | null): number {
-  return TIER_WEIGHT[(tier ?? "free").toLowerCase()] ?? 0;
+/**
+ * Weight for the tier a listing is *entitled* to, not the one its row claims.
+ *
+ * `subscription_tier` is set by hand for some profiles with nothing paid behind
+ * it, so ranking straight off the column sells top placement for free. Going
+ * through `resolveTier` means a courtesy grant stops lifting a listing the day
+ * its deadline passes, with nothing scheduled to make that happen.
+ */
+function tierWeight(listing: TierGrantFields): number {
+  return TIER_WEIGHT[resolveTier(listing)] ?? 0;
 }
 
 /**
@@ -112,7 +125,7 @@ function tierWeight(tier: string | null): number {
  */
 export function compareByRank(a: TherapistListing, b: TherapistListing): number {
   return (
-    tierWeight(b.subscription_tier) - tierWeight(a.subscription_tier) ||
+    tierWeight(b) - tierWeight(a) ||
     Number(b.is_featured ?? false) - Number(a.is_featured ?? false) ||
     (b.boost_score ?? 0) - (a.boost_score ?? 0) ||
     (b.rating_average ?? 0) - (a.rating_average ?? 0) ||

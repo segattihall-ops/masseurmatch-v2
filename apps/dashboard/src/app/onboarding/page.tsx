@@ -2,7 +2,7 @@ import { Card } from "@masseurmatch/ui";
 import { PROFILE_STATUS_LABELS } from "@masseurmatch/db/profile-status";
 import type { Metadata } from "next";
 
-import { photoLimitFor } from "@/lib/cloudinary";
+import { photoLimitForProfile } from "@/lib/cloudinary";
 import { requireTherapist } from "@/lib/guards";
 import { currentStep, stepProgress, STEP_LABELS, type OnboardingStep } from "@/lib/onboarding";
 import { getOrCreateMyProfile, listMyPhotos } from "@/lib/profile";
@@ -99,10 +99,7 @@ export default async function OnboardingPage({
           ) : null}
 
           {step === "photos" ? (
-            <PhotosStep
-              photos={photos}
-              limit={photoLimitFor(profile.subscription_tier, profile.photo_limit)}
-            />
+            <PhotosStep photos={photos} limit={photoLimitForProfile(profile)} />
           ) : null}
 
           {step === "review" ? <ReviewStep ready={progress.review} /> : null}

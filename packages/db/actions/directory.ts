@@ -29,6 +29,37 @@ import {
  * `profile_photos` are the only relations anon can read today.
  */
 
+/**
+ * Columns that only exist once `migrations/courtesy_tier_grants.sql` has run.
+ *
+ * Kept separate so the site does not require a particular deploy order. If the
+ * code ships before the migration, every query would otherwise fail with
+ * `column profiles.tier_granted_until does not exist` and take the whole build
+ * with it — and CI would not catch it, because CI has no database credentials
+ * and skips these queries entirely. That combination (green CI, broken
+ * production build) is worth a few lines to avoid.
+ */
+const GRANT_COLUMNS = ["subscription_status", "tier_granted_until"];
+
+/**
+ * Set once the database tells us the grant columns are not there.
+ *
+ * Process-lifetime, not per-request: one failed query is enough to know, and
+ * retrying every request would double the load on a site that is already
+ * degraded. A deploy after the migration starts a fresh process with this
+ * cleared.
+ */
+let grantColumnsMissing = false;
+
+function columnsFor(base: string[]): string {
+  return (grantColumnsMissing ? base.filter((c) => !GRANT_COLUMNS.includes(c)) : base).join(",");
+}
+
+/** True when an error is PostgREST reporting one of the grant columns absent. */
+function isMissingGrantColumn(message: string): boolean {
+  return GRANT_COLUMNS.some((c) => message.includes(c)) && message.includes("does not exist");
+}
+
 /** Columns the public site needs. Explicit, so a schema change is visible. */
 const LISTING_COLUMNS = [
   "id",
@@ -45,6 +76,8 @@ const LISTING_COLUMNS = [
   "massage_techniques",
   "specialties",
   "subscription_tier",
+  "subscription_status",
+  "tier_granted_until",
   "is_featured",
   "boost_score",
   "rating_average",
@@ -56,10 +89,10 @@ const LISTING_COLUMNS = [
   "incall_price",
   "outcall_price",
   "updated_at",
-].join(",");
+];
 
 const DETAIL_COLUMNS = [
-  LISTING_COLUMNS,
+  ...LISTING_COLUMNS,
   "bio",
   "tagline",
   "years_experience",
@@ -71,7 +104,7 @@ const DETAIL_COLUMNS = [
   "zip_code",
   "seo_title",
   "seo_description",
-].join(",");
+];
 
 /**
  * The visibility gate, mirroring the live RLS policy on `profiles`:
@@ -109,18 +142,64 @@ function directoryUnavailable(): boolean {
   return true;
 }
 
+/**
+ * Run a profiles query, dropping the grant columns if the database lacks them.
+ *
+ * Retries exactly once, and only for that specific error. Anything else is a
+ * real failure and is rethrown — a query that silently returns nothing would
+ * empty the directory, which is far worse than a failed build.
+ *
+ * Without the grant columns, `resolveTier` sees no deadline on any row and
+ * falls back to trusting `subscription_tier` — the behaviour that shipped
+ * before this feature. Degrading to "as it was yesterday" is the right
+ * direction while a migration is pending.
+ */
+async function selectProfiles<T>(
+  columns: string[],
+  build: (client: ReturnType<typeof createAnonClient>, select: string) => PromiseLike<QueryResult>,
+): Promise<T[]> {
+  const client = createAnonClient();
+
+  for (const attempt of [0, 1]) {
+    const { data, error } = await build(client, columnsFor(columns));
+    if (!error) return (data ?? []) as unknown as T[];
+
+    // Deliberately NOT gated on `!grantColumnsMissing`. Static generation runs
+    // these queries concurrently: the first failure sets the flag, and every
+    // other in-flight query has already failed by then. Gating on the flag made
+    // exactly one call retry and the rest throw.
+    if (attempt === 0 && isMissingGrantColumn(error.message)) {
+      if (!grantColumnsMissing) {
+        grantColumnsMissing = true;
+        console.warn(
+          "[@masseurmatch/db] profiles.tier_granted_until is missing — run " +
+            "migrations/courtesy_tier_grants.sql. Falling back to subscription_tier, " +
+            "so courtesy grants will not expire until it is applied.",
+        );
+      }
+      continue;
+    }
+
+    throw new Error(`Failed to load directory: ${error.message}`);
+  }
+
+  return [];
+}
+
+type QueryResult = { data: unknown; error: { message: string } | null };
+
 async function fetchVisibleListings(): Promise<TherapistListing[]> {
   if (directoryUnavailable()) return [];
 
-  const { data, error } = await createAnonClient()
-    .from("profiles")
-    .select(LISTING_COLUMNS)
-    .eq("profile_status", APPROVED)
-    .eq("visibility_status", PUBLIC);
+  const rows = await selectProfiles<TherapistListing>(LISTING_COLUMNS, (client, select) =>
+    client
+      .from("profiles")
+      .select(select)
+      .eq("profile_status", APPROVED)
+      .eq("visibility_status", PUBLIC),
+  );
 
-  if (error) throw new Error(`Failed to load directory: ${error.message}`);
-
-  return ((data ?? []) as unknown as TherapistListing[]).filter(isRoutable).sort(compareByRank);
+  return rows.filter(isRoutable).sort(compareByRank);
 }
 
 /** Every publicly visible, routable therapist. Cached for an hour. */
@@ -202,18 +281,18 @@ export async function getProfileBySlug(slug: string): Promise<ProfileDetail | nu
 
   const client = createAnonClient();
 
-  const { data, error } = await client
-    .from("profiles")
-    .select(DETAIL_COLUMNS)
-    .eq("profile_status", APPROVED)
-    .eq("visibility_status", PUBLIC)
-    .eq("slug", slug)
-    .maybeSingle();
+  const rows = await selectProfiles<ProfileDetail>(DETAIL_COLUMNS, (c, select) =>
+    c
+      .from("profiles")
+      .select(select)
+      .eq("profile_status", APPROVED)
+      .eq("visibility_status", PUBLIC)
+      .eq("slug", slug)
+      .limit(1),
+  );
 
-  if (error) throw new Error(`Failed to load profile "${slug}": ${error.message}`);
-  if (!data) return null;
-
-  const profile = data as unknown as ProfileDetail;
+  const profile = rows[0];
+  if (!profile) return null;
 
   // Approved photos only — enforced by RLS, restated here for intent.
   const { data: photos } = await client

@@ -15,7 +15,8 @@
     "./actions/ranking-config": "./actions/ranking-config.ts",
     "./actions/directory": "./actions/directory.ts",
     "./actions/directory-config": "./actions/directory-config.ts",
-    "./actions/blog": "./actions/blog.ts"
+    "./actions/blog": "./actions/blog.ts",
+    "./tier-grants": "./tier-grants.ts"
   },
   "files": [
     "index.ts",
