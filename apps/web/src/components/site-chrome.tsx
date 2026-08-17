@@ -80,16 +80,16 @@ export function SiteHeader() {
     <header className="border-b border-border bg-bg-surface">
       <nav
         aria-label="Primary"
-        className="mx-auto flex w-full max-w-6xl items-center justify-between gap-6 px-6 py-4"
+        className="mx-auto flex min-h-16 w-full max-w-6xl items-center justify-between gap-4 px-5 py-3 sm:gap-6 sm:px-6"
       >
         <Link
           href="/"
-          className="font-display text-ds-18 font-bold tracking-tight text-text-primary"
+          className="shrink-0 font-display text-ds-18 font-bold tracking-tight text-text-primary"
         >
           {SITE_NAME}
         </Link>
 
-        <ul className="flex list-none items-center gap-6 p-0 text-sm">
+        <ul className="hidden list-none items-center gap-6 p-0 text-sm sm:flex">
           {NAV.map((item) => (
             <li key={item.href}>
               <Link
@@ -100,6 +100,25 @@ export function SiteHeader() {
               </Link>
             </li>
           ))}
+        </ul>
+
+        <ul className="flex list-none items-center gap-3 p-0 text-xs sm:hidden">
+          <li>
+            <Link
+              href="/search"
+              className="whitespace-nowrap font-medium text-text-secondary transition-colors hover:text-brand-secondary"
+            >
+              Find
+            </Link>
+          </li>
+          <li>
+            <Link
+              href="/for-therapists"
+              className="whitespace-nowrap font-medium text-brand-secondary transition-colors hover:text-action-primary-hover"
+            >
+              List
+            </Link>
+          </li>
         </ul>
       </nav>
     </header>

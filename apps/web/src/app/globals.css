@@ -7,6 +7,10 @@
     @apply border-border;
   }
 
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
     @apply bg-background font-sans text-foreground antialiased;
     text-rendering: optimizeLegibility;
@@ -14,5 +18,23 @@
 
   ::selection {
     background: rgb(var(--color-brand-secondary-rgb) / 0.18);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+  }
+}
+
+/*
+ * The shortest phone viewports cannot fit the full desktop-style trust strip
+ * without forcing the first fold below the screen. Keep the core promise,
+ * supporting H2 and both CTAs visible; the same trust content appears again
+ * immediately below the fold in the dedicated sections.
+ */
+@media (max-width: 340px) and (max-height: 700px) {
+  .home-hero-signals {
+    display: none;
   }
 }
