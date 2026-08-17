@@ -21,6 +21,32 @@
 > **Still to do: replay the failed deliveries** with `Resend` in the PayPal
 > dashboard. Nothing that failed before the fix has been reprocessed.
 >
+> ### The path differs between the two sites — handled in code, 2026-08-17
+>
+> PayPal delivers to `/api/webhooks/paypal`. v2 names that handler
+> `/api/webhooks/billing`, because it serves whichever provider
+> `BILLING_PROVIDER` selects. Measured today:
+>
+> | URL                                                         | Status                            |
+> | ----------------------------------------------------------- | --------------------------------- |
+> | `www.masseurmatch.com/api/webhooks/paypal` (old site, live) | 400 — handler reached             |
+> | v2 dashboard `/api/webhooks/billing`                        | 401 invalid signature — correct   |
+> | v2 dashboard `/api/webhooks/paypal` (before the fix)        | **404** — would have lost billing |
+>
+> On cutover day that 404 is silent: PayPal retries into nothing and no error
+> surfaces on our side. Repointing the webhook is worse than it sounds — PayPal
+> rejects a URL already registered on the account, so it means delete-then-create
+> against live billing and losing whatever is delivered in between.
+>
+> `apps/dashboard/src/app/api/webhooks/paypal/route.ts` now re-exports the
+> billing handler, so both paths answer and no cutover step is needed. It is an
+> alias, not a copy — one handler, one signature check. A smoke test asserts the
+> path is not 404, because a rename is exactly how this comes back.
+>
+> Deployment protection on `masseurmatch-v2-kftd` is **off**, so PayPal can reach
+> it. The public project still has SSO on `all_except_custom_domains`, which is
+> fine — it serves no webhook, and custom domains are exempt at cutover.
+>
 > To re-check at any time:
 >
 > ```sh
