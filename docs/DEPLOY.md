@@ -352,16 +352,37 @@ Sign-up sends a confirmation email, and the link in it has to come back to
 is not on its allow-list, so until this is set, every new account confirms into
 an error page.
 
-1. Supabase → **Authentication** → **URL Configuration**.
-2. **Site URL**: `https://dashboard.masseurmatch.com` — the domain is already
-   attached to `masseurmatch-v2-kftd` and serving it.
-3. **Redirect URLs**: add `https://dashboard.masseurmatch.com/auth/callback`.
-4. Set `NEXT_PUBLIC_DASHBOARD_URL=https://dashboard.masseurmatch.com` on the
+> **Do not touch Site URL.** This Supabase project is shared with the site
+> that is live at `www` today. Site URL is where any auth link with no explicit
+> `redirect_to` lands — which is every confirmation and password email the old
+> site sends. Repointing it at the dashboard would redirect the live site's own
+> auth emails. v2 never relies on it: both flows pass their destination
+> explicitly (`emailRedirectTo` on sign-up, `redirectTo` on recovery), so the
+> field can keep whatever it holds until cutover, when it becomes a decision for
+> whoever owns the domain.
+
+1. Supabase → **Authentication** → **URL Configuration** → **Redirect URLs**.
+2. Add both:
+   - `https://dashboard.masseurmatch.com/auth/callback`
+   - `https://dashboard.masseurmatch.com/auth/callback**`
+
+   Two entries because the links carry a query string
+   (`?setup=1&next=…`, `?next=%2Freset-password`) and Supabase's documentation
+   defines its wildcards (`*` stops at a separator, `**` does not, `.` and `/`
+   are the separators) without saying whether the query string takes part in the
+   match. The pair covers both behaviours and stays pinned to that one path.
+   Adding entries is additive — nothing already working changes.
+
+3. Set `NEXT_PUBLIC_DASHBOARD_URL=https://dashboard.masseurmatch.com` on the
    dashboard project, and the same value on the public site (that is what puts
    the "Create your account" button on `/for-therapists`). It must match the
    allow-list entry exactly — scheme included, no trailing slash. That variable
    is what the sign-up action puts in the email link; the request's own `Host`
    header is deliberately not used. See `apps/dashboard/src/lib/dashboard-url.ts`.
+4. Check **Authentication → Email Templates**. A template customised to build
+   its link from `{{ .SiteURL }}` instead of `{{ .ConfirmationURL }}` ignores the
+   `redirect_to` we send, and the confirmation would go to the old site no matter
+   what the allow-list says. The stock templates do not do this.
 
 Two things worth knowing before someone reports them as bugs:
 
