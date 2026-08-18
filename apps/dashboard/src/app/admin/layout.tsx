@@ -1,9 +1,9 @@
 import { redirect } from "next/navigation";
 import { createSessionClient } from "@masseurmatch/db/auth";
-import { Sidebar } from "@/components/dashboard/sidebar";
 import { Navbar } from "@/components/dashboard/navbar";
+import { AdminSidebar } from "@/components/dashboard/admin-sidebar";
 
-export default async function TherapistLayout({ children }: { children: React.ReactNode }) {
+export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const supabase = createSessionClient();
   const {
     data: { user },
@@ -15,9 +15,9 @@ export default async function TherapistLayout({ children }: { children: React.Re
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      <Navbar title="Therapist Dashboard" homeLink="/therapist" />
+      <Navbar title="Admin Dashboard" homeLink="/admin" />
       <div className="flex flex-1 overflow-hidden">
-        <Sidebar />
+        <AdminSidebar />
         <main className="flex-1 overflow-y-auto">{children}</main>
       </div>
     </div>
