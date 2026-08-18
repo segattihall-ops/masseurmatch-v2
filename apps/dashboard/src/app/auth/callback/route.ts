@@ -23,6 +23,12 @@ import { safeNext } from "@/lib/safe-next";
  *                        property of PKCE, not a bug to route around.
  *   - `?token_hash=…&type=…` — the newer default template. Verified directly.
  *
+ * Account setup runs only for a link that created an account. The same handler
+ * is where a **password recovery** link lands, and running setup there would
+ * mean an existing account with no `user_roles` row — which today resolves to
+ * `client` — silently became a `provider` by resetting its password. So sign-up
+ * marks its own link with `setup=1`, and nothing else is trusted to imply it.
+ *
  * Anything else, or a failure, goes back to sign-in with a fixed notice code.
  * Never with text from the URL: an attacker-authored sentence rendered on the
  * sign-in page is a phishing surface ("your session expired, email your
@@ -75,21 +81,27 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   if (!result) return failed("link-invalid");
   if (result.error || !result.data.user) return failed("link-expired");
 
-  // The second attempt at account setup. Sign-up already tried; if that call
-  // failed the account would otherwise be confirmed, signed in, and stranded on
+  // The second attempt at account setup, for sign-up links only — see the note
+  // about recovery links above. Sign-up already tried once; if that call failed
+  // the account would otherwise be confirmed, signed in, and stranded on
   // /not-authorized with no way back. This is the repair, and it writes nothing
   // when the first attempt succeeded.
-  try {
-    await ensureProviderAccount(result.data.user.id, {
-      fullName:
-        (result.data.user.user_metadata?.full_name as string | undefined) ??
-        (result.data.user.user_metadata?.name as string | undefined) ??
-        null,
-      email: result.data.user.email ?? null,
-    });
-  } catch (cause) {
-    console.error("[auth/callback] could not finish account setup", cause);
-    return failed("setup-failed");
+  const isNewAccount =
+    url.searchParams.get("setup") === "1" || type === "signup" || type === "invite";
+
+  if (isNewAccount) {
+    try {
+      await ensureProviderAccount(result.data.user.id, {
+        fullName:
+          (result.data.user.user_metadata?.full_name as string | undefined) ??
+          (result.data.user.user_metadata?.name as string | undefined) ??
+          null,
+        email: result.data.user.email ?? null,
+      });
+    } catch (cause) {
+      console.error("[auth/callback] could not finish account setup", cause);
+      return failed("setup-failed");
+    }
   }
 
   return NextResponse.redirect(new URL(next, url.origin));

@@ -66,7 +66,9 @@ export async function signUp(_prev: SignUpState, formData: FormData): Promise<Si
       // Where the confirmation link lands. `next` rides along so the person
       // ends up where they were headed rather than always at the dashboard
       // home — the same contract sign-in already honours.
-      emailRedirectTo: `${dashboardUrl()}/auth/callback?next=${encodeURIComponent(next)}`,
+      // `setup=1` is what tells the callback this link created an account, so
+      // it may grant the `provider` role. A recovery link never carries it.
+      emailRedirectTo: `${dashboardUrl()}/auth/callback?setup=1&next=${encodeURIComponent(next)}`,
       data: fullName ? { full_name: fullName } : undefined,
     },
   });

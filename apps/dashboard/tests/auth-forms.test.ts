@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { MIN_PASSWORD_LENGTH, validateCredentials } from "@/lib/credentials";
+import { MIN_PASSWORD_LENGTH, validateCredentials, validatePassword } from "@/lib/credentials";
 import { safeNext } from "@/lib/safe-next";
 
 /**
@@ -69,5 +69,20 @@ describe("validateCredentials", () => {
 
   it("catches a mistyped confirmation", () => {
     expect(validateCredentials({ ...valid, confirm: "correct hors" })).toMatch(/match/i);
+  });
+});
+
+describe("validatePassword", () => {
+  it("holds the same floor the sign-up form does", () => {
+    const short = "a".repeat(MIN_PASSWORD_LENGTH - 1);
+    expect(validatePassword(short, short)).toContain(String(MIN_PASSWORD_LENGTH));
+
+    const exact = "a".repeat(MIN_PASSWORD_LENGTH);
+    expect(validatePassword(exact, exact)).toBeNull();
+  });
+
+  it("catches an empty or mistyped confirmation", () => {
+    expect(validatePassword("", "")).toMatch(/password/i);
+    expect(validatePassword("a long enough one", "a long enough On")).toMatch(/match/i);
   });
 });

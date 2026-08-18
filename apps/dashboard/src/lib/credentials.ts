@@ -18,6 +18,21 @@ export const MIN_PASSWORD_LENGTH = 8;
 export type Credentials = { email: string; password: string; confirm: string };
 
 /**
+ * The password half on its own — sign-up checks it alongside an address, and
+ * the reset form checks it with no address in play. One function so the floor
+ * cannot drift between the place a password is created and the place it is
+ * replaced.
+ */
+export function validatePassword(password: string, confirm: string): string | null {
+  if (!password) return "Enter a new password.";
+  if (password.length < MIN_PASSWORD_LENGTH) {
+    return `Use at least ${MIN_PASSWORD_LENGTH} characters for your password.`;
+  }
+  if (confirm !== password) return "The two passwords do not match.";
+  return null;
+}
+
+/**
  * Deliberately shallow email validation — a single `@` with something either
  * side. Anything stricter rejects addresses that are legal and deliverable,
  * and the confirmation email is the real check: an address that cannot receive
@@ -32,9 +47,5 @@ function looksLikeEmail(value: string): boolean {
 export function validateCredentials({ email, password, confirm }: Credentials): string | null {
   if (!email || !password) return "Enter your email and a password.";
   if (!looksLikeEmail(email)) return "That does not look like an email address.";
-  if (password.length < MIN_PASSWORD_LENGTH) {
-    return `Use at least ${MIN_PASSWORD_LENGTH} characters for your password.`;
-  }
-  if (confirm !== password) return "The two passwords do not match.";
-  return null;
+  return validatePassword(password, confirm);
 }

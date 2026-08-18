@@ -54,6 +54,12 @@ export default function SignInPage({
 
         <SignInForm next={next} turnstileSiteKey={turnstileSiteKey()} />
 
+        <p className="mt-4 text-sm">
+          <Link href="/forgot-password" className="text-ink/60 hover:underline">
+            Forgot your password?
+          </Link>
+        </p>
+
         <p className="mt-6 text-sm text-ink/60">
           New here?{" "}
           <Link

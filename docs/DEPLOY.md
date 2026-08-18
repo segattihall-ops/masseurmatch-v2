@@ -160,41 +160,41 @@ nothing at all.
 
 ### `masseurmatch-v2` (the public site)
 
-| Variable                            | Required   | Notes                                                                                                                                                             |
-| ----------------------------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `NEXT_PUBLIC_SUPABASE_URL`          | yes        |                                                                                                                                                                   |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY`     | yes        |                                                                                                                                                                   |
-| `NEXT_PUBLIC_SITE_URL`              | at cutover | Leave unset until the domain moves; it falls back to the Vercel URL. Set it to `https://www.masseurmatch.com` when cutting over                                   |
-| `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` | for images | Without it, profile photos do not render                                                                                                                          |
-| `NEXT_PUBLIC_TURNSTILE_SITE_KEY`    | optional   |                                                                                                                                                                   |
-| `NEXT_PUBLIC_SENTRY_DSN`            | optional   |                                                                                                                                                                   |
-| `SUPABASE_SERVICE_ROLE_KEY`         | for views  | Server only. `/api/views` records profile views with it; without it the endpoint is inert and view counts stay flat                                               |
-| `NEXT_PUBLIC_DASHBOARD_URL`         | for signup | The dashboard's origin. Without it, `/for-therapists` shows no "Create your account" button — there is no fallback, because a guessed host would be a dead button |
+| Variable                            | Required   | Notes                                                                                                                                                                           |
+| ----------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`          | yes        |                                                                                                                                                                                 |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY`     | yes        |                                                                                                                                                                                 |
+| `NEXT_PUBLIC_SITE_URL`              | at cutover | Leave unset until the domain moves; it falls back to the Vercel URL. Set it to `https://www.masseurmatch.com` when cutting over                                                 |
+| `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` | for images | Without it, profile photos do not render                                                                                                                                        |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY`    | optional   |                                                                                                                                                                                 |
+| `NEXT_PUBLIC_SENTRY_DSN`            | optional   |                                                                                                                                                                                 |
+| `SUPABASE_SERVICE_ROLE_KEY`         | for views  | Server only. `/api/views` records profile views with it; without it the endpoint is inert and view counts stay flat                                                             |
+| `NEXT_PUBLIC_DASHBOARD_URL`         | for signup | `https://dashboard.masseurmatch.com`. Without it, `/for-therapists` shows no "Create your account" button — there is no fallback, because a guessed host would be a dead button |
 
 ### `masseurmatch-v2-kftd` (the dashboard)
 
-| Variable                            | Required     | Notes                                                                                                               |
-| ----------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------- |
-| `NEXT_PUBLIC_SUPABASE_URL`          | yes          |                                                                                                                     |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY`     | yes          |                                                                                                                     |
-| `SUPABASE_SERVICE_ROLE_KEY`         | yes          | Server only. Bypasses RLS — never prefix with `NEXT_PUBLIC_`                                                        |
-| `NEXT_PUBLIC_DASHBOARD_URL`         | yes          | This app's own origin. Goes into the confirmation-email link; must match the Supabase redirect allow-list (step 4b) |
-| `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` | yes          | Photo uploads fail without it                                                                                       |
-| `CLOUDINARY_API_KEY`                | yes          | Server only                                                                                                         |
-| `CLOUDINARY_API_SECRET`             | yes          | Server only                                                                                                         |
-| `BILLING_PROVIDER`                  | yes          | Set to `paypal`. Defaults to `authorizenet`, which is not configured                                                |
-| `PAYPAL_CLIENT_ID`                  | yes          |                                                                                                                     |
-| `PAYPAL_CLIENT_SECRET`              | yes          | Server only                                                                                                         |
-| `PAYPAL_WEBHOOK_ID`                 | yes          | From step 4                                                                                                         |
-| `PAYPAL_PLAN_STANDARD`              | yes          | From step 3                                                                                                         |
-| `PAYPAL_PLAN_PRO`                   | yes          | From step 3                                                                                                         |
-| `PAYPAL_PLAN_ELITE`                 | yes          | From step 3                                                                                                         |
-| `PAYPAL_API_BASE`                   | sandbox only | `https://api-m.sandbox.paypal.com`. Omit for live                                                                   |
-| `PAYPAL_RETURN_URL`                 | recommended  | `https://<dashboard-url>/subscription?paypal=return`                                                                |
-| `PAYPAL_CANCEL_URL`                 | recommended  | `https://<dashboard-url>/subscription?paypal=cancel`                                                                |
-| `NEXT_PUBLIC_TURNSTILE_SITE_KEY`    | optional     | Both Turnstile keys, or neither — one alone leaves the check off                                                    |
-| `TURNSTILE_SECRET_KEY`              | optional     | Server only                                                                                                         |
-| `NEXT_PUBLIC_SENTRY_DSN`            | optional     |                                                                                                                     |
+| Variable                            | Required     | Notes                                                                                                                                                              |
+| ----------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `NEXT_PUBLIC_SUPABASE_URL`          | yes          |                                                                                                                                                                    |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY`     | yes          |                                                                                                                                                                    |
+| `SUPABASE_SERVICE_ROLE_KEY`         | yes          | Server only. Bypasses RLS — never prefix with `NEXT_PUBLIC_`                                                                                                       |
+| `NEXT_PUBLIC_DASHBOARD_URL`         | yes          | `https://dashboard.masseurmatch.com` — this app's own domain. Goes into the confirmation-email link; must match the Supabase redirect allow-list exactly (step 4b) |
+| `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` | yes          | Photo uploads fail without it                                                                                                                                      |
+| `CLOUDINARY_API_KEY`                | yes          | Server only                                                                                                                                                        |
+| `CLOUDINARY_API_SECRET`             | yes          | Server only                                                                                                                                                        |
+| `BILLING_PROVIDER`                  | yes          | Set to `paypal`. Defaults to `authorizenet`, which is not configured                                                                                               |
+| `PAYPAL_CLIENT_ID`                  | yes          |                                                                                                                                                                    |
+| `PAYPAL_CLIENT_SECRET`              | yes          | Server only                                                                                                                                                        |
+| `PAYPAL_WEBHOOK_ID`                 | yes          | From step 4                                                                                                                                                        |
+| `PAYPAL_PLAN_STANDARD`              | yes          | From step 3                                                                                                                                                        |
+| `PAYPAL_PLAN_PRO`                   | yes          | From step 3                                                                                                                                                        |
+| `PAYPAL_PLAN_ELITE`                 | yes          | From step 3                                                                                                                                                        |
+| `PAYPAL_API_BASE`                   | sandbox only | `https://api-m.sandbox.paypal.com`. Omit for live                                                                                                                  |
+| `PAYPAL_RETURN_URL`                 | recommended  | `https://dashboard.masseurmatch.com/subscription?paypal=return`                                                                                                    |
+| `PAYPAL_CANCEL_URL`                 | recommended  | `https://dashboard.masseurmatch.com/subscription?paypal=cancel`                                                                                                    |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY`    | optional     | Both Turnstile keys, or neither — one alone leaves the check off                                                                                                   |
+| `TURNSTILE_SECRET_KEY`              | optional     | Server only                                                                                                                                                        |
+| `NEXT_PUBLIC_SENTRY_DSN`            | optional     |                                                                                                                                                                    |
 
 ### Adding a variable Vercel does not already know about
 
@@ -303,9 +303,9 @@ point the old one at `https://www.masseurmatch.com/api/webhooks/paypal` (with
 `www`, per the warning at the top) and add a second webhook for v2.
 
 1. PayPal dashboard → **Apps & Credentials** → your app → **Webhooks** → **Add**.
-2. URL: `https://<dashboard-url>/api/webhooks/billing`
-   (the dashboard's URL from step 1, e.g.
-   `https://masseurmatch-v2-kftd-mm-website.vercel.app`).
+2. URL: `https://dashboard.masseurmatch.com/api/webhooks/billing`
+   (the `masseurmatch-v2-kftd` project's own domain — not `www`, which is
+   still the old site until cutover).
 3. Subscribe to these events:
    - `BILLING.SUBSCRIPTION.ACTIVATED`
    - `BILLING.SUBSCRIPTION.CANCELLED`
@@ -329,7 +329,7 @@ created and approved and never activate.
 ### Verifying it
 
 ```
-curl -i -X POST https://<dashboard-url>/api/webhooks/billing -d '{}'
+curl -i -X POST https://dashboard.masseurmatch.com/api/webhooks/billing -d '{}'
 ```
 
 Expect **401** (signature rejected) or **503** (provider unconfigured). A
@@ -353,14 +353,15 @@ is not on its allow-list, so until this is set, every new account confirms into
 an error page.
 
 1. Supabase → **Authentication** → **URL Configuration**.
-2. **Site URL**: the dashboard's origin, e.g.
-   `https://masseurmatch-v2-kftd-mm-website.vercel.app` (after cutover, the
-   dashboard's real domain).
-3. **Redirect URLs**: add `<dashboard-url>/auth/callback`.
-4. Confirm `NEXT_PUBLIC_DASHBOARD_URL` on the dashboard project matches exactly
-   — that variable is what the sign-up action puts in the email link. It is
-   read instead of the request's `Host` header on purpose; see
-   `apps/dashboard/src/lib/dashboard-url.ts`.
+2. **Site URL**: `https://dashboard.masseurmatch.com` — the domain is already
+   attached to `masseurmatch-v2-kftd` and serving it.
+3. **Redirect URLs**: add `https://dashboard.masseurmatch.com/auth/callback`.
+4. Set `NEXT_PUBLIC_DASHBOARD_URL=https://dashboard.masseurmatch.com` on the
+   dashboard project, and the same value on the public site (that is what puts
+   the "Create your account" button on `/for-therapists`). It must match the
+   allow-list entry exactly — scheme included, no trailing slash. That variable
+   is what the sign-up action puts in the email link; the request's own `Host`
+   header is deliberately not used. See `apps/dashboard/src/lib/dashboard-url.ts`.
 
 Two things worth knowing before someone reports them as bugs:
 
