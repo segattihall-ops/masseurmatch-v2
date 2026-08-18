@@ -2,6 +2,7 @@ import { createSessionClient } from "@masseurmatch/db/auth";
 import { NextResponse, type NextRequest } from "next/server";
 
 import { ensureProviderAccount } from "@/lib/account-setup";
+import { isNewAccount } from "@/lib/oauth";
 import { safeNext } from "@/lib/safe-next";
 
 /**
@@ -23,11 +24,17 @@ import { safeNext } from "@/lib/safe-next";
  *                        property of PKCE, not a bug to route around.
  *   - `?token_hash=…&type=…` — the newer default template. Verified directly.
  *
- * Account setup runs only for a link that created an account. The same handler
- * is where a **password recovery** link lands, and running setup there would
- * mean an existing account with no `user_roles` row — which today resolves to
- * `client` — silently became a `provider` by resetting its password. So sign-up
- * marks its own link with `setup=1`, and nothing else is trusted to imply it.
+ * Account setup runs only for an arrival that created an account. The same
+ * handler is where a **password recovery** link lands, and running setup there
+ * would mean an existing account with no `user_roles` row — which today
+ * resolves to `client` — silently became a `provider` by resetting its
+ * password. So sign-up marks its own link with `setup=1`, and nothing else is
+ * trusted to imply it.
+ *
+ * Google is the exception that needs a second rule. "Sign up with Google" and
+ * "Sign in with Google" are the same request, so its `setup=oauth` marker says
+ * only *which flow* this was, not that anyone is new; whether the account is
+ * actually new is decided from the auth user's `created_at`. See `@/lib/oauth`.
  *
  * Anything else, or a failure, goes back to sign-in with a fixed notice code.
  * Never with text from the URL: an attacker-authored sentence rendered on the
@@ -86,10 +93,14 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   // the account would otherwise be confirmed, signed in, and stranded on
   // /not-authorized with no way back. This is the repair, and it writes nothing
   // when the first attempt succeeded.
-  const isNewAccount =
-    url.searchParams.get("setup") === "1" || type === "signup" || type === "invite";
+  const setup = url.searchParams.get("setup");
+  const createdAnAccount =
+    setup === "1" ||
+    type === "signup" ||
+    type === "invite" ||
+    (setup === "oauth" && isNewAccount(result.data.user.created_at, Date.now()));
 
-  if (isNewAccount) {
+  if (createdAnAccount) {
     try {
       await ensureProviderAccount(result.data.user.id, {
         fullName:

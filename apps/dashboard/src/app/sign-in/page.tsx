@@ -3,6 +3,7 @@ import { Card } from "@masseurmatch/ui";
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { GoogleButton } from "@/components/google-button";
 import { safeNext } from "@/lib/safe-next";
 
 import { SignInForm } from "./sign-in-form";
@@ -53,6 +54,14 @@ export default function SignInPage({
         ) : null}
 
         <SignInForm next={next} turnstileSiteKey={turnstileSiteKey()} />
+
+        <div className="my-6 flex items-center gap-3">
+          <span className="h-px flex-1 bg-ink/10" />
+          <span className="text-xs uppercase tracking-wide text-ink/40">or</span>
+          <span className="h-px flex-1 bg-ink/10" />
+        </div>
+
+        <GoogleButton next={next} />
 
         <p className="mt-4 text-sm">
           <Link href="/forgot-password" className="text-ink/60 hover:underline">
