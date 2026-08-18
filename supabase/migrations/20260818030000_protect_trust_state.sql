@@ -132,16 +132,20 @@ begin
     return new;
   end if;
 
-  if coalesce(new.profile_status::text, 'draft') <> 'draft'
+  if coalesce(new.role, 'provider') <> 'provider'
+     or coalesce(new.profile_status::text, 'draft') <> 'draft'
      or coalesce(new.visibility_status::text, 'hidden') <> 'hidden'
+     or coalesce(new.verification_status, 'unverified') <> 'unverified'
      or coalesce(new.is_verified_identity, false)
      or coalesce(new.is_verified_phone, false)
      or coalesce(new.is_verified_email, false)
      or coalesce(new.is_verified_profile, false)
+     or coalesce(new.is_verified_photos, false)
      or coalesce(new.is_featured, false)
      or coalesce(new.is_suspended, false)
      or coalesce(new.is_banned, false)
      or new.identity_verified_at is not null
+     or new.stripe_verification_session_id is not null
      or new.featured_until is not null
      or coalesce(new.visibility_level, 0) <> 0
      or coalesce(new.boost_score, 0) <> 0
@@ -151,6 +155,7 @@ begin
      or new._tier is not null
      or new.subscription_plan is not null
      or new.subscription_status is not null
+     or coalesce(new.photo_limit, 1) <> 1
      or new.stripe_customer_id is not null
      or new.stripe_subscription_id is not null
      or new.current_period_end is not null
