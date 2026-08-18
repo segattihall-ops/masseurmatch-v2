@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { basicsSchema, canSubmit, servicesSchema } from "@/lib/onboarding";
-import { getOrCreateMyProfile, updateMyProfile } from "@/lib/profile";
+import { getOrCreateMyProfile, updateMyProfile, updateModerationState } from "@/lib/profile";
 
 import type { StepState } from "./form-state";
 
@@ -115,7 +115,10 @@ export async function submitForReview(_prev: StepState): Promise<StepState> {
     return { error: "Finish the earlier steps before submitting." };
   }
 
-  const written = await updateMyProfile(userId, {
+  // Through the privileged writer, not the therapist's own permission: these
+  // two columns are exactly what decides whether a listing is public. See
+  // `updateModerationState` and docs/SELF-GRANT.md.
+  const written = await updateModerationState(userId, {
     profile_status: "pending",
     visibility_status: HIDDEN,
   });

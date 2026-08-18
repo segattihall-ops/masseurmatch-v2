@@ -452,14 +452,11 @@ The flow, and the two things about it that are policy rather than plumbing:
    with no upside. If you ever need retention instead, it is `forgetDocument` in
    `apps/dashboard/src/lib/identity-storage.ts` and nothing else.
 
-> **One thing to check that this code cannot.** `profiles` has an owner-update
-> policy. If it is column-blind, then `is_verified_phone` and
-> `is_verified_identity` can be set by the very account they describe with one
-> `PATCH /rest/v1/profiles`, and the badges are worth nothing regardless of the
-> flows above. Confirming it needs a therapist login. Sign in as a test
-> therapist and try to set `is_verified_identity` on your own row: a 200 means
-> it needs a column grant or a policy `WITH CHECK` pinning those columns; a 403
-> or an unchanged row means it is already handled.
+> **Checked, and it is open.** See `SELF-GRANT.md` — a signed-in therapist can
+> set any column on their own `profiles` row, including `profile_status` and
+> `visibility_status`, which is enough to publish a listing without moderation.
+> It predates this repository and it is live now. The verification badges above
+> are only the smallest part of it, and no application code can close it.
 
 ---
 
