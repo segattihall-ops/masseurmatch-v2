@@ -21,6 +21,32 @@
 > **Still to do: replay the failed deliveries** with `Resend` in the PayPal
 > dashboard. Nothing that failed before the fix has been reprocessed.
 >
+> ### The path differs between the two sites — handled in code, 2026-08-17
+>
+> PayPal delivers to `/api/webhooks/paypal`. v2 names that handler
+> `/api/webhooks/billing`, because it serves whichever provider
+> `BILLING_PROVIDER` selects. Measured today:
+>
+> | URL                                                         | Status                            |
+> | ----------------------------------------------------------- | --------------------------------- |
+> | `www.masseurmatch.com/api/webhooks/paypal` (old site, live) | 400 — handler reached             |
+> | v2 dashboard `/api/webhooks/billing`                        | 401 invalid signature — correct   |
+> | v2 dashboard `/api/webhooks/paypal` (before the fix)        | **404** — would have lost billing |
+>
+> On cutover day that 404 is silent: PayPal retries into nothing and no error
+> surfaces on our side. Repointing the webhook is worse than it sounds — PayPal
+> rejects a URL already registered on the account, so it means delete-then-create
+> against live billing and losing whatever is delivered in between.
+>
+> `apps/dashboard/src/app/api/webhooks/paypal/route.ts` now re-exports the
+> billing handler, so both paths answer and no cutover step is needed. It is an
+> alias, not a copy — one handler, one signature check. A smoke test asserts the
+> path is not 404, because a rename is exactly how this comes back.
+>
+> Deployment protection on `masseurmatch-v2-kftd` is **off**, so PayPal can reach
+> it. The public project still has SSO on `all_except_custom_domains`, which is
+> fine — it serves no webhook, and custom domains are exempt at cutover.
+>
 > To re-check at any time:
 >
 > ```sh
@@ -43,17 +69,38 @@
 > nothing was charged for it, but any `PAYMENT.SALE.COMPLETED` would have failed
 > delivery in exactly the same way.
 >
-> Two things follow, both needing a decision:
+> Both consequences are now closed:
 >
-> 1. **The 26 paid tiers have nothing behind them.** 25 profiles marked `elite`
->    with no subscription record looks seeded rather than earned. v2 grants photo
->    limits and featured placement from `profiles.subscription_tier`, so this
->    decides what those therapists get.
-> 2. **Existing PayPal subscribers have no row in `therapist_subscriptions`.**
->    The webhook matches on `provider_subscription_id`; with the table empty,
->    every event for an existing subscription is filed as "No matching
->    subscription" and ignored. They need backfilling from PayPal's subscription
->    list before v2 takes over billing.
+> 1. **The 26 paid tiers had nothing behind them.** Resolved by the courtesy
+>    wind-down — each carries a 2026-09-16 deadline and `resolveTier()` returns
+>    `free` after it. See `docs/COURTESY-GRANT-WINDDOWN.md`. Note that photo
+>    limits come from the tier but **featured placement does not**: the directory
+>    ranks on the hand-set `is_featured` column, which no tier writes.
+> 2. **No backfill is needed.** `therapist_subscriptions` is empty because nobody
+>    has ever paid — confirmed by the account owner. There are no existing
+>    subscribers to reconcile, so the webhook's "No matching subscription" branch
+>    has nothing to catch up on.
+
+> ## Migrations
+>
+> **Both are applied.** Nothing here is outstanding.
+>
+> | Migration                  | State                 | Verified                                                              |
+> | -------------------------- | --------------------- | --------------------------------------------------------------------- |
+> | `visibility_spikes.sql`    | ✅ Applied 2026-08-17 | `spike_until` present; `profile_spikes` with RLS, 1 policy, 2 indexes |
+> | `courtesy_tier_grants.sql` | ✅ Applied 2026-08-17 | 26 rows carry a deadline, 0 missed; all at 2026-09-16                 |
+>
+> The `UntypedForSpikes` alias is gone and the generated types are current.
+>
+> `courtesy_tier_grants.sql` stamps `now() + 30 days`, so the deadline is
+> **2026-09-16** and the notice email had to go out the same day it ran. The
+> wind-down itself is documented in `docs/COURTESY-GRANT-WINDDOWN.md`, including
+> why the notice must not mention featured placement.
+>
+> The per-column fallback in `packages/db/actions/directory.ts` stays regardless.
+> **CI cannot catch a missing migration** — it has no database credentials and
+> skips those queries — so a future column must be able to be absent without
+> taking the build down.
 
 Everything that has to be done in the Vercel and PayPal dashboards, in order.
 None of it can be done from the repository.
@@ -113,38 +160,41 @@ nothing at all.
 
 ### `masseurmatch-v2` (the public site)
 
-| Variable                            | Required   | Notes                                                                                                                           |
-| ----------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| `NEXT_PUBLIC_SUPABASE_URL`          | yes        |                                                                                                                                 |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY`     | yes        |                                                                                                                                 |
-| `NEXT_PUBLIC_SITE_URL`              | at cutover | Leave unset until the domain moves; it falls back to the Vercel URL. Set it to `https://www.masseurmatch.com` when cutting over |
-| `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` | for images | Without it, profile photos do not render                                                                                        |
-| `NEXT_PUBLIC_TURNSTILE_SITE_KEY`    | optional   |                                                                                                                                 |
-| `NEXT_PUBLIC_SENTRY_DSN`            | optional   |                                                                                                                                 |
+| Variable                            | Required   | Notes                                                                                                                                                                           |
+| ----------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`          | yes        |                                                                                                                                                                                 |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY`     | yes        |                                                                                                                                                                                 |
+| `NEXT_PUBLIC_SITE_URL`              | at cutover | Leave unset until the domain moves; it falls back to the Vercel URL. Set it to `https://www.masseurmatch.com` when cutting over                                                 |
+| `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` | for images | Without it, profile photos do not render                                                                                                                                        |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY`    | optional   |                                                                                                                                                                                 |
+| `NEXT_PUBLIC_SENTRY_DSN`            | optional   |                                                                                                                                                                                 |
+| `SUPABASE_SERVICE_ROLE_KEY`         | for views  | Server only. `/api/views` records profile views with it; without it the endpoint is inert and view counts stay flat                                                             |
+| `NEXT_PUBLIC_DASHBOARD_URL`         | for signup | `https://dashboard.masseurmatch.com`. Without it, `/for-therapists` shows no "Create your account" button — there is no fallback, because a guessed host would be a dead button |
 
 ### `masseurmatch-v2-kftd` (the dashboard)
 
-| Variable                            | Required     | Notes                                                                |
-| ----------------------------------- | ------------ | -------------------------------------------------------------------- |
-| `NEXT_PUBLIC_SUPABASE_URL`          | yes          |                                                                      |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY`     | yes          |                                                                      |
-| `SUPABASE_SERVICE_ROLE_KEY`         | yes          | Server only. Bypasses RLS — never prefix with `NEXT_PUBLIC_`         |
-| `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` | yes          | Photo uploads fail without it                                        |
-| `CLOUDINARY_API_KEY`                | yes          | Server only                                                          |
-| `CLOUDINARY_API_SECRET`             | yes          | Server only                                                          |
-| `BILLING_PROVIDER`                  | yes          | Set to `paypal`. Defaults to `authorizenet`, which is not configured |
-| `PAYPAL_CLIENT_ID`                  | yes          |                                                                      |
-| `PAYPAL_CLIENT_SECRET`              | yes          | Server only                                                          |
-| `PAYPAL_WEBHOOK_ID`                 | yes          | From step 4                                                          |
-| `PAYPAL_PLAN_STANDARD`              | yes          | From step 3                                                          |
-| `PAYPAL_PLAN_PRO`                   | yes          | From step 3                                                          |
-| `PAYPAL_PLAN_ELITE`                 | yes          | From step 3                                                          |
-| `PAYPAL_API_BASE`                   | sandbox only | `https://api-m.sandbox.paypal.com`. Omit for live                    |
-| `PAYPAL_RETURN_URL`                 | recommended  | `https://<dashboard-url>/subscription?paypal=return`                 |
-| `PAYPAL_CANCEL_URL`                 | recommended  | `https://<dashboard-url>/subscription?paypal=cancel`                 |
-| `NEXT_PUBLIC_TURNSTILE_SITE_KEY`    | optional     | Both Turnstile keys, or neither — one alone leaves the check off     |
-| `TURNSTILE_SECRET_KEY`              | optional     | Server only                                                          |
-| `NEXT_PUBLIC_SENTRY_DSN`            | optional     |                                                                      |
+| Variable                            | Required     | Notes                                                                                                                                                              |
+| ----------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `NEXT_PUBLIC_SUPABASE_URL`          | yes          |                                                                                                                                                                    |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY`     | yes          |                                                                                                                                                                    |
+| `SUPABASE_SERVICE_ROLE_KEY`         | yes          | Server only. Bypasses RLS — never prefix with `NEXT_PUBLIC_`                                                                                                       |
+| `NEXT_PUBLIC_DASHBOARD_URL`         | yes          | `https://dashboard.masseurmatch.com` — this app's own domain. Goes into the confirmation-email link; must match the Supabase redirect allow-list exactly (step 4b) |
+| `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` | yes          | Photo uploads fail without it                                                                                                                                      |
+| `CLOUDINARY_API_KEY`                | yes          | Server only                                                                                                                                                        |
+| `CLOUDINARY_API_SECRET`             | yes          | Server only                                                                                                                                                        |
+| `BILLING_PROVIDER`                  | yes          | Set to `paypal`. Defaults to `authorizenet`, which is not configured                                                                                               |
+| `PAYPAL_CLIENT_ID`                  | yes          |                                                                                                                                                                    |
+| `PAYPAL_CLIENT_SECRET`              | yes          | Server only                                                                                                                                                        |
+| `PAYPAL_WEBHOOK_ID`                 | yes          | From step 4                                                                                                                                                        |
+| `PAYPAL_PLAN_STANDARD`              | yes          | From step 3                                                                                                                                                        |
+| `PAYPAL_PLAN_PRO`                   | yes          | From step 3                                                                                                                                                        |
+| `PAYPAL_PLAN_ELITE`                 | yes          | From step 3                                                                                                                                                        |
+| `PAYPAL_API_BASE`                   | sandbox only | `https://api-m.sandbox.paypal.com`. Omit for live                                                                                                                  |
+| `PAYPAL_RETURN_URL`                 | recommended  | `https://dashboard.masseurmatch.com/subscription?paypal=return`                                                                                                    |
+| `PAYPAL_CANCEL_URL`                 | recommended  | `https://dashboard.masseurmatch.com/subscription?paypal=cancel`                                                                                                    |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY`    | optional     | Both Turnstile keys, or neither — one alone leaves the check off                                                                                                   |
+| `TURNSTILE_SECRET_KEY`              | optional     | Server only                                                                                                                                                        |
+| `NEXT_PUBLIC_SENTRY_DSN`            | optional     |                                                                                                                                                                    |
 
 ### Adding a variable Vercel does not already know about
 
@@ -176,11 +226,29 @@ and are easy to miss. They are declared in `turbo.json` — leave them there.
 **All three plans already exist and are ACTIVE**, at exactly the `plans.ts`
 prices. Verified against the live account on 2026-08-16:
 
-| Variable               | Plan id                      | Price          |
-| ---------------------- | ---------------------------- | -------------- |
-| `PAYPAL_PLAN_STANDARD` | `P-0LK9851678808213YNJ5TSKQ` | $39.00 / month |
-| `PAYPAL_PLAN_PRO`      | `P-6DG73865LJ933653NNJ5TU4Q` | $79.00 / month |
-| `PAYPAL_PLAN_ELITE`    | `P-9US760508D1062104NJ5TX7Y` | $99.00 / month |
+| Variable               | Plan id                      | Price           |
+| ---------------------- | ---------------------------- | --------------- |
+| `PAYPAL_PLAN_STANDARD` | `P-0LK9851678808213YNJ5TSKQ` | $39.00 / month  |
+| `PAYPAL_PLAN_PRO`      | `P-6DG73865LJ933653NNJ5TU4Q` | $79.00 / month  |
+| `PAYPAL_PLAN_ELITE`    | ⚠️ needs a new $129 plan     | $129.00 / month |
+
+> ### ⚠️ Elite moved to $129 — PayPal has not
+>
+> `plans.ts` now prices Elite at **$129**, but `P-9US760508D1062104NJ5TX7Y` is a
+> **$99** plan. Until a new plan exists, the site shows $129 and PayPal charges
+> $99.
+>
+> Create a NEW plan rather than editing that one — editing a live plan re-prices
+> its subscribers. Nothing is at risk here (nobody has ever subscribed), but the
+> habit is what keeps it safe later.
+>
+> ```sh
+> export PAYPAL_CLIENT_ID=... PAYPAL_CLIENT_SECRET=...
+> scripts/paypal-admin.sh plans        # confirm no $129 plan exists yet
+> ```
+>
+> Create it in the PayPal dashboard at $129.00 USD/month, then point
+> `PAYPAL_PLAN_ELITE` at the new id and redeploy the dashboard.
 
 Nothing needs creating. Set these three on the **dashboard** project.
 
@@ -235,9 +303,9 @@ point the old one at `https://www.masseurmatch.com/api/webhooks/paypal` (with
 `www`, per the warning at the top) and add a second webhook for v2.
 
 1. PayPal dashboard → **Apps & Credentials** → your app → **Webhooks** → **Add**.
-2. URL: `https://<dashboard-url>/api/webhooks/billing`
-   (the dashboard's URL from step 1, e.g.
-   `https://masseurmatch-v2-kftd-mm-website.vercel.app`).
+2. URL: `https://dashboard.masseurmatch.com/api/webhooks/billing`
+   (the `masseurmatch-v2-kftd` project's own domain — not `www`, which is
+   still the old site until cutover).
 3. Subscribe to these events:
    - `BILLING.SUBSCRIPTION.ACTIVATED`
    - `BILLING.SUBSCRIPTION.CANCELLED`
@@ -261,7 +329,7 @@ created and approved and never activate.
 ### Verifying it
 
 ```
-curl -i -X POST https://<dashboard-url>/api/webhooks/billing -d '{}'
+curl -i -X POST https://dashboard.masseurmatch.com/api/webhooks/billing -d '{}'
 ```
 
 Expect **401** (signature rejected) or **503** (provider unconfigured). A
@@ -274,6 +342,64 @@ Then subscribe with a PayPal sandbox account and check the row:
 select provider, kind, event_id, processed_at, error from billing_events
 order by processed_at desc limit 5;
 ```
+
+---
+
+## Step 4b — Let Supabase redirect to the dashboard's auth callback
+
+Sign-up sends a confirmation email, and the link in it has to come back to
+`/auth/callback` on the dashboard. Supabase refuses to redirect anywhere that
+is not on its allow-list, so until this is set, every new account confirms into
+an error page.
+
+> **Do not touch Site URL.** This Supabase project is shared with the site
+> that is live at `www` today. Site URL is where any auth link with no explicit
+> `redirect_to` lands — which is every confirmation and password email the old
+> site sends. Repointing it at the dashboard would redirect the live site's own
+> auth emails. v2 never relies on it: both flows pass their destination
+> explicitly (`emailRedirectTo` on sign-up, `redirectTo` on recovery), so the
+> field can keep whatever it holds until cutover, when it becomes a decision for
+> whoever owns the domain.
+
+1. Supabase → **Authentication** → **URL Configuration** → **Redirect URLs**.
+2. Add both:
+   - `https://dashboard.masseurmatch.com/auth/callback`
+   - `https://dashboard.masseurmatch.com/auth/callback**`
+
+   Two entries because the links carry a query string
+   (`?setup=1&next=…`, `?next=%2Freset-password`) and Supabase's documentation
+   defines its wildcards (`*` stops at a separator, `**` does not, `.` and `/`
+   are the separators) without saying whether the query string takes part in the
+   match. The pair covers both behaviours and stays pinned to that one path.
+   Adding entries is additive — nothing already working changes.
+
+3. Set `NEXT_PUBLIC_DASHBOARD_URL=https://dashboard.masseurmatch.com` on the
+   dashboard project, and the same value on the public site (that is what puts
+   the "Create your account" button on `/for-therapists`). It must match the
+   allow-list entry exactly — scheme included, no trailing slash. That variable
+   is what the sign-up action puts in the email link; the request's own `Host`
+   header is deliberately not used. See `apps/dashboard/src/lib/dashboard-url.ts`.
+4. Check **Authentication → Email Templates**. A template customised to build
+   its link from `{{ .SiteURL }}` instead of `{{ .ConfirmationURL }}` ignores the
+   `redirect_to` we send, and the confirmation would go to the old site no matter
+   what the allow-list says. The stock templates do not do this.
+
+Two things worth knowing before someone reports them as bugs:
+
+- **Confirmation is required.** `mailer_autoconfirm` is `false` on this
+  project, so `signUp` creates the account and returns _no_ session. The form
+  says to check the email; the sign-in happens when the link is clicked. If
+  confirmation is ever turned off, the same code signs people straight in.
+- **The link only works in the browser that signed up.** The PKCE verifier is a
+  cookie set at sign-up. Opening the email on a phone after signing up on a
+  laptop lands on sign-in with "that link has expired" — the account is fine
+  and the password works.
+
+New accounts are granted `provider` in `user_roles` by the sign-up action,
+using the service-role key, because self-service writes to that table are
+correctly refused (`packages/db/POLICIES.md`). That is a key to their own
+dashboard, not to a listing: the profile is created `draft` and hidden, and
+only moderation publishes it.
 
 ---
 

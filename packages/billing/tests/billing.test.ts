@@ -28,7 +28,7 @@ describe("plans", () => {
   it("prices the tiers the spec names", () => {
     expect(PLANS.standard.priceCents).toBe(3_900);
     expect(PLANS.pro.priceCents).toBe(7_900);
-    expect(PLANS.elite.priceCents).toBe(9_900);
+    expect(PLANS.elite.priceCents).toBe(12_900);
   });
 
   it("keeps money in integer cents, never floats", () => {
@@ -55,9 +55,9 @@ describe("plans", () => {
 
   it("is the single source of the photo limits the dashboard enforces", () => {
     expect(photoLimitFor("free")).toBe(3);
-    expect(photoLimitFor("standard")).toBe(10);
-    expect(photoLimitFor("pro")).toBe(15);
-    expect(photoLimitFor("elite")).toBe(20);
+    expect(photoLimitFor("standard")).toBe(6);
+    expect(photoLimitFor("pro")).toBe(9);
+    expect(photoLimitFor("elite")).toBe(12);
   });
 
   it("gives every step up the ladder more photos than the one below", () => {
@@ -81,14 +81,14 @@ describe("plans", () => {
 
   it("lets a per-account override win, ignoring nonsense values", () => {
     expect(photoLimitFor("free", 25)).toBe(25);
-    expect(photoLimitFor("pro", 0)).toBe(15);
-    expect(photoLimitFor("pro", -3)).toBe(15);
+    expect(photoLimitFor("pro", 0)).toBe(9);
+    expect(photoLimitFor("pro", -3)).toBe(9);
   });
 
   it("formats prices for display", () => {
     expect(formatPrice(PLANS.free)).toBe("Free");
     expect(formatPrice(PLANS.standard)).toBe("$39");
-    expect(formatPrice(PLANS.elite)).toBe("$99");
+    expect(formatPrice(PLANS.elite)).toBe("$129");
   });
 });
 

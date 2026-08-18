@@ -268,7 +268,7 @@ values and how to verify each one. The summary below is the shape of it.
    `PAYPAL_PLAN_STANDARD/PRO/ELITE`, `PAYPAL_CLIENT_ID/SECRET/WEBHOOK_ID`, and
    `BILLING_PROVIDER=paypal` — **on the dashboard project**. Nothing in
    `apps/web` reads any of them.
-3. **Point the webhook** at `<dashboard-url>/api/webhooks/billing`.
+3. **Point the webhook** at `https://dashboard.masseurmatch.com/api/webhooks/billing`.
 4. **Move the domain**, following the checklist in `CUTOVER.md`.
 
 Optional, and safe to defer: Turnstile keys, a Sentry DSN, a shared rate-limit

@@ -20,7 +20,7 @@
  * `max_photos` are ignored.
  *
  * Prices agree with it on every tier. Photo limits deliberately do not — the
- * database has 1/5/12/20 and this file has 3/10/15/20, which is the product
+ * database has 1/5/12/20 and this file has 3/6/9/12, which is the product
  * decision, made 2026-08-16.
  *
  * The number that actually gets charged is neither of these: PayPal bills
@@ -39,8 +39,26 @@ export type Plan = {
   /** Monthly price in **cents**, to keep money out of floating point. */
   priceCents: number;
   photoLimit: number;
+  /**
+   * Visibility Spikes included each calendar month.
+   *
+   * A Spike is distribution: the therapist spends one and their listing is
+   * lifted for a day. Not to be confused with a demand *spike score*, which is
+   * intelligence — "is this city heating up?". Two different products; keeping
+   * the words apart here is the cheapest place to do it.
+   */
+  spikesPerMonth: number;
   /** Eligible for the featured rotation on city pages. */
   featured: boolean;
+  /**
+   * Hours an "Available Now" window lasts on this tier. Zero means the tier
+   * cannot start one.
+   *
+   * Here rather than in the route that writes it, for the same reason
+   * `photoLimit` is: a per-tier number kept next to the request handler is a
+   * second price list, and the two drift.
+   */
+  availableNowHours: number;
   blurb: string;
 };
 
@@ -50,38 +68,44 @@ export const PLANS: Record<PlanId, Plan> = {
     name: "Free",
     priceCents: 0,
     photoLimit: 3,
+    spikesPerMonth: 0,
     featured: false,
+    availableNowHours: 0,
     blurb: "A listing in the directory.",
   },
   standard: {
     id: "standard",
     name: "Standard",
     priceCents: 3_900,
-    photoLimit: 10,
+    photoLimit: 6,
+    spikesPerMonth: 2,
     featured: false,
+    availableNowHours: 1,
     blurb: "More photos and a fuller profile.",
   },
   pro: {
     id: "pro",
     name: "Pro",
     priceCents: 7_900,
-    // 15, not 20. Elite is 20, and two adjacent tiers with the same photo limit
-    // means the more expensive one buys nothing on this axis.
-    photoLimit: 15,
+    photoLimit: 9,
+    spikesPerMonth: 6,
     featured: true,
+    availableNowHours: 2,
     blurb: "Featured placement on your city page.",
   },
   elite: {
     id: "elite",
     name: "Elite",
-    // $99 / 20 photos, matching `subscription_plans` in production. The two
-    // disagreed — this file said $149 / 40 — and the database was confirmed
-    // correct. PayPal charges whatever its own plan says, so `PAYPAL_PLAN_ELITE`
-    // must be created at $99 too, or a therapist is shown one price and billed
-    // another.
-    priceCents: 9_900,
-    photoLimit: 20,
+    // $129, not $99. At $99 the gap to Pro was $20 for a step that is meant to
+    // be the largest in the ladder. PayPal charges whatever ITS plan says, so
+    // PAYPAL_PLAN_ELITE must point at a $129 plan — see docs/DEPLOY.md. The id
+    // configured today (P-9US760508D1062104NJ5TX7Y) is a $99 plan and must be
+    // replaced, or a therapist is shown one price and billed another.
+    priceCents: 12_900,
+    photoLimit: 12,
+    spikesPerMonth: 12,
     featured: true,
+    availableNowHours: 3,
     blurb: "Top placement and the highest photo limit.",
   },
 };

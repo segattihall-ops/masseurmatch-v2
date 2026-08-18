@@ -9,10 +9,41 @@ const csp = contentSecurityPolicy({
   supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
 });
 
+/**
+ * The old site's auth entry points, which live on this host and move to the
+ * dashboard at cutover.
+ *
+ * `/signup`, `/register` and `/login` are real URLs on the site running at
+ * `www` today. The moment this app owns that hostname they become 404s for
+ * anyone with a bookmark or an old link, so they are forwarded to the dashboard
+ * instead. They are robots-disallowed on the old site, so nothing here is about
+ * search — it is about people.
+ *
+ * Only emitted when the dashboard's origin is known: a redirect to a guessed
+ * host is worse than the 404 it replaces. Temporary (307) rather than permanent
+ * on purpose — a 308 is cached by browsers indefinitely, and this points at a
+ * hostname that could still change.
+ */
+function authRedirects() {
+  const dashboard = process.env.NEXT_PUBLIC_DASHBOARD_URL?.replace(/\/$/, "");
+  if (!dashboard) return [];
+
+  return [
+    { source: "/signup", destination: `${dashboard}/sign-up`, permanent: false },
+    { source: "/signup/:path*", destination: `${dashboard}/sign-up`, permanent: false },
+    { source: "/register", destination: `${dashboard}/sign-up`, permanent: false },
+    { source: "/login", destination: `${dashboard}/sign-in`, permanent: false },
+    { source: "/forgot-password", destination: `${dashboard}/forgot-password`, permanent: false },
+  ];
+}
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders({ csp }) }];
+  },
+  async redirects() {
+    return authRedirects();
   },
   reactStrictMode: true,
   // The design system and data layer are consumed as TypeScript source.

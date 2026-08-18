@@ -10,14 +10,9 @@ import { redirect } from "next/navigation";
  * form-state type lives in `./form-state`.
  */
 import { clientAddress, LIMITS, rateLimit } from "@/lib/rate-limit";
+import { safeNext } from "@/lib/safe-next";
 
 import type { SignInState } from "./form-state";
-
-/** Only allow same-origin relative paths, so `?next=` cannot become an open redirect. */
-function safeNext(value: FormDataEntryValue | null): string {
-  const next = typeof value === "string" ? value : "";
-  return next.startsWith("/") && !next.startsWith("//") ? next : "/";
-}
 
 export async function signIn(_prev: SignInState, formData: FormData): Promise<SignInState> {
   const email = String(formData.get("email") ?? "").trim();

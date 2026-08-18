@@ -24,6 +24,8 @@ import {
 import { jsonLdScript, siteJsonLd } from "@/lib/jsonld";
 import { absoluteUrl, SITE_DESCRIPTION, SITE_NAME } from "@/lib/site";
 
+import { KnottyChat } from "./knotty-chat";
+
 export const revalidate = DIRECTORY_REVALIDATE_SECONDS;
 
 const HOME_TITLE = `${SITE_NAME} — Verified Male Massage Therapists`;
@@ -173,6 +175,13 @@ export default async function HomePage() {
         <HomeFeaturedTherapists therapists={featured} />
         <HomeDiscoverySection />
         <HomeCityDiscovery cities={cities} />
+
+        {/* After the listings on purpose: someone who already found who they
+            wanted should not be asked whether they need help finding someone. */}
+        <section className="mx-auto w-full max-w-6xl px-6 py-12">
+          <KnottyChat />
+        </section>
+
         <HomeHowItWorks />
         <HomeTrustSection />
         <HomeProviderGrowth />

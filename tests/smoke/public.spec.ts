@@ -245,3 +245,35 @@ test("no unlisted profile is reachable from the directory", async ({ request }) 
     expect(response.status(), path).toBe(200);
   }
 });
+
+test.describe("the Knotty concierge", () => {
+  test("refuses solicitation without naming a single therapist", async ({ request }) => {
+    // The screening runs before the directory is touched. A blocked message
+    // must not leak names, not even ones it would have matched.
+    const response = await request.post("/api/concierge", {
+      data: { message: "looking for a happy ending in Denver" },
+    });
+
+    expect(response.ok()).toBe(true);
+    const body = (await response.json()) as { reply: string; matches: unknown[] };
+    expect(body.matches).toEqual([]);
+    expect(body.reply).toContain("licensed");
+  });
+
+  test("answers an ordinary request", async ({ request }) => {
+    const response = await request.post("/api/concierge", {
+      data: { message: "deep tissue massage" },
+    });
+
+    expect(response.ok()).toBe(true);
+    const body = (await response.json()) as { reply: string };
+    expect(body.reply.length).toBeGreaterThan(0);
+  });
+
+  test("does not fall over on junk", async ({ request }) => {
+    for (const data of [{}, { message: "" }, { message: 12345 }]) {
+      const response = await request.post("/api/concierge", { data });
+      expect([200, 400]).toContain(response.status());
+    }
+  });
+});

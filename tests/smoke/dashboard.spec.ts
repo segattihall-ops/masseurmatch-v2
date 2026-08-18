@@ -74,6 +74,20 @@ test.describe("the billing webhook", () => {
     const response = await request.post("/api/webhooks/billing", { data: "" });
     expect([401, 503]).toContain(response.status());
   });
+
+  // PayPal's live webhook is registered against /api/webhooks/paypal, which the
+  // old site serves. A 404 here means the alias was dropped and billing stops
+  // the day the domain moves to v2 — silently, because PayPal's retries fail
+  // somewhere we are not looking. This test is the only thing standing between
+  // that rename and lost revenue.
+  test("answers on the legacy PayPal path too", async ({ request }) => {
+    const response = await request.post("/api/webhooks/paypal", {
+      data: { event_type: "PAYMENT.SALE.COMPLETED", id: "evt-smoke" },
+    });
+
+    expect(response.status()).not.toBe(404);
+    expect([401, 503]).toContain(response.status());
+  });
 });
 
 test("the dashboard is not indexable", async ({ request }) => {

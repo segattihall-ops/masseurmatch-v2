@@ -45,3 +45,24 @@ export const SITE_DESCRIPTION =
 export function absoluteUrl(path = "/"): string {
   return `${SITE_URL}${path.startsWith("/") ? path : `/${path}`}`;
 }
+
+/**
+ * Where the therapist dashboard lives, or null when this deployment has not
+ * been told.
+ *
+ * The two apps are separate Vercel projects on separate hosts, so a link from
+ * here into sign-up is cross-origin and cannot be a relative path. There is no
+ * fallback chain like `SITE_URL` has: guessing wrong would put a dead
+ * "Create your account" button on the page, which is worse than the button not
+ * being there. Callers render the link only when this returns a value.
+ */
+export function dashboardUrl(): string | null {
+  const explicit = process.env.NEXT_PUBLIC_DASHBOARD_URL;
+  return explicit ? explicit.replace(/\/$/, "") : null;
+}
+
+/** Where a therapist creates an account, or null — see `dashboardUrl`. */
+export function signUpUrl(): string | null {
+  const origin = dashboardUrl();
+  return origin ? `${origin}/sign-up` : null;
+}

@@ -4,7 +4,7 @@ import { createSessionClient, getViewer } from "@masseurmatch/db/auth";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { photoLimitFor, verifyUploadedAsset } from "@/lib/cloudinary";
+import { photoLimitForProfile, verifyUploadedAsset } from "@/lib/cloudinary";
 import { getOrCreateMyProfile, updateMyProfile } from "@/lib/profile";
 
 import type { StepState } from "./form-state";
@@ -33,7 +33,7 @@ export async function confirmPhoto(_prev: StepState, formData: FormData): Promis
   if (!publicId) return { error: "Nothing to save." };
 
   const { profile, photoCount } = await getOrCreateMyProfile(userId);
-  const limit = photoLimitFor(profile.subscription_tier, profile.photo_limit);
+  const limit = photoLimitForProfile(profile);
   if (photoCount >= limit) {
     return { error: `Your plan allows ${limit} photos.` };
   }

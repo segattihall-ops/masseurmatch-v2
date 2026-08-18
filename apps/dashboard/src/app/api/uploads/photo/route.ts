@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { getViewer } from "@masseurmatch/db/auth";
 import { NextResponse } from "next/server";
 
-import { createUploadTicket, photoLimitFor } from "@/lib/cloudinary";
+import { createUploadTicket, photoLimitForProfile } from "@/lib/cloudinary";
 import { getOrCreateMyProfile } from "@/lib/profile";
 import { LIMITS, rateLimit } from "@/lib/rate-limit";
 
@@ -53,7 +53,7 @@ export async function POST() {
     return NextResponse.json({ error: "Could not load your profile." }, { status: 500 });
   }
 
-  const limit = photoLimitFor(profile.profile.subscription_tier, profile.profile.photo_limit);
+  const limit = photoLimitForProfile(profile.profile);
   if (profile.photoCount >= limit) {
     return NextResponse.json(
       { error: `Your plan allows ${limit} photos. Remove one to add another.` },

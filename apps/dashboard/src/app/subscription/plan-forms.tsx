@@ -20,6 +20,8 @@ type PlanOption = {
   priceCents: number;
   photoLimit: number;
   blurb: string;
+  /** What this plan unlocks, already resolved from the entitlement table. */
+  unlocks: string[];
 };
 
 function price(cents: number): string {
@@ -85,7 +87,12 @@ export function PlanPicker({
                 <span className="text-base font-normal text-ink/50">/mo</span>
               </p>
               <p className="mt-2 text-sm text-ink/60">{plan.blurb}</p>
-              <p className="mt-1 text-sm text-ink/50">{plan.photoLimit} photos</p>
+              <ul className="mt-3 list-none space-y-1 p-0 text-sm text-ink/60">
+                <li>{plan.photoLimit} photos</li>
+                {plan.unlocks.map((line) => (
+                  <li key={line}>{line}</li>
+                ))}
+              </ul>
 
               <form action={action} className="mt-4 pt-2">
                 <input type="hidden" name="plan" value={plan.id} />
