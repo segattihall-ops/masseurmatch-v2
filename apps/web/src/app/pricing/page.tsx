@@ -74,14 +74,17 @@ export default function PricingPage() {
         ]}
         stats={[
           { value: "Free", label: "A public directory listing without a monthly subscription." },
-          { value: "No commission", label: "Client session revenue stays between provider and client." },
+          {
+            value: "No commission",
+            label: "Client session revenue stays between provider and client.",
+          },
           { value: "4 tiers", label: "A simple ladder from Free through Elite." },
         ]}
       />
 
       <InstitutionalBand>
-        Every price and per-tier limit on this page comes from the same billing configuration used by
-        the application. The marketing page does not maintain a second copy of the plan ladder.
+        Every price and per-tier limit on this page comes from the same billing configuration used
+        by the application. The marketing page does not maintain a second copy of the plan ladder.
       </InstitutionalBand>
 
       <InstitutionalSection
@@ -121,31 +124,47 @@ export default function PricingPage() {
                     ) : null}
                   </div>
 
-                  <h2 className={`mt-5 font-display text-2xl font-semibold tracking-tight ${isFeatured ? "text-white" : "text-text-primary"}`}>
+                  <h2
+                    className={`mt-5 font-display text-2xl font-semibold tracking-tight ${isFeatured ? "text-white" : "text-text-primary"}`}
+                  >
                     {plan.name}
                   </h2>
-                  <p className={`mt-3 font-stat text-4xl ${isFeatured ? "text-white" : "text-text-primary"}`}>
+                  <p
+                    className={`mt-3 font-stat text-4xl ${isFeatured ? "text-white" : "text-text-primary"}`}
+                  >
                     {formatPrice(plan)}
                     {plan.priceCents > 0 ? (
-                      <span className={`ml-1 text-sm font-normal ${isFeatured ? "text-white/50" : "text-text-secondary"}`}>
+                      <span
+                        className={`ml-1 text-sm font-normal ${isFeatured ? "text-white/50" : "text-text-secondary"}`}
+                      >
                         / month
                       </span>
                     ) : null}
                   </p>
-                  <p className={`mt-4 text-sm leading-7 ${isFeatured ? "text-white/60" : "text-text-secondary"}`}>
+                  <p
+                    className={`mt-4 text-sm leading-7 ${isFeatured ? "text-white/60" : "text-text-secondary"}`}
+                  >
                     {plan.blurb}
                   </p>
 
-                  <div className={`my-7 h-px ${isFeatured ? "bg-white/[0.08]" : "bg-border-subtle"}`} />
+                  <div
+                    className={`my-7 h-px ${isFeatured ? "bg-white/[0.08]" : "bg-border-subtle"}`}
+                  />
 
-                  <ul className={`space-y-4 text-sm ${isFeatured ? "text-white/70" : "text-text-secondary"}`}>
+                  <ul
+                    className={`space-y-4 text-sm ${isFeatured ? "text-white/70" : "text-text-secondary"}`}
+                  >
                     <li className="flex items-start justify-between gap-4">
                       <span>Profile photos</span>
-                      <strong className={isFeatured ? "text-white" : "text-text-primary"}>{plan.photoLimit}</strong>
+                      <strong className={isFeatured ? "text-white" : "text-text-primary"}>
+                        {plan.photoLimit}
+                      </strong>
                     </li>
                     <li className="flex items-start justify-between gap-4">
                       <span>Visibility Spikes / month</span>
-                      <strong className={isFeatured ? "text-white" : "text-text-primary"}>{plan.spikesPerMonth}</strong>
+                      <strong className={isFeatured ? "text-white" : "text-text-primary"}>
+                        {plan.spikesPerMonth}
+                      </strong>
                     </li>
                     <li className="flex items-start justify-between gap-4">
                       <span>Available Now window</span>
@@ -161,8 +180,11 @@ export default function PricingPage() {
                     </li>
                   </ul>
 
-                  <p className={`mt-auto pt-8 text-xs leading-5 ${isFeatured ? "text-white/38" : "text-text-muted"}`}>
-                    Prices are monthly in US dollars. Platform features are subject to the subscription terms and current entitlement rules.
+                  <p
+                    className={`mt-auto pt-8 text-xs leading-5 ${isFeatured ? "text-white/38" : "text-text-muted"}`}
+                  >
+                    Prices are monthly in US dollars. Platform features are subject to the
+                    subscription terms and current entitlement rules.
                   </p>
                 </section>
               </StaggerItem>
@@ -179,12 +201,23 @@ export default function PricingPage() {
       >
         <div className="grid gap-px overflow-hidden rounded-[2rem] border border-white/[0.08] bg-white/[0.08] sm:grid-cols-3">
           {[
-            ["More profile capacity", "Higher tiers allow more approved profile photos so the public page can show more of the practice."],
-            ["More distribution tools", "Visibility Spikes and featured eligibility are platform visibility features controlled by the current plan."],
-            ["Current-availability signal", "Eligible tiers can start an Available Now window for the duration defined by that plan."],
+            [
+              "More profile capacity",
+              "Higher tiers allow more approved profile photos so the public page can show more of the practice.",
+            ],
+            [
+              "More distribution tools",
+              "Visibility Spikes and featured eligibility are platform visibility features controlled by the current plan.",
+            ],
+            [
+              "Current-availability signal",
+              "Eligible tiers can start an Available Now window for the duration defined by that plan.",
+            ],
           ].map(([title, body]) => (
             <FadeIn key={title} whileInView className="bg-[#151517] p-8">
-              <h3 className="font-display text-xl font-semibold tracking-tight text-white">{title}</h3>
+              <h3 className="font-display text-xl font-semibold tracking-tight text-white">
+                {title}
+              </h3>
               <p className="mt-4 text-sm leading-7 text-white/58">{body}</p>
             </FadeIn>
           ))}

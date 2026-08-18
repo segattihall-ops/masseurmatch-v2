@@ -69,9 +69,18 @@ export default function Page() {
           { label: "Safety guidance", href: "/safety", secondary: true },
         ]}
         stats={[
-          { value: "Human reviewed", label: "A person on the MasseurMatch team reviews submitted identity evidence." },
-          { value: "Optional", label: "Identity verification is separate from basic public profile review." },
-          { value: "Files deleted", label: "Submitted identity files are removed after the review decision." },
+          {
+            value: "Human reviewed",
+            label: "A person on the MasseurMatch team reviews submitted identity evidence.",
+          },
+          {
+            value: "Optional",
+            label: "Identity verification is separate from basic public profile review.",
+          },
+          {
+            value: "Files deleted",
+            label: "Submitted identity files are removed after the review decision.",
+          },
         ]}
       />
 
@@ -176,7 +185,10 @@ export default function Page() {
         />
       </InstitutionalSection>
 
-      <InstitutionalSection eyebrow="Questions" title="The badge should never require interpretation by guesswork.">
+      <InstitutionalSection
+        eyebrow="Questions"
+        title="The badge should never require interpretation by guesswork."
+      >
         <InstitutionalFaq items={FAQS} />
       </InstitutionalSection>
 

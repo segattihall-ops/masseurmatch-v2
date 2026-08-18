@@ -44,9 +44,18 @@ export default function Page() {
           { label: "Advertising terms", href: "/advertising-terms", secondary: true },
         ]}
         stats={[
-          { value: "Your listing", label: "Paid visibility applies to the provider's own MasseurMatch profile." },
-          { value: "No ad network", label: "The public directory is not funded by third-party banner inventory." },
-          { value: "No paid badge", label: "Subscription spend cannot purchase an identity-verification result." },
+          {
+            value: "Your listing",
+            label: "Paid visibility applies to the provider's own MasseurMatch profile.",
+          },
+          {
+            value: "No ad network",
+            label: "The public directory is not funded by third-party banner inventory.",
+          },
+          {
+            value: "No paid badge",
+            label: "Subscription spend cannot purchase an identity-verification result.",
+          },
         ]}
       />
 

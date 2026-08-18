@@ -46,8 +46,15 @@ export default function Page() {
         ]}
         stats={[
           { value: "Profile review", label: "Listings are moderated before public publication." },
-          { value: "Identity review", label: "Optional identity evidence can create a separate verified signal." },
-          { value: "Clear limits", label: "A trust signal is never presented as a broader guarantee than the review supports." },
+          {
+            value: "Identity review",
+            label: "Optional identity evidence can create a separate verified signal.",
+          },
+          {
+            value: "Clear limits",
+            label:
+              "A trust signal is never presented as a broader guarantee than the review supports.",
+          },
         ]}
       />
 

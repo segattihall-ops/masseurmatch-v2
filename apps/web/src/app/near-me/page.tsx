@@ -45,9 +45,18 @@ export default function Page() {
           { label: "Search therapists", href: "/search", secondary: true },
         ]}
         stats={[
-          { value: "City first", label: "Local pages organize providers around markets they actually serve." },
-          { value: "Incall / outcall", label: "Profiles show the session formats a therapist offers." },
-          { value: "Direct contact", label: "Confirm the final details with the provider themselves." },
+          {
+            value: "City first",
+            label: "Local pages organize providers around markets they actually serve.",
+          },
+          {
+            value: "Incall / outcall",
+            label: "Profiles show the session formats a therapist offers.",
+          },
+          {
+            value: "Direct contact",
+            label: "Confirm the final details with the provider themselves.",
+          },
         ]}
       />
 
@@ -105,8 +114,8 @@ export default function Page() {
               </h3>
               <p className="mt-5 text-sm leading-7 text-white/60">
                 The public profile can tell you that incall is offered and may include neighborhood
-                context. Confirm the exact address, access instructions, parking, and session details
-                directly before arrival.
+                context. Confirm the exact address, access instructions, parking, and session
+                details directly before arrival.
               </p>
             </div>
           }
@@ -120,8 +129,8 @@ export default function Page() {
               </h3>
               <p className="mt-5 text-sm leading-7 text-white/60">
                 Travel coverage can vary by neighborhood, hotel, distance, and provider policy.
-                Confirm whether your location is covered and whether any travel charge applies before
-                the session is arranged.
+                Confirm whether your location is covered and whether any travel charge applies
+                before the session is arranged.
               </p>
             </div>
           }

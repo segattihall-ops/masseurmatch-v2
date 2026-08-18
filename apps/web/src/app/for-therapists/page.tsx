@@ -69,14 +69,20 @@ export default function Page() {
         title="Your practice. Your profile."
         highlight="Your client relationship."
         description={DESCRIPTION}
-        actions={[
-          primaryAction,
-          { label: "See pricing", href: "/pricing", secondary: true },
-        ]}
+        actions={[primaryAction, { label: "See pricing", href: "/pricing", secondary: true }]}
         stats={[
-          { value: "Direct contact", label: "Prospective clients reach you using your published contact details." },
-          { value: "No session cut", label: "MasseurMatch does not take a commission from client session revenue." },
-          { value: "Local discovery", label: "Profiles can appear across relevant city and service discovery." },
+          {
+            value: "Direct contact",
+            label: "Prospective clients reach you using your published contact details.",
+          },
+          {
+            value: "No session cut",
+            label: "MasseurMatch does not take a commission from client session revenue.",
+          },
+          {
+            value: "Local discovery",
+            label: "Profiles can appear across relevant city and service discovery.",
+          },
         ]}
       />
 

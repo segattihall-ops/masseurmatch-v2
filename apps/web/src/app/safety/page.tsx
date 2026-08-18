@@ -69,9 +69,18 @@ export default function Page() {
           { label: "Identity verification", href: "/verification", secondary: true },
         ]}
         stats={[
-          { value: "Review first", label: "Read the complete public profile before first contact." },
-          { value: "Confirm directly", label: "Make location, price, timing, and boundaries explicit." },
-          { value: "Report concerns", label: "Use the platform safety route when something appears misleading or unsafe." },
+          {
+            value: "Review first",
+            label: "Read the complete public profile before first contact.",
+          },
+          {
+            value: "Confirm directly",
+            label: "Make location, price, timing, and boundaries explicit.",
+          },
+          {
+            value: "Report concerns",
+            label: "Use the platform safety route when something appears misleading or unsafe.",
+          },
         ]}
       />
 
@@ -146,7 +155,10 @@ export default function Page() {
                 <li>• Verify professional credentials when they matter to your choice.</li>
                 <li>• Confirm the actual meeting location and access details.</li>
                 <li>• Confirm final pricing, session length, and service boundaries.</li>
-                <li>• End or avoid a meeting when circumstances materially differ from what was agreed.</li>
+                <li>
+                  • End or avoid a meeting when circumstances materially differ from what was
+                  agreed.
+                </li>
               </ul>
             </div>
           }
@@ -175,7 +187,10 @@ export default function Page() {
         />
       </InstitutionalSection>
 
-      <InstitutionalSection eyebrow="Questions" title="Safety language should be precise enough to act on.">
+      <InstitutionalSection
+        eyebrow="Questions"
+        title="Safety language should be precise enough to act on."
+      >
         <InstitutionalFaq items={FAQS} />
       </InstitutionalSection>
 

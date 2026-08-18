@@ -43,16 +43,22 @@ export default function AboutPage() {
           { label: "List your practice", href: "/for-therapists", secondary: true },
         ]}
         stats={[
-          { value: "Directory only", label: "Discovery and direct contact, without a booking middleman." },
+          {
+            value: "Directory only",
+            label: "Discovery and direct contact, without a booking middleman.",
+          },
           { value: "Human reviewed", label: "Profiles are reviewed before they become public." },
-          { value: "Independent", label: "Therapists control their practice, rates, and client relationships." },
+          {
+            value: "Independent",
+            label: "Therapists control their practice, rates, and client relationships.",
+          },
         ]}
       />
 
       <InstitutionalBand>
-        MasseurMatch does not provide massage, employ the therapists in the directory, process client
-        session payments, or arrange appointments. The public profile helps both sides make a more
-        informed first connection.
+        MasseurMatch does not provide massage, employ the therapists in the directory, process
+        client session payments, or arrange appointments. The public profile helps both sides make a
+        more informed first connection.
       </InstitutionalBand>
 
       <InstitutionalSection
@@ -100,9 +106,9 @@ export default function AboutPage() {
                 Compare before first contact.
               </h3>
               <p className="mt-5 text-sm leading-7 text-white/60">
-                Read the profile, understand the therapist&apos;s location and session formats, review
-                published services and rates, and use visible trust signals as one part of your own
-                decision.
+                Read the profile, understand the therapist&apos;s location and session formats,
+                review published services and rates, and use visible trust signals as one part of
+                your own decision.
               </p>
               <p className="mt-5 text-sm leading-7 text-white/60">
                 MasseurMatch never substitutes a stock photo for a real provider and does not turn a

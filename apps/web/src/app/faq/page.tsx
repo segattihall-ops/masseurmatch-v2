@@ -118,7 +118,10 @@ export default function FaqPage() {
         stats={[
           { value: "Directory", label: "Discovery and direct contact, not booking mediation." },
           { value: "Reviewed", label: "Public profiles are reviewed before publication." },
-          { value: "Specific signals", label: "Verification means only what the completed review actually checked." },
+          {
+            value: "Specific signals",
+            label: "Verification means only what the completed review actually checked.",
+          },
         ]}
       />
 
@@ -141,10 +144,7 @@ export default function FaqPage() {
         </div>
       </InstitutionalSection>
 
-      <InstitutionalSection
-        eyebrow="For therapists"
-        title="Listing and operating your profile."
-      >
+      <InstitutionalSection eyebrow="For therapists" title="Listing and operating your profile.">
         <InstitutionalFaq items={PROVIDER_FAQS} />
       </InstitutionalSection>
 
