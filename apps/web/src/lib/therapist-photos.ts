@@ -17,9 +17,13 @@ import { hasImage } from "@/lib/cloudinary";
 export async function withApprovedProfilePhotos(
   therapists: TherapistListing[],
 ): Promise<TherapistListing[]> {
-  const missingPhotoIds = therapists
-    .filter((therapist) => !hasImage(therapist.avatar_url) && !hasImage(therapist.photo_url))
-    .map((therapist) => therapist.id);
+  const missingPhotoIds = [
+    ...new Set(
+      therapists
+        .filter((therapist) => !hasImage(therapist.avatar_url) && !hasImage(therapist.photo_url))
+        .map((therapist) => therapist.id),
+    ),
+  ];
 
   if (missingPhotoIds.length === 0 || !hasSupabaseCredentials()) return therapists;
 
