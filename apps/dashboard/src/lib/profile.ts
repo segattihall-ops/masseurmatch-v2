@@ -24,6 +24,7 @@ const PROFILE_COLUMNS =
   "service_categories,additional_services,incall_price,outcall_price,starting_price," +
   "avatar_url,photo_url,profile_status,visibility_status,subscription_tier," +
   "moderation_status,moderation_notes," +
+  "is_verified_phone,is_verified_identity,identity_verified_at," +
   "subscription_status,photo_limit,updated_at";
 
 export type MyProfile = {
@@ -49,6 +50,9 @@ export type MyProfile = {
   visibility_status: string | null;
   moderation_status: string | null;
   moderation_notes: string | null;
+  is_verified_phone: boolean | null;
+  is_verified_identity: boolean | null;
+  identity_verified_at: string | null;
   subscription_tier: string | null;
   subscription_status: string | null;
   photo_limit: number | null;

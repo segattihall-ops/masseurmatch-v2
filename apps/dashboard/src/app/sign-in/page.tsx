@@ -6,7 +6,7 @@ import Link from "next/link";
 import { GoogleButton } from "@/components/google-button";
 import { safeNext } from "@/lib/safe-next";
 
-import { SignInForm } from "./sign-in-form";
+import { SignInMethods } from "./sign-in-methods";
 
 export const metadata: Metadata = {
   title: "Sign in",
@@ -53,7 +53,7 @@ export default function SignInPage({
           </p>
         ) : null}
 
-        <SignInForm next={next} turnstileSiteKey={turnstileSiteKey()} />
+        <SignInMethods next={next} turnstileSiteKey={turnstileSiteKey()} />
 
         <div className="my-6 flex items-center gap-3">
           <span className="h-px flex-1 bg-ink/10" />
