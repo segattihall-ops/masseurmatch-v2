@@ -8,6 +8,7 @@ import {
 
 import { TherapistCard } from "@/components/therapist-card";
 import { absoluteUrl, SITE_NAME } from "@/lib/site";
+import { withApprovedProfilePhotos } from "@/lib/therapist-photos";
 
 /** Filters live in the URL, so results are server-rendered and shareable. */
 export const dynamic = "force-dynamic";
@@ -31,11 +32,12 @@ export default async function SearchPage({ searchParams }: SearchParams) {
     query: searchParams.q?.trim() || undefined,
   };
 
-  const [results, cities, services] = await Promise.all([
+  const [rawResults, cities, services] = await Promise.all([
     searchTherapists(filters),
     getCities(),
     getServiceCategories(),
   ]);
+  const results = await withApprovedProfilePhotos(rawResults);
 
   return (
     <main className="mx-auto w-full max-w-6xl px-6 pb-16 pt-16">

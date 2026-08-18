@@ -7,6 +7,7 @@ import { DIRECTORY_REVALIDATE_SECONDS } from "@masseurmatch/db/actions/directory
 import { TherapistCard } from "@/components/therapist-card";
 import { cityItemListJsonLd, jsonLdScript } from "@/lib/jsonld";
 import { absoluteUrl, SITE_NAME } from "@/lib/site";
+import { withApprovedProfilePhotos } from "@/lib/therapist-photos";
 
 export const revalidate = DIRECTORY_REVALIDATE_SECONDS;
 /** Only the cities we prerender are real; anything else is a 404. */
@@ -43,7 +44,8 @@ export default async function CityPage({ params }: CityParams) {
   const city = await getCity(params.state, params.city);
   if (!city) notFound();
 
-  const therapists = await getTherapistsByCity(params.state, params.city);
+  const rawTherapists = await getTherapistsByCity(params.state, params.city);
+  const therapists = await withApprovedProfilePhotos(rawTherapists);
 
   return (
     <>
