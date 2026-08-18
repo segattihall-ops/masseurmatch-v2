@@ -1,3 +1,4 @@
+import { normaliseOrigin } from "@masseurmatch/config/origin";
 import { describe, expect, it } from "vitest";
 
 import { MIN_PASSWORD_LENGTH, validateCredentials, validatePassword } from "@/lib/credentials";
@@ -84,5 +85,36 @@ describe("validatePassword", () => {
   it("catches an empty or mistyped confirmation", () => {
     expect(validatePassword("", "")).toMatch(/password/i);
     expect(validatePassword("a long enough one", "a long enough On")).toMatch(/match/i);
+  });
+});
+
+describe("normaliseOrigin", () => {
+  it("adds the scheme a bare hostname is missing", () => {
+    // The production failure: NEXT_PUBLIC_DASHBOARD_URL was set to a hostname,
+    // so every `${origin}/path` became a relative path — the public site's
+    // sign-up button resolved under its own host, and the confirmation email's
+    // redirect was not an absolute URL at all.
+    expect(normaliseOrigin("dashboard.masseurmatch.com")).toBe(
+      "https://dashboard.masseurmatch.com",
+    );
+  });
+
+  it("leaves a value that already names a scheme alone", () => {
+    expect(normaliseOrigin("https://dashboard.masseurmatch.com")).toBe(
+      "https://dashboard.masseurmatch.com",
+    );
+    // Local development is http, and must not be rewritten to https.
+    expect(normaliseOrigin("http://localhost:3001")).toBe("http://localhost:3001");
+  });
+
+  it("strips trailing slashes, so callers can always append a path", () => {
+    expect(normaliseOrigin("https://example.com/")).toBe("https://example.com");
+    expect(normaliseOrigin("example.com//")).toBe("https://example.com");
+  });
+
+  it("reports 'not configured' as null rather than an empty string", () => {
+    expect(normaliseOrigin(undefined)).toBeNull();
+    expect(normaliseOrigin(null)).toBeNull();
+    expect(normaliseOrigin("   ")).toBeNull();
   });
 });
