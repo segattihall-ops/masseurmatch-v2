@@ -126,4 +126,13 @@ export const LIMITS = {
    * anything useful for brute force.
    */
   signIn: { limit: 10, windowMs: 60_000 },
+  /**
+   * Sign-up attempts, per address.
+   *
+   * Lower than sign-in because each accepted call sends an email to an address
+   * the caller chose, and a form that will do that without limit is a way to
+   * deliver mail to strangers with this project's domain on it. Five is more
+   * than a person needs to correct a typo twice.
+   */
+  signUp: { limit: 5, windowMs: 60_000 },
 } as const;

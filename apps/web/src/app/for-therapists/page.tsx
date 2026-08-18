@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { absoluteUrl, SITE_NAME } from "@/lib/site";
+import { absoluteUrl, signUpUrl, SITE_NAME } from "@/lib/site";
 
 const TITLE = "For Therapists";
 const DESCRIPTION =
@@ -24,6 +24,8 @@ export const metadata: Metadata = {
 export const dynamic = "force-static";
 
 export default function Page() {
+  const signUp = signUpUrl();
+
   return (
     <main className="mx-auto w-full max-w-3xl px-6 pb-16 pt-16">
       <header>
@@ -97,11 +99,29 @@ export default function Page() {
       </div>
 
       <section className="mt-12 border-t border-border-subtle pt-8">
-        <p className="leading-relaxed text-text-secondary">Ready to list?</p>
+        <p className="leading-relaxed text-text-secondary">
+          Ready to list? Creating an account is free — you build your profile first and choose a
+          plan afterwards.
+        </p>
         <div className="mt-4 flex flex-wrap gap-3">
+          {/* The dashboard is a separate origin, so this is an anchor rather
+              than a Link, and it appears only when this deployment knows where
+              the dashboard is. See `dashboardUrl` in @/lib/site. */}
+          {signUp ? (
+            <a
+              href={signUp}
+              className="rounded-full bg-action-primary text-text-inverse hover:bg-action-primary-hover px-5 py-2.5 text-sm font-semibold transition"
+            >
+              Create your account
+            </a>
+          ) : null}
           <Link
             href="/pricing"
-            className="rounded-full bg-action-primary text-text-inverse hover:bg-action-primary-hover px-5 py-2.5 text-sm font-semibold transition"
+            className={
+              signUp
+                ? "rounded-full border border-border-subtle text-text-primary hover:border-brand-secondary px-5 py-2.5 text-sm font-semibold transition"
+                : "rounded-full bg-action-primary text-text-inverse hover:bg-action-primary-hover px-5 py-2.5 text-sm font-semibold transition"
+            }
           >
             See pricing
           </Link>
