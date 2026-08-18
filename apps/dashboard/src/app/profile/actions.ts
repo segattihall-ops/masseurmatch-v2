@@ -1,11 +1,12 @@
 "use server";
 
 import { getViewer } from "@masseurmatch/db/auth";
+import { createServiceClient } from "@masseurmatch/db/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { basicsSchema, changedSensitiveFields, servicesSchema } from "@/lib/onboarding";
-import { getOrCreateMyProfile, updateMyProfile } from "@/lib/profile";
+import { getOrCreateMyProfile } from "@/lib/profile";
 
 import type { StepState } from "../onboarding/form-state";
 
@@ -45,8 +46,12 @@ function fieldErrors(error: {
  * held, edited text stays live pending review. If you would rather hold text
  * too, this is the single place to change it.
  *
- * No columns were added for any of this: `moderation_status`, `moderation_notes`
- * and `reviewed_at` already exist on `profiles`.
+ * Database trust-state guards intentionally prevent a provider JWT from
+ * changing moderation metadata directly. This action therefore validates the
+ * authenticated provider and every editable field first, then performs only
+ * the explicit patch below through the trusted backend for that same profile
+ * id. That keeps the guard meaningful without breaking the legitimate
+ * re-review transition.
  */
 export async function saveProfile(_prev: StepState, formData: FormData): Promise<StepState> {
   const userId = await requireTherapistId();
@@ -105,8 +110,14 @@ export async function saveProfile(_prev: StepState, formData: FormData): Promise
     patch.reviewed_at = null;
   }
 
-  const written = await updateMyProfile(userId, patch);
-  if (written === 0) return { error: "That change was not saved. Please sign in again." };
+  const { data, error } = await createServiceClient()
+    .from("profiles")
+    .update({ ...patch, updated_at: new Date().toISOString() } as never)
+    .eq("id", userId)
+    .select("id");
+
+  if (error) return { error: `That change was not saved: ${error.message}` };
+  if ((data ?? []).length === 0) return { error: "That change was not saved. Please sign in again." };
 
   revalidatePath("/profile");
   // The public page is ISR'd; without this the edit would not surface until the
