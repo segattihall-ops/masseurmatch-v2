@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { basicsSchema, changedSensitiveFields, servicesSchema } from "@/lib/onboarding";
-import { getOrCreateMyProfile, updateMyProfile } from "@/lib/profile";
+import { getOrCreateMyProfile, updateMyProfile, updateModerationState } from "@/lib/profile";
 
 import type { StepState } from "../onboarding/form-state";
 
@@ -98,11 +98,21 @@ export async function saveProfile(_prev: StepState, formData: FormData): Promise
     patch,
   );
 
+  // Queue the re-review *before* saving the edit, and through the privileged
+  // writer rather than the therapist's own permission.
+  //
+  // The ordering is the same argument the moderation queue makes: if the second
+  // write fails, this leaves a profile queued for review whose content did not
+  // change — an admin sees nothing to do. The other order would leave edited
+  // content live on an approved listing with nothing asking a human to look at
+  // it, which is the outcome the re-review exists to prevent.
   const needsReview = status === "approved" && changed.length > 0;
   if (needsReview) {
-    patch.moderation_status = "pending_review";
-    patch.moderation_notes = `Re-review after edit to: ${changed.join(", ")}`;
-    patch.reviewed_at = null;
+    await updateModerationState(userId, {
+      moderation_status: "pending_review",
+      moderation_notes: `Re-review after edit to: ${changed.join(", ")}`,
+      reviewed_at: null,
+    });
   }
 
   const written = await updateMyProfile(userId, patch);

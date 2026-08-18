@@ -100,15 +100,30 @@ available_now_expires, updated_at`
    caller, and neither needs the therapist's own permission to happen. Without
    this step, change 1 breaks submitting for review.
 
-**Why it has not been applied:** the old application is still live against this
-same database and writes to `profiles` as `authenticated` too. Revoking a column
-this repository does not use may be revoking one the old site does, and the
-failure would land on real therapists mid-edit rather than in CI. Nothing here
-can tell which columns those are — that needs either the old codebase or a
-window where breaking it is acceptable.
+### Blast radius — measured, not assumed
 
-So it is written down, in full, with the exact commands to verify and to fix,
-rather than applied at a moment when it cannot be tested.
+The first version of this document said the fix could not be applied because the
+old site is live against the same database and might write these columns as
+`authenticated`. That was the right worry and the wrong conclusion: the old
+repository is readable, so it was read.
+
+`X-RANKFLOW-MEDIA-GROUP/masseurmatch` writes `profiles` in **46 places, and
+every one of them uses the service-role client** — the whole API surface goes
+through `createSupabaseAdminClient()`. There is exactly one browser-side write
+path, `useProfile().updateProfile`, and **nothing calls it**: the single
+component that imports that hook destructures `{ profile, loading }` and stops
+there. (The three other `updateProfile` call sites in that repo belong to
+`useSignup()`, a local form-state context, not to this hook.)
+
+So revoking `authenticated`'s UPDATE takes nothing away from any write either
+application actually makes. Change 2 has landed in this repo already —
+`updateModerationState` in `apps/dashboard/src/lib/profile.ts` — and change 1 is
+`supabase/migrations/20260818060000_profiles_column_grants.sql`, ready to apply.
+
+**It is still not applied**, for one reason only: applying it is a production
+change to a database serving two live applications, and that is the operator's
+call to make with their eyes open, not a side effect of a code review. The
+migration is written, reviewed and verifiable; running it is one command.
 
 ## Verifying it yourself
 
