@@ -1,11 +1,19 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 
+import {
+  InstitutionalBand,
+  InstitutionalCardGrid,
+  InstitutionalCta,
+  InstitutionalHero,
+  InstitutionalPage,
+  InstitutionalSection,
+  InstitutionalSplit,
+} from "@/components/institutional/institutional-page";
 import { absoluteUrl, SITE_NAME } from "@/lib/site";
 
 const TITLE = "Advertise on MasseurMatch";
 const DESCRIPTION =
-  "Listing plans built for therapist visibility across city pages, search results, and specialty discovery.";
+  "MasseurMatch visibility is built around promoting a therapist's own directory listing, not third-party banner ads or sponsored editorial.";
 const PATH = "/advertise";
 
 export const metadata: Metadata = {
@@ -25,77 +33,128 @@ export const dynamic = "force-static";
 
 export default function Page() {
   return (
-    <main className="mx-auto w-full max-w-3xl px-6 pb-16 pt-16">
-      <header>
-        <h1 className="font-display text-ds-40 font-bold tracking-tight text-text-primary">
-          {TITLE}
-        </h1>
-        <p className="mt-4 leading-relaxed text-text-secondary">{DESCRIPTION}</p>
-      </header>
+    <InstitutionalPage>
+      <InstitutionalHero
+        eyebrow="Visibility"
+        title="Promote the practice."
+        highlight="Not someone else's ad."
+        description={DESCRIPTION}
+        actions={[
+          { label: "See listing plans", href: "/pricing" },
+          { label: "Advertising terms", href: "/advertising-terms", secondary: true },
+        ]}
+        stats={[
+          { value: "Your listing", label: "Paid visibility applies to the provider's own MasseurMatch profile." },
+          { value: "No ad network", label: "The public directory is not funded by third-party banner inventory." },
+          { value: "No paid badge", label: "Subscription spend cannot purchase an identity-verification result." },
+        ]}
+      />
 
-      <div className="mt-10 space-y-10">
-        <section className="space-y-3">
-          <h2 className="font-display text-ds-24 font-bold tracking-tight text-text-primary">
-            Who this is for
-          </h2>
-          <p className="leading-relaxed text-text-secondary">
-            Independent massage therapists who want to be found in the cities they work. If that is
-            you, listing your own profile is the whole product — see the pricing page for what each
-            plan includes.
-          </p>
-          <p className="leading-relaxed text-text-secondary">
-            MasseurMatch does not sell display advertising, sponsored articles, or banner
-            placements, and it does not run third-party ad networks. The only thing you can pay for
-            is the visibility of your own listing.
-          </p>
-        </section>
+      <InstitutionalBand>
+        MasseurMatch does not sell display banners, sponsored articles, or third-party ad-network
+        inventory as the core product. Paid provider plans change eligible platform features around
+        that provider&apos;s own listing.
+      </InstitutionalBand>
 
-        <section className="space-y-3">
-          <h2 className="font-display text-ds-24 font-bold tracking-tight text-text-primary">
-            How placement works
-          </h2>
-          <p className="leading-relaxed text-text-secondary">
-            Results are ordered by relevance to the city and the search first. Paid plans raise
-            placement within that, and featured listings are marked as such — they are never
-            disguised as ordinary results.
-          </p>
-          <p className="leading-relaxed text-text-secondary">
-            No plan buys a review, a verification badge, or a claim the profile cannot support.
-            Those are earned or checked, not sold.
-          </p>
-        </section>
+      <InstitutionalSection
+        eyebrow="What paid visibility means"
+        title="A stronger directory presence, with the commercial relationship disclosed by the plan."
+        intro="Visibility features are platform distribution tools. They do not change who the therapist is or what MasseurMatch has verified about them."
+      >
+        <InstitutionalCardGrid
+          cards={[
+            {
+              title: "Featured eligibility",
+              body: "Plans that include featured eligibility can participate in the platform's featured placement surfaces according to the current product rules.",
+              meta: "Plan feature",
+            },
+            {
+              title: "Visibility Spikes",
+              body: "Eligible plans include a monthly number of temporary distribution boosts. The current quantity for each tier is shown on the pricing page.",
+              meta: "Distribution tool",
+            },
+            {
+              title: "More profile capacity",
+              body: "Higher tiers can support more approved profile photos, giving providers more room to represent their practice on the public page.",
+              meta: "Profile capacity",
+            },
+          ]}
+        />
+      </InstitutionalSection>
 
-        <section className="space-y-3">
-          <h2 className="font-display text-ds-24 font-bold tracking-tight text-text-primary">
-            Partnerships and press
-          </h2>
-          <p className="leading-relaxed text-text-secondary">
-            For anything that is not a therapist listing — partnership enquiries, press, or data
-            requests — email support and say which it is.
-          </p>
-          <p className="leading-relaxed text-text-secondary">
-            Advertising arrangements, where they exist, are governed by the advertising terms.
-          </p>
-        </section>
-      </div>
+      <InstitutionalSection
+        dark
+        eyebrow="Commercial boundaries"
+        title="Money can buy platform features. It cannot buy trust claims."
+      >
+        <InstitutionalSplit
+          dark
+          left={
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#d66b7a]">
+                A plan can change
+              </p>
+              <h3 className="mt-4 font-display text-3xl font-semibold tracking-tight text-white">
+                Visibility and profile entitlements.
+              </h3>
+              <ul className="mt-6 space-y-4 text-sm leading-7 text-white/60">
+                <li>• Photo limits assigned to the subscription tier.</li>
+                <li>• Included Visibility Spikes.</li>
+                <li>• Available Now eligibility and duration.</li>
+                <li>• Featured eligibility where the plan includes it.</li>
+              </ul>
+            </div>
+          }
+          right={
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#d66b7a]">
+                A plan cannot change
+              </p>
+              <h3 className="mt-4 font-display text-3xl font-semibold tracking-tight text-white">
+                What MasseurMatch actually verified.
+              </h3>
+              <ul className="mt-6 space-y-4 text-sm leading-7 text-white/60">
+                <li>• It cannot buy an Identity Verified badge.</li>
+                <li>• It cannot turn profile moderation into a professional-license check.</li>
+                <li>• It cannot purchase a recommendation or guaranteed result.</li>
+                <li>• It cannot make an unsupported profile claim true.</li>
+              </ul>
+            </div>
+          }
+        />
+      </InstitutionalSection>
 
-      <section className="mt-12 border-t border-border-subtle pt-8">
-        <p className="leading-relaxed text-text-secondary">Want to be listed?</p>
-        <div className="mt-4 flex flex-wrap gap-3">
-          <Link
-            href="/pricing"
-            className="rounded-full bg-action-primary text-text-inverse hover:bg-action-primary-hover px-5 py-2.5 text-sm font-semibold transition"
-          >
-            See plans
-          </Link>
-          <Link
-            href="/advertising-terms"
-            className="rounded-full border border-border-subtle text-text-primary hover:border-brand-secondary px-5 py-2.5 text-sm font-semibold transition"
-          >
-            Advertising terms
-          </Link>
-        </div>
-      </section>
-    </main>
+      <InstitutionalSection
+        eyebrow="Other enquiries"
+        title="Press, partnerships, and data requests are not listing ads."
+        intro="If the request is not about promoting an independent therapist profile, route it through support so the right team can evaluate it separately from provider subscriptions."
+      >
+        <InstitutionalCardGrid
+          cards={[
+            {
+              title: "Press",
+              body: "Send media and publication enquiries through support@masseurmatch.com with enough context to route the request.",
+            },
+            {
+              title: "Partnerships",
+              body: "Partnership proposals are considered separately from listing plans and do not automatically create placement or endorsement rights.",
+            },
+            {
+              title: "Data & research",
+              body: "Requests involving platform data, research, or formal use should identify the purpose and requested scope before any review begins.",
+            },
+          ]}
+        />
+      </InstitutionalSection>
+
+      <InstitutionalCta
+        title="Want more visibility for your own listing?"
+        description="Use the current pricing ladder for the exact profile and distribution features available to providers."
+        actions={[
+          { label: "Compare plans", href: "/pricing" },
+          { label: "Contact MasseurMatch", href: "/contact", secondary: true },
+        ]}
+      />
+    </InstitutionalPage>
   );
 }
