@@ -1,11 +1,21 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 
+import {
+  InstitutionalBand,
+  InstitutionalCardGrid,
+  InstitutionalCta,
+  InstitutionalFaq,
+  InstitutionalHero,
+  InstitutionalPage,
+  InstitutionalSection,
+  InstitutionalSplit,
+  InstitutionalSteps,
+} from "@/components/institutional/institutional-page";
 import { absoluteUrl, SITE_NAME } from "@/lib/site";
 
 const TITLE = "How It Works";
 const DESCRIPTION =
-  "MasseurMatch is a directory. You browse public profiles and contact independent therapists directly — there is no booking system and no middleman.";
+  "Search public therapist profiles, compare useful details, and contact independent providers directly. MasseurMatch is a directory, not a booking service.";
 const PATH = "/how-it-works";
 
 export const metadata: Metadata = {
@@ -23,95 +33,176 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-static";
 
+const FAQS = [
+  {
+    question: "Does MasseurMatch book appointments?",
+    answer:
+      "No. MasseurMatch is a directory. You contact the independent therapist directly and arrange timing, location, price, and payment outside the platform.",
+  },
+  {
+    question: "Does MasseurMatch take a commission from sessions?",
+    answer:
+      "No. MasseurMatch does not process client session payments or take a percentage of what a therapist charges for their work.",
+  },
+  {
+    question: "Does a verified badge guarantee the therapist?",
+    answer:
+      "No. Identity verification is a specific point-in-time identity signal. It is not a professional-license check, background check, recommendation, or guarantee of service quality.",
+  },
+  {
+    question: "What should I confirm before meeting a therapist?",
+    answer:
+      "Confirm the session format, location, timing, price, boundaries, and anything else that matters to you directly with the provider before meeting.",
+  },
+];
+
 export default function Page() {
   return (
-    <main className="mx-auto w-full max-w-3xl px-6 pb-16 pt-16">
-      <header>
-        <h1 className="font-display text-ds-40 font-bold tracking-tight text-text-primary">
-          {TITLE}
-        </h1>
-        <p className="mt-4 leading-relaxed text-text-secondary">{DESCRIPTION}</p>
-      </header>
+    <InstitutionalPage>
+      <InstitutionalHero
+        eyebrow="How it works"
+        title="Find the right profile."
+        highlight="Then connect directly."
+        description={DESCRIPTION}
+        actions={[
+          { label: "Search therapists", href: "/search" },
+          { label: "For therapists", href: "/for-therapists", secondary: true },
+        ]}
+        stats={[
+          { value: "Search", label: "Start with city, service, or therapist name." },
+          { value: "Compare", label: "Review real profile details and visible trust signals." },
+          { value: "Contact", label: "Reach the independent therapist directly." },
+        ]}
+      />
 
-      <div className="mt-10 space-y-10">
-        <section className="space-y-3">
-          <h2 className="font-display text-ds-24 font-bold tracking-tight text-text-primary">
-            Find someone near you
-          </h2>
-          <p className="leading-relaxed text-text-secondary">
-            Start from your city or search by service. Every listing shows where the therapist
-            works, what they offer, and whether they see clients at their own space, travel to you,
-            or both.
-          </p>
-          <p className="leading-relaxed text-text-secondary">
-            Profiles are ordered by relevance to your city and search, not by who paid the most.
-            Paid placement is marked where it exists.
-          </p>
-        </section>
+      <InstitutionalBand>
+        MasseurMatch helps with discovery. It does not become part of the appointment, session
+        payment, or provider-client relationship after you connect.
+      </InstitutionalBand>
 
-        <section className="space-y-3">
-          <h2 className="font-display text-ds-24 font-bold tracking-tight text-text-primary">
-            Compare before you contact
-          </h2>
-          <p className="leading-relaxed text-text-secondary">
-            Each profile carries the details that actually change whether someone is a fit: services
-            and techniques, session formats, published rates, neighbourhood, and availability.
-          </p>
-          <p className="leading-relaxed text-text-secondary">
-            Take the time to read the whole profile. A complete listing with clear pricing and a
-            specific description is usually a sign of someone who communicates well in person too.
-          </p>
-        </section>
+      <InstitutionalSection
+        eyebrow="For clients"
+        title="From search to first contact in four clear steps."
+        intro="The platform is intentionally simple: give you enough context to decide who is worth contacting, then get out of the way."
+      >
+        <InstitutionalSteps
+          steps={[
+            {
+              title: "Search your market",
+              body: "Browse a city or use search to narrow the directory by the location and service you actually need.",
+              meta: "Local discovery",
+            },
+            {
+              title: "Read the full profile",
+              body: "Compare services, session formats, location details, published rates, photos, and the therapist's own description of their practice.",
+              meta: "Useful context",
+            },
+            {
+              title: "Read trust signals precisely",
+              body: "Profile review and identity verification can reduce ambiguity, but each signal has limits. Use them as information, not guarantees.",
+              meta: "Specific, not absolute",
+            },
+            {
+              title: "Contact directly",
+              body: "Use the public contact details and confirm timing, location, price, and expectations directly with the independent provider.",
+              meta: "No booking middleman",
+            },
+          ]}
+        />
+      </InstitutionalSection>
 
-        <section className="space-y-3">
-          <h2 className="font-display text-ds-24 font-bold tracking-tight text-text-primary">
-            Contact the therapist directly
-          </h2>
-          <p className="leading-relaxed text-text-secondary">
-            Contact details are on the profile. You arrange timing, location, and price with the
-            therapist — MasseurMatch does not take bookings, process payments, or take a commission.
-          </p>
-          <p className="leading-relaxed text-text-secondary">
-            Because the arrangement is directly between you and an independent provider, confirm
-            anything that matters to you — credentials, session length, what is included — before
-            you book.
-          </p>
-        </section>
+      <InstitutionalSection
+        dark
+        eyebrow="The model"
+        title="A directory behaves differently from an on-demand marketplace."
+        intro="That distinction matters because it defines what MasseurMatch controls and what remains between client and provider."
+      >
+        <InstitutionalSplit
+          dark
+          left={
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#d66b7a]">
+                MasseurMatch does
+              </p>
+              <h3 className="mt-4 font-display text-3xl font-semibold tracking-tight text-white">
+                Organize discovery and publish professional profiles.
+              </h3>
+              <ul className="mt-6 space-y-4 text-sm leading-7 text-white/60">
+                <li>• Surfaces therapists by city and searchable profile information.</li>
+                <li>• Reviews profiles and photos before publication.</li>
+                <li>• Displays identity verification when that review was completed.</li>
+                <li>• Provides reporting and moderation paths for platform concerns.</li>
+              </ul>
+            </div>
+          }
+          right={
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#d66b7a]">
+                MasseurMatch does not
+              </p>
+              <h3 className="mt-4 font-display text-3xl font-semibold tracking-tight text-white">
+                Operate the therapist&apos;s practice for them.
+              </h3>
+              <ul className="mt-6 space-y-4 text-sm leading-7 text-white/60">
+                <li>• Does not book appointments for clients.</li>
+                <li>• Does not collect or process client session payments.</li>
+                <li>• Does not employ the therapists in the directory.</li>
+                <li>• Does not universally verify professional licenses or guarantee outcomes.</li>
+              </ul>
+            </div>
+          }
+        />
+      </InstitutionalSection>
 
-        <section className="space-y-3">
-          <h2 className="font-display text-ds-24 font-bold tracking-tight text-text-primary">
-            What MasseurMatch is not
-          </h2>
-          <p className="leading-relaxed text-text-secondary">
-            It is not an employer, an agency, a booking service, or a payment processor, and it does
-            not provide massage. Therapists listed here are independent professionals responsible
-            for their own services and licensing.
-          </p>
-          <p className="leading-relaxed text-text-secondary">
-            Every profile is reviewed before it goes live, and listings that break the rules are
-            removed. Review is not a background check or a guarantee — read the verification page
-            for exactly what is and is not checked.
-          </p>
-        </section>
-      </div>
+      <InstitutionalSection
+        eyebrow="What to compare"
+        title="A profile should answer the practical questions first."
+      >
+        <InstitutionalCardGrid
+          cards={[
+            {
+              title: "Location & format",
+              body: "See where the therapist works and whether they offer incall, outcall, or both. Outcall areas and travel details should still be confirmed directly.",
+            },
+            {
+              title: "Services & rates",
+              body: "Use published techniques, service categories, and prices to narrow the field before starting a conversation.",
+            },
+            {
+              title: "Photos & presentation",
+              body: "Approved profile photos are shown when available. If a profile has no approved photo, MasseurMatch uses initials rather than a stock substitute.",
+            },
+            {
+              title: "Verification",
+              body: "Identity Verified means identity evidence was reviewed. It does not imply licensing, background screening, or endorsement.",
+            },
+            {
+              title: "Profile completeness",
+              body: "A specific, current profile can help you understand how a provider communicates before you ever send a message.",
+            },
+            {
+              title: "Your own checks",
+              body: "Confirm anything important to your decision directly with the provider, especially credentials, boundaries, timing, location, and total price.",
+            },
+          ]}
+        />
+      </InstitutionalSection>
 
-      <section className="mt-12 border-t border-border-subtle pt-8">
-        <p className="leading-relaxed text-text-secondary">Ready to look?</p>
-        <div className="mt-4 flex flex-wrap gap-3">
-          <Link
-            href="/search"
-            className="rounded-full bg-action-primary text-text-inverse hover:bg-action-primary-hover px-5 py-2.5 text-sm font-semibold transition"
-          >
-            Browse therapists
-          </Link>
-          <Link
-            href="/verification"
-            className="rounded-full border border-border-subtle text-text-primary hover:border-brand-secondary px-5 py-2.5 text-sm font-semibold transition"
-          >
-            What we verify
-          </Link>
-        </div>
-      </section>
-    </main>
+      <InstitutionalSection
+        eyebrow="Questions"
+        title="Know the platform boundary before you use it."
+      >
+        <InstitutionalFaq items={FAQS} />
+      </InstitutionalSection>
+
+      <InstitutionalCta
+        title="Ready to compare real profiles?"
+        description="Start with your city or search the directory directly."
+        actions={[
+          { label: "Find a therapist", href: "/search" },
+          { label: "Read verification", href: "/verification", secondary: true },
+        ]}
+      />
+    </InstitutionalPage>
   );
 }

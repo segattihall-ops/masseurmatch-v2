@@ -1,12 +1,20 @@
 import { formatPrice, PLAN_IDS, PLANS } from "@masseurmatch/billing";
+import { FadeIn, StaggerItem, StaggerList } from "@masseurmatch/ui";
 import type { Metadata } from "next";
-import Link from "next/link";
 
+import {
+  InstitutionalBand,
+  InstitutionalCta,
+  InstitutionalFaq,
+  InstitutionalHero,
+  InstitutionalPage,
+  InstitutionalSection,
+} from "@/components/institutional/institutional-page";
 import { absoluteUrl, SITE_NAME } from "@/lib/site";
 
 const TITLE = "Pricing";
 const DESCRIPTION =
-  "What a MasseurMatch listing costs. Free to be listed; paid plans add photos, featured placement, and priority in city results.";
+  "Start with a free MasseurMatch listing, then add profile capacity and visibility tools when your practice needs them.";
 const PATH = "/pricing";
 
 export const metadata: Metadata = {
@@ -24,116 +32,177 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-static";
 
-/**
- * Pricing.
- *
- * Every number on this page comes from `@masseurmatch/billing`. Nothing is
- * typed in here — a marketing page with its own copy of the prices is exactly
- * how a site ends up advertising one figure and charging another, and this one
- * is the page a therapist will quote back at you.
- */
 const FAQS = [
   {
     question: "Do I have to pay to be listed?",
     answer:
-      "No. A free listing puts your profile in the directory and in city results. Paid plans add photos, featured placement, and priority ordering.",
+      "No. Free is a real listing tier. Paid plans add profile capacity and platform visibility features according to the current plan table.",
   },
   {
-    question: "Does MasseurMatch take a commission?",
+    question: "Does MasseurMatch take a commission from my sessions?",
     answer:
-      "No. MasseurMatch is a directory, not a booking service or payment processor. Clients contact you directly and you keep everything you charge.",
+      "No. MasseurMatch is a directory and does not process client session payments or take a percentage of what you charge for your work.",
   },
   {
-    question: "What happens if a payment fails?",
+    question: "What is a Visibility Spike?",
     answer:
-      "Your listing stays live through a short grace period rather than disappearing the moment a card is declined. If the subscription is not restored by the end of it, the profile is unlisted — not deleted — and returns when payment resumes.",
+      "A Visibility Spike is a plan feature that temporarily increases distribution for a listing. The number included each month depends on the plan shown above.",
   },
   {
-    question: "Can I change or cancel a plan?",
+    question: "What does Available Now mean?",
     answer:
-      "Yes, from your dashboard at any time. Cancelling keeps your listing live until the end of the period you have already paid for.",
+      "Eligible paid tiers can start a temporary Available Now window. The duration is fixed by the plan and indicates that the therapist has chosen to show current availability for that period.",
+  },
+  {
+    question: "Can a paid plan buy an identity badge?",
+    answer:
+      "No. Identity verification is separate from subscription tier. A plan cannot purchase a verification result or turn an unverified identity into a verified one.",
   },
 ];
 
 export default function PricingPage() {
   return (
-    <main className="mx-auto w-full max-w-4xl px-6 pb-16 pt-16">
-      <header>
-        <h1 className="font-display text-ds-40 font-bold tracking-tight text-text-primary">
-          {TITLE}
-        </h1>
-        <p className="mt-4 max-w-2xl leading-relaxed text-text-secondary">{DESCRIPTION}</p>
-      </header>
+    <InstitutionalPage>
+      <InstitutionalHero
+        eyebrow="Plans"
+        title="Start visible."
+        highlight="Scale when it earns its place."
+        description={DESCRIPTION}
+        actions={[
+          { label: "For therapists", href: "/for-therapists" },
+          { label: "Subscription terms", href: "/subscriptions", secondary: true },
+        ]}
+        stats={[
+          { value: "Free", label: "A public directory listing without a monthly subscription." },
+          { value: "No commission", label: "Client session revenue stays between provider and client." },
+          { value: "4 tiers", label: "A simple ladder from Free through Elite." },
+        ]}
+      />
 
-      <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {PLAN_IDS.map((id) => {
-          const plan = PLANS[id];
-          return (
-            <section
-              key={plan.id}
-              className="flex flex-col rounded-3xl border border-border-subtle p-6"
-            >
-              <h2 className="font-display text-ds-18 font-semibold tracking-tight text-text-primary">
-                {plan.name}
-              </h2>
-              <p className="mt-2 font-stat text-ds-32 text-text-primary">
-                {formatPrice(plan)}
-                {plan.priceCents > 0 ? (
-                  <span className="text-base font-normal text-text-secondary">/mo</span>
-                ) : null}
-              </p>
-              <p className="mt-3 flex-1 text-sm leading-relaxed text-text-secondary">
-                {plan.blurb}
-              </p>
-              <ul className="mt-4 space-y-1.5 text-sm text-text-secondary">
-                <li>{plan.photoLimit} photos</li>
-                <li>{plan.featured ? "Featured placement" : "Standard placement"}</li>
-              </ul>
-            </section>
-          );
-        })}
-      </div>
+      <InstitutionalBand>
+        Every price and per-tier limit on this page comes from the same billing configuration used by
+        the application. The marketing page does not maintain a second copy of the plan ladder.
+      </InstitutionalBand>
 
-      <p className="mt-6 text-sm text-text-secondary">
-        Prices are per month in US dollars. MasseurMatch never takes a commission on your work.
-      </p>
+      <InstitutionalSection
+        eyebrow="Current ladder"
+        title="Choose the amount of profile capacity and visibility you actually need."
+        intro="Free gets you listed. Higher tiers add photos, Visibility Spikes, Available Now windows, and featured eligibility where the plan includes it."
+      >
+        <StaggerList
+          whileInView
+          as="ul"
+          className="grid list-none gap-4 p-0 sm:grid-cols-2 xl:grid-cols-4"
+        >
+          {PLAN_IDS.map((id) => {
+            const plan = PLANS[id];
+            const isFeatured = id === "pro";
+            return (
+              <StaggerItem as="li" key={plan.id} className="h-full">
+                <section
+                  className={`flex h-full min-h-[31rem] flex-col overflow-hidden rounded-[2rem] border p-7 transition duration-300 hover:-translate-y-1 hover:shadow-ds-md ${
+                    isFeatured
+                      ? "border-brand-secondary/40 bg-[#111113] text-white shadow-lg shadow-brand-secondary/10"
+                      : "border-border-subtle bg-bg-surface text-text-primary"
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-4">
+                    <p
+                      className={`text-[10px] font-semibold uppercase tracking-[0.22em] ${
+                        isFeatured ? "text-[#d66b7a]" : "text-brand-secondary"
+                      }`}
+                    >
+                      {plan.id === "free" ? "Start here" : `Tier ${PLAN_IDS.indexOf(id) + 1}`}
+                    </p>
+                    {isFeatured ? (
+                      <span className="rounded-full bg-brand-secondary px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white">
+                        Featured
+                      </span>
+                    ) : null}
+                  </div>
 
-      <section className="mt-12">
-        <h2 className="font-display text-ds-24 font-bold tracking-tight text-text-primary">
-          Questions
-        </h2>
-        <dl className="mt-4 space-y-5">
-          {FAQS.map((faq) => (
-            <div key={faq.question}>
-              <dt className="font-semibold text-text-primary">{faq.question}</dt>
-              <dd className="mt-1 leading-relaxed text-text-secondary">{faq.answer}</dd>
-            </div>
+                  <h2 className={`mt-5 font-display text-2xl font-semibold tracking-tight ${isFeatured ? "text-white" : "text-text-primary"}`}>
+                    {plan.name}
+                  </h2>
+                  <p className={`mt-3 font-stat text-4xl ${isFeatured ? "text-white" : "text-text-primary"}`}>
+                    {formatPrice(plan)}
+                    {plan.priceCents > 0 ? (
+                      <span className={`ml-1 text-sm font-normal ${isFeatured ? "text-white/50" : "text-text-secondary"}`}>
+                        / month
+                      </span>
+                    ) : null}
+                  </p>
+                  <p className={`mt-4 text-sm leading-7 ${isFeatured ? "text-white/60" : "text-text-secondary"}`}>
+                    {plan.blurb}
+                  </p>
+
+                  <div className={`my-7 h-px ${isFeatured ? "bg-white/[0.08]" : "bg-border-subtle"}`} />
+
+                  <ul className={`space-y-4 text-sm ${isFeatured ? "text-white/70" : "text-text-secondary"}`}>
+                    <li className="flex items-start justify-between gap-4">
+                      <span>Profile photos</span>
+                      <strong className={isFeatured ? "text-white" : "text-text-primary"}>{plan.photoLimit}</strong>
+                    </li>
+                    <li className="flex items-start justify-between gap-4">
+                      <span>Visibility Spikes / month</span>
+                      <strong className={isFeatured ? "text-white" : "text-text-primary"}>{plan.spikesPerMonth}</strong>
+                    </li>
+                    <li className="flex items-start justify-between gap-4">
+                      <span>Available Now window</span>
+                      <strong className={isFeatured ? "text-white" : "text-text-primary"}>
+                        {plan.availableNowHours > 0 ? `${plan.availableNowHours}h` : "—"}
+                      </strong>
+                    </li>
+                    <li className="flex items-start justify-between gap-4">
+                      <span>Featured eligibility</span>
+                      <strong className={isFeatured ? "text-white" : "text-text-primary"}>
+                        {plan.featured ? "Yes" : "No"}
+                      </strong>
+                    </li>
+                  </ul>
+
+                  <p className={`mt-auto pt-8 text-xs leading-5 ${isFeatured ? "text-white/38" : "text-text-muted"}`}>
+                    Prices are monthly in US dollars. Platform features are subject to the subscription terms and current entitlement rules.
+                  </p>
+                </section>
+              </StaggerItem>
+            );
+          })}
+        </StaggerList>
+      </InstitutionalSection>
+
+      <InstitutionalSection
+        dark
+        eyebrow="What you are paying for"
+        title="Visibility tools, not control over the client relationship."
+        intro="A paid MasseurMatch tier changes platform features around your listing. It does not turn MasseurMatch into your booking processor or employer."
+      >
+        <div className="grid gap-px overflow-hidden rounded-[2rem] border border-white/[0.08] bg-white/[0.08] sm:grid-cols-3">
+          {[
+            ["More profile capacity", "Higher tiers allow more approved profile photos so the public page can show more of the practice."],
+            ["More distribution tools", "Visibility Spikes and featured eligibility are platform visibility features controlled by the current plan."],
+            ["Current-availability signal", "Eligible tiers can start an Available Now window for the duration defined by that plan."],
+          ].map(([title, body]) => (
+            <FadeIn key={title} whileInView className="bg-[#151517] p-8">
+              <h3 className="font-display text-xl font-semibold tracking-tight text-white">{title}</h3>
+              <p className="mt-4 text-sm leading-7 text-white/58">{body}</p>
+            </FadeIn>
           ))}
-        </dl>
-      </section>
-
-      <section className="mt-12 border-t border-border-subtle pt-8">
-        <h2 className="font-display text-ds-24 font-bold tracking-tight text-text-primary">
-          Ready to list?
-        </h2>
-        <p className="mt-3 leading-relaxed text-text-secondary">
-          Create a profile, add your services and photos, and submit it for review.
-        </p>
-        <div className="mt-4 flex flex-wrap gap-3">
-          <Link
-            href="/for-therapists"
-            className="rounded-full bg-action-primary px-5 py-2.5 text-sm font-semibold text-text-inverse transition hover:bg-action-primary-hover"
-          >
-            For therapists
-          </Link>
-          <Link
-            href="/subscriptions"
-            className="rounded-full border border-border-subtle px-5 py-2.5 text-sm font-semibold text-text-primary transition hover:border-brand-secondary"
-          >
-            Subscription terms
-          </Link>
         </div>
-      </section>
-    </main>
+      </InstitutionalSection>
+
+      <InstitutionalSection eyebrow="Questions" title="Know what changes when you upgrade.">
+        <InstitutionalFaq items={FAQS} />
+      </InstitutionalSection>
+
+      <InstitutionalCta
+        title="Build the listing first. Upgrade when the leverage is clear."
+        description="Start with the provider experience, then choose the tier that matches the capacity and distribution your practice needs."
+        actions={[
+          { label: "List your practice", href: "/for-therapists" },
+          { label: "Read subscription terms", href: "/subscriptions", secondary: true },
+        ]}
+      />
+    </InstitutionalPage>
   );
 }

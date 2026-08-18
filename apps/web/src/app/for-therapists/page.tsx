@@ -1,11 +1,21 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 
+import {
+  InstitutionalBand,
+  InstitutionalCardGrid,
+  InstitutionalCta,
+  InstitutionalFaq,
+  InstitutionalHero,
+  InstitutionalPage,
+  InstitutionalSection,
+  InstitutionalSplit,
+  InstitutionalSteps,
+} from "@/components/institutional/institutional-page";
 import { absoluteUrl, signUpUrl, SITE_NAME } from "@/lib/site";
 
 const TITLE = "For Therapists";
 const DESCRIPTION =
-  "A public profile, in the cities you actually work, with your own contact details on it. No commission, no booking system taking a cut.";
+  "Build a public MasseurMatch profile, appear in local discovery, publish your own contact details, and keep the client relationship direct.";
 const PATH = "/for-therapists";
 
 export const metadata: Metadata = {
@@ -23,116 +33,187 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-static";
 
+const FAQS = [
+  {
+    question: "Do I need a paid plan to be listed?",
+    answer:
+      "No. MasseurMatch has a free listing tier. Paid plans expand profile and visibility features according to the current pricing page.",
+  },
+  {
+    question: "Does MasseurMatch take part of my session revenue?",
+    answer:
+      "No. MasseurMatch is a directory and does not process client session payments or take a commission from the work you perform.",
+  },
+  {
+    question: "Does being Identity Verified mean MasseurMatch verified my professional license?",
+    answer:
+      "No. Identity verification confirms the identity evidence reviewed by MasseurMatch. It does not verify professional licensing, qualifications, background history, or service quality.",
+  },
+  {
+    question: "Can I update my profile later?",
+    answer:
+      "Yes. Your dashboard is the operating surface for your listing. Some public-facing edits may go back through review before the public profile updates.",
+  },
+];
+
 export default function Page() {
   const signUp = signUpUrl();
+  const primaryAction = signUp
+    ? { label: "Create your account", href: signUp }
+    : { label: "See pricing", href: "/pricing" };
 
   return (
-    <main className="mx-auto w-full max-w-3xl px-6 pb-16 pt-16">
-      <header>
-        <h1 className="font-display text-ds-40 font-bold tracking-tight text-text-primary">
-          {TITLE}
-        </h1>
-        <p className="mt-4 leading-relaxed text-text-secondary">{DESCRIPTION}</p>
-      </header>
+    <InstitutionalPage>
+      <InstitutionalHero
+        eyebrow="For independent therapists"
+        title="Your practice. Your profile."
+        highlight="Your client relationship."
+        description={DESCRIPTION}
+        actions={[
+          primaryAction,
+          { label: "See pricing", href: "/pricing", secondary: true },
+        ]}
+        stats={[
+          { value: "Direct contact", label: "Prospective clients reach you using your published contact details." },
+          { value: "No session cut", label: "MasseurMatch does not take a commission from client session revenue." },
+          { value: "Local discovery", label: "Profiles can appear across relevant city and service discovery." },
+        ]}
+      />
 
-      <div className="mt-10 space-y-10">
-        <section className="space-y-3">
-          <h2 className="font-display text-ds-24 font-bold tracking-tight text-text-primary">
-            What a listing gives you
-          </h2>
-          <p className="leading-relaxed text-text-secondary">
-            A profile page that search engines can find, on a directory built around city and
-            service discovery rather than a single national list. Your city page, your services,
-            your rates, and your contact details.
-          </p>
-          <p className="leading-relaxed text-text-secondary">
-            Clients contact you directly. MasseurMatch never takes a percentage of your work, never
-            handles your payments, and never sits between you and the people who hire you.
-          </p>
-        </section>
+      <InstitutionalBand>
+        MasseurMatch is not a booking marketplace. The product is your public listing, the discovery
+        system around it, and the tools that help you manage how your practice is represented.
+      </InstitutionalBand>
 
-        <section className="space-y-3">
-          <h2 className="font-display text-ds-24 font-bold tracking-tight text-text-primary">
-            Getting listed
-          </h2>
-          <p className="leading-relaxed text-text-secondary">
-            Create an account and work through the onboarding: your basics and city, the services
-            you offer and what you charge, and your photos. You can leave and come back — progress
-            is saved at each step.
-          </p>
-          <p className="leading-relaxed text-text-secondary">
-            When it is complete, submit it for review. A person reads every profile before it goes
-            live, usually to check the photos and the description against the content rules.
-          </p>
-        </section>
+      <InstitutionalSection
+        eyebrow="What you get"
+        title="A professional discovery layer around your independent practice."
+        intro="The profile is designed to answer the questions prospective clients ask before they decide who to contact."
+      >
+        <InstitutionalCardGrid
+          cards={[
+            {
+              title: "A public profile",
+              body: "Publish your practice description, services, session formats, rates, city, neighborhood, approved photos, and the contact information you want clients to use.",
+              meta: "Your public presence",
+            },
+            {
+              title: "City discovery",
+              body: "Your listing can appear in the city markets you actually serve, giving people a more relevant path than a single national directory page.",
+              meta: "Local intent",
+            },
+            {
+              title: "Service discovery",
+              body: "Structured techniques and service categories make your practice easier to compare when a client already knows what they are looking for.",
+              meta: "Searchable context",
+            },
+            {
+              title: "Trust signals",
+              body: "Profile moderation and optional identity verification create specific visible signals without pretending MasseurMatch verified more than it actually did.",
+              meta: "Precise claims",
+            },
+            {
+              title: "Visibility tools",
+              body: "Paid tiers can add profile capacity and distribution features. The pricing page is the source of truth for the current plan ladder and included limits.",
+              meta: "Plan based",
+            },
+            {
+              title: "Direct client contact",
+              body: "MasseurMatch does not sit in the middle of the appointment. Clients contact you directly and you remain responsible for your own schedule, terms, and service delivery.",
+              meta: "Independent relationship",
+            },
+          ]}
+        />
+      </InstitutionalSection>
 
-        <section className="space-y-3">
-          <h2 className="font-display text-ds-24 font-bold tracking-tight text-text-primary">
-            Keeping it live
-          </h2>
-          <p className="leading-relaxed text-text-secondary">
-            You can edit your profile whenever you like. Changes to prices, availability and contact
-            details take effect straight away; edits to your name, description, services, or photos
-            go back through review before the public page updates.
-          </p>
-          <p className="leading-relaxed text-text-secondary">
-            If a payment fails, your listing stays up through a grace period rather than vanishing
-            the same day. It is unlisted, never deleted, and comes straight back when payment
-            resumes.
-          </p>
-        </section>
+      <InstitutionalSection
+        dark
+        eyebrow="Getting listed"
+        title="Build it once. Keep it current."
+        intro="Onboarding is structured around the information the public directory actually needs."
+      >
+        <InstitutionalSteps
+          dark
+          steps={[
+            {
+              title: "Create your account",
+              body: "Start with the account that owns and manages your provider profile.",
+              meta: "Account",
+            },
+            {
+              title: "Build your listing",
+              body: "Add your location, services, rates, session formats, practice description, and photos.",
+              meta: "Profile",
+            },
+            {
+              title: "Submit for review",
+              body: "Public-facing content is reviewed against platform standards before the listing goes live.",
+              meta: "Moderation",
+            },
+            {
+              title: "Manage from your dashboard",
+              body: "Keep the listing current, use the tools available to your plan, and update your practice as it changes.",
+              meta: "Operate",
+            },
+          ]}
+        />
+      </InstitutionalSection>
 
-        <section className="space-y-3">
-          <h2 className="font-display text-ds-24 font-bold tracking-tight text-text-primary">
-            What is expected
-          </h2>
-          <p className="leading-relaxed text-text-secondary">
-            Accurate information, photos that are genuinely of you, and services that are lawful and
-            non-sexual. The content rules exist to keep the directory usable and to comply with US
-            law — they are enforced, and profiles that break them are removed.
-          </p>
-          <p className="leading-relaxed text-text-secondary">
-            Read the provider terms and the content guidelines before you list. They are short and
-            they say exactly where the lines are.
-          </p>
-        </section>
-      </div>
+      <InstitutionalSection
+        eyebrow="The boundary"
+        title="MasseurMatch helps you get found. You run the practice."
+      >
+        <InstitutionalSplit
+          left={
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-brand-secondary">
+                You control
+              </p>
+              <h3 className="mt-4 font-display text-3xl font-semibold tracking-tight text-text-primary">
+                The professional relationship after discovery.
+              </h3>
+              <ul className="mt-6 space-y-4 text-sm leading-7 text-text-secondary">
+                <li>• Your availability and schedule.</li>
+                <li>• The rates and services you publish.</li>
+                <li>• Where and how you provide sessions.</li>
+                <li>• Your direct communication with prospective clients.</li>
+                <li>• Your own legal, licensing, tax, insurance, and professional obligations.</li>
+              </ul>
+            </div>
+          }
+          right={
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-brand-secondary">
+                MasseurMatch controls
+              </p>
+              <h3 className="mt-4 font-display text-3xl font-semibold tracking-tight text-text-primary">
+                The integrity of the directory itself.
+              </h3>
+              <ul className="mt-6 space-y-4 text-sm leading-7 text-text-secondary">
+                <li>• Profile and photo moderation before publication.</li>
+                <li>• Platform visibility, ranking, and eligible distribution features.</li>
+                <li>• Identity verification status when that review is completed.</li>
+                <li>• Enforcement of content, safety, and acceptable-use rules.</li>
+                <li>• Subscription entitlements for paid platform features.</li>
+              </ul>
+            </div>
+          }
+        />
+      </InstitutionalSection>
 
-      <section className="mt-12 border-t border-border-subtle pt-8">
-        <p className="leading-relaxed text-text-secondary">
-          Ready to list? Creating an account is free — you build your profile first and choose a
-          plan afterwards.
-        </p>
-        <div className="mt-4 flex flex-wrap gap-3">
-          {/* The dashboard is a separate origin, so this is an anchor rather
-              than a Link, and it appears only when this deployment knows where
-              the dashboard is. See `dashboardUrl` in @/lib/site. */}
-          {signUp ? (
-            <a
-              href={signUp}
-              className="rounded-full bg-action-primary text-text-inverse hover:bg-action-primary-hover px-5 py-2.5 text-sm font-semibold transition"
-            >
-              Create your account
-            </a>
-          ) : null}
-          <Link
-            href="/pricing"
-            className={
-              signUp
-                ? "rounded-full border border-border-subtle text-text-primary hover:border-brand-secondary px-5 py-2.5 text-sm font-semibold transition"
-                : "rounded-full bg-action-primary text-text-inverse hover:bg-action-primary-hover px-5 py-2.5 text-sm font-semibold transition"
-            }
-          >
-            See pricing
-          </Link>
-          <Link
-            href="/provider-terms"
-            className="rounded-full border border-border-subtle text-text-primary hover:border-brand-secondary px-5 py-2.5 text-sm font-semibold transition"
-          >
-            Provider terms
-          </Link>
-        </div>
-      </section>
-    </main>
+      <InstitutionalSection eyebrow="Questions" title="Know exactly what you are joining.">
+        <InstitutionalFaq items={FAQS} />
+      </InstitutionalSection>
+
+      <InstitutionalCta
+        eyebrow="Build your presence"
+        title="Make your practice easier to discover."
+        description="Create your profile first, then use the plan that fits the visibility and profile capacity you need."
+        actions={[
+          primaryAction,
+          { label: "Provider terms", href: "/provider-terms", secondary: true },
+        ]}
+      />
+    </InstitutionalPage>
   );
 }
