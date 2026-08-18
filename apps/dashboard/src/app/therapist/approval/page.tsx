@@ -32,7 +32,8 @@ export default async function ApprovalStatusPage() {
       color: "text-amber-600",
       bgColor: "bg-amber-50",
       title: "Profile Under Review",
-      description: "Your profile is currently being reviewed by our team. This typically takes 24-48 hours.",
+      description:
+        "Your profile is currently being reviewed by our team. This typically takes 24-48 hours.",
     },
     rejected: {
       icon: AlertCircle,
@@ -72,11 +73,15 @@ export default async function ApprovalStatusPage() {
           <div className="space-y-3 text-sm">
             <div>
               <p className="text-text-secondary">Status</p>
-              <p className="font-medium capitalize text-text-primary">{therapistProfile?.status || "pending"}</p>
+              <p className="font-medium capitalize text-text-primary">
+                {therapistProfile?.status || "pending"}
+              </p>
             </div>
             <div>
               <p className="text-text-secondary">Display Name</p>
-              <p className="font-medium text-text-primary">{therapistProfile?.display_name || "Not set"}</p>
+              <p className="font-medium text-text-primary">
+                {therapistProfile?.display_name || "Not set"}
+              </p>
             </div>
           </div>
         </div>

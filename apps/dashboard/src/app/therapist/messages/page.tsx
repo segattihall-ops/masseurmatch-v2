@@ -89,7 +89,9 @@ export default async function MessagesPage() {
                 <div className="flex-1">
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <p className={`font-semibold ${message.unread ? "text-blue-900" : "text-text-primary"}`}>
+                      <p
+                        className={`font-semibold ${message.unread ? "text-blue-900" : "text-text-primary"}`}
+                      >
                         {message.senderName}
                       </p>
                       <p className="text-sm text-text-secondary">{message.subject}</p>
@@ -108,7 +110,9 @@ export default async function MessagesPage() {
           <div className="rounded-lg border border-border bg-surface p-8 text-center">
             <MessageCircle className="mx-auto h-12 w-12 text-text-secondary opacity-50" />
             <p className="mt-2 text-text-secondary">No messages yet</p>
-            <p className="text-sm text-text-secondary">When clients inquire about your services, their messages will appear here</p>
+            <p className="text-sm text-text-secondary">
+              When clients inquire about your services, their messages will appear here
+            </p>
           </div>
         )}
       </div>

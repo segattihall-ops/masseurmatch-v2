@@ -211,7 +211,10 @@ export default function ProfilePage() {
             </div>
 
             <div>
-              <label htmlFor="outcall_price" className="block text-sm font-medium text-text-primary">
+              <label
+                htmlFor="outcall_price"
+                className="block text-sm font-medium text-text-primary"
+              >
                 Outcall Rate (per hour)
               </label>
               <div className="flex items-center">
@@ -232,11 +235,7 @@ export default function ProfilePage() {
 
         {/* Submit Button */}
         <div className="flex gap-4">
-          <Button
-            type="submit"
-            disabled={loading}
-            className="flex items-center gap-2"
-          >
+          <Button type="submit" disabled={loading} className="flex items-center gap-2">
             <Save className="h-4 w-4" />
             {loading ? "Saving..." : "Save Changes"}
           </Button>

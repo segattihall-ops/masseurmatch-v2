@@ -76,7 +76,10 @@ export default async function GrowthAnalyticsPage() {
             { week: "This Week", views: 45, clicks: 8, inquiries: 2 },
             { week: "Last Week", views: 189, clicks: 37, inquiries: 10 },
           ].map((item) => (
-            <div key={item.week} className="flex items-center justify-between border-b border-border pb-4">
+            <div
+              key={item.week}
+              className="flex items-center justify-between border-b border-border pb-4"
+            >
               <div>
                 <p className="font-medium text-text-primary">{item.week}</p>
               </div>
@@ -106,13 +109,15 @@ export default async function GrowthAnalyticsPage() {
           <div className="space-y-2 rounded-lg border border-border bg-surface p-6">
             <h3 className="font-semibold text-text-primary">Complete Your Profile</h3>
             <p className="text-sm text-text-secondary">
-              Therapists with complete profiles get 70% more views. Fill in all your services, availability, and photos.
+              Therapists with complete profiles get 70% more views. Fill in all your services,
+              availability, and photos.
             </p>
           </div>
           <div className="space-y-2 rounded-lg border border-border bg-surface p-6">
             <h3 className="font-semibold text-text-primary">Add Professional Photos</h3>
             <p className="text-sm text-text-secondary">
-              High-quality photos increase bookings. Make sure your photos are clear and professional.
+              High-quality photos increase bookings. Make sure your photos are clear and
+              professional.
             </p>
           </div>
           <div className="space-y-2 rounded-lg border border-border bg-surface p-6">

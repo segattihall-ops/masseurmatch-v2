@@ -52,7 +52,12 @@ function callerKey(request: NextRequest): string {
 async function generateConversationalReply(
   message: string,
   deterministic: string,
-  matches: { headline: string | null; city: string | null; state: string | null; reasons: string[] }[]
+  matches: {
+    headline: string | null;
+    city: string | null;
+    state: string | null;
+    reasons: string[];
+  }[],
 ): Promise<string> {
   const apiKey = process.env.DEEPSEEK_API_KEY;
   if (!apiKey) return deterministic;
