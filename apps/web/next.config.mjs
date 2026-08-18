@@ -1,3 +1,4 @@
+import { normaliseOrigin } from "@masseurmatch/config/origin";
 import { contentSecurityPolicy, securityHeaders } from "@masseurmatch/config/security-headers";
 
 // A real workspace package, not a relative import. That distinction is not
@@ -25,7 +26,9 @@ const csp = contentSecurityPolicy({
  * hostname that could still change.
  */
 function authRedirects() {
-  const dashboard = process.env.NEXT_PUBLIC_DASHBOARD_URL?.replace(/\/$/, "");
+  // Normalised, not trusted: the variable was set to a bare hostname in
+  // production and every destination below silently became a relative path.
+  const dashboard = normaliseOrigin(process.env.NEXT_PUBLIC_DASHBOARD_URL);
   if (!dashboard) return [];
 
   return [

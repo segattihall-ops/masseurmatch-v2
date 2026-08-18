@@ -49,6 +49,7 @@ import { ProfileScoreCard } from "./profile-score-card";
 import { SignOutButton } from "./sign-out-button";
 import { SpikeCard } from "./spike-card";
 import { TravelCard } from "./travel-card";
+import { VerificationCard } from "./verification-card";
 
 /**
  * Dashboard home.
@@ -255,6 +256,10 @@ export default async function DashboardPage() {
             remaining={availableNowRemaining(availability)}
             hours={planFor(tier).availableNowHours}
             lapsed={availableNowLapsed(availability)}
+          />
+          <VerificationCard
+            phoneVerified={profile.is_verified_phone === true}
+            identityVerified={profile.is_verified_identity === true}
           />
           <TravelCard
             entries={travelEntries}

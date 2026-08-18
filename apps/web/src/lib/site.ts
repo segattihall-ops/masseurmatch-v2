@@ -1,3 +1,4 @@
+import { normaliseOrigin } from "@masseurmatch/config/origin";
 import "server-only";
 
 /**
@@ -57,8 +58,7 @@ export function absoluteUrl(path = "/"): string {
  * being there. Callers render the link only when this returns a value.
  */
 export function dashboardUrl(): string | null {
-  const explicit = process.env.NEXT_PUBLIC_DASHBOARD_URL;
-  return explicit ? explicit.replace(/\/$/, "") : null;
+  return normaliseOrigin(process.env.NEXT_PUBLIC_DASHBOARD_URL);
 }
 
 /** Where a therapist creates an account, or null — see `dashboardUrl`. */

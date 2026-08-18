@@ -5,6 +5,10 @@
   "type": "module",
   "exports": {
     "./security-headers": "./security-headers.mjs",
-    "./observability": "./observability.ts"
+    "./observability": "./observability.ts",
+    "./origin": {
+      "types": "./origin.d.mts",
+      "default": "./origin.mjs"
+    }
   }
 }

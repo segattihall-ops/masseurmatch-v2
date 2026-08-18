@@ -135,4 +135,12 @@ export const LIMITS = {
    * than a person needs to correct a typo twice.
    */
   signUp: { limit: 5, windowMs: 60_000 },
+  /**
+   * SMS codes, per account or per address.
+   *
+   * The tightest limit here, because it is the only one where each accepted
+   * call spends real money at Twilio and rings a physical phone. Three is a
+   * mistyped number, a correction, and one retry.
+   */
+  phoneCode: { limit: 3, windowMs: 60_000 },
 } as const;

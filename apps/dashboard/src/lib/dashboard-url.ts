@@ -1,3 +1,5 @@
+import { normaliseOrigin } from "@masseurmatch/config/origin";
+
 /**
  * This app's own public origin.
  *
@@ -15,13 +17,16 @@
  * The cost is that preview deployments email a link to production. That is the
  * right trade: preview URLs are not in the Supabase allow-list either, so the
  * link would not work from them regardless. See docs/DEPLOY.md.
+ *
+ * The variable is normalised rather than trusted — a bare hostname with no
+ * scheme broke this in production. See `normaliseOrigin`.
  */
 export function dashboardUrl(): string {
-  const explicit = process.env.NEXT_PUBLIC_DASHBOARD_URL;
-  if (explicit) return explicit.replace(/\/$/, "");
+  const explicit = normaliseOrigin(process.env.NEXT_PUBLIC_DASHBOARD_URL);
+  if (explicit) return explicit;
 
-  const productionHost = process.env.VERCEL_PROJECT_PRODUCTION_URL;
-  if (productionHost) return `https://${productionHost}`;
+  const productionHost = normaliseOrigin(process.env.VERCEL_PROJECT_PRODUCTION_URL);
+  if (productionHost) return productionHost;
 
   // The dashboard runs on 3001 locally; the public site has 3000.
   return "http://localhost:3001";

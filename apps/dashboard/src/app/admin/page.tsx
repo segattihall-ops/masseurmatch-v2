@@ -58,6 +58,9 @@ export default async function AdminPage() {
         <Link href="/admin/moderation" className={buttonVariants()}>
           Moderation queue{metrics.pending > 0 ? ` (${metrics.pending})` : ""}
         </Link>
+        <Link href="/admin/verifications" className={buttonVariants({ variant: "outline" })}>
+          Identity verifications
+        </Link>
         <Link href="/admin/demand-radar" className={buttonVariants({ variant: "outline" })}>
           Demand Radar
         </Link>
