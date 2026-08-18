@@ -403,6 +403,66 @@ only moderation publishes it.
 
 ---
 
+## Step 4c — The other ways in, and identity verification
+
+Three things beyond email sign-up. Two need nothing from you; one needs a
+decision you have already made.
+
+**Google.** Already enabled on this Supabase project — `/auth/v1/settings`
+reports `google: true` — so "Continue with Google" works as soon as the
+`/auth/callback` entry from step 4b is in the allow-list. Nothing else to set.
+
+Worth knowing: Google is the one flow where signing up and signing in are the
+same click, so the role grant cannot be inferred from the button. It is decided
+from the auth user's `created_at` instead — an account created in the last ten
+minutes is new, anything older is a returning user and keeps whatever role it
+has. See `apps/dashboard/src/lib/oauth.ts`.
+
+**Phone.** Uses Supabase's own SMS provider settings (Twilio), so there is no
+new variable here either. Two properties are deliberate and will look like bugs
+otherwise:
+
+- Signing in by SMS only works for a number verified from inside the dashboard
+  first, at `/verify-phone`. Phone sign-in passes `shouldCreateUser: false` —
+  without it, any number typed into the form would mint an account with no
+  email, no role and no profile, which then fails every guard and cannot
+  recover a password it never had.
+- "A code is on its way" is shown whether or not the number has an account, for
+  the same reason sign-in refuses vaguely.
+
+SMS is the tightest rate limit in the app — three a minute — because each
+accepted call spends money and rings a physical phone.
+
+**Identity documents.** Manual review, not Stripe Identity. The storage bucket
+(`identity-documents`, private, 10MB, images and PDF only) is created by the
+app on first use rather than by hand: the failure mode of a runbook line is
+silent, and creating it in code means it is created _with_ its limits.
+
+The flow, and the two things about it that are policy rather than plumbing:
+
+1. The therapist uploads at `/verify-id`. The browser gets a one-shot signed URL
+   and sends the file straight to Supabase Storage — a government ID never
+   passes through our servers, so it cannot be logged or cached by accident.
+2. An admin reviews at `/admin/verifications`. The document is **not** rendered
+   inline; opening it is a click, and the link is signed and expires in a
+   minute.
+3. **The file is deleted as soon as a decision is made.** What remains is the
+   `profile_documents` row and the audit entry — the record that a human checked
+   a document and decided. Holding the document itself afterwards is a liability
+   with no upside. If you ever need retention instead, it is `forgetDocument` in
+   `apps/dashboard/src/lib/identity-storage.ts` and nothing else.
+
+> **One thing to check that this code cannot.** `profiles` has an owner-update
+> policy. If it is column-blind, then `is_verified_phone` and
+> `is_verified_identity` can be set by the very account they describe with one
+> `PATCH /rest/v1/profiles`, and the badges are worth nothing regardless of the
+> flows above. Confirming it needs a therapist login. Sign in as a test
+> therapist and try to set `is_verified_identity` on your own row: a 200 means
+> it needs a column grant or a policy `WITH CHECK` pinning those columns; a 403
+> or an unchanged row means it is already handled.
+
+---
+
 ## Step 5 — Cut over the domain
 
 Only after steps 1–4 verify. Follow `CUTOVER.md`; the short version:
