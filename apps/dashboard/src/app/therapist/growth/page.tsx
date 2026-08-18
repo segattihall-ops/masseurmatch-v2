@@ -1,6 +1,5 @@
 import { createSessionClient } from "@masseurmatch/db/auth";
-import { getProfile } from "@masseurmatch/db/actions/profile";
-import { Eye, Click, MessageSquare, TrendingUp, Calendar } from "lucide-react";
+import { Eye, Activity, MessageSquare, TrendingUp, Calendar } from "lucide-react";
 
 export default async function GrowthAnalyticsPage() {
   const supabase = createSessionClient();
@@ -9,8 +8,6 @@ export default async function GrowthAnalyticsPage() {
   } = await supabase.auth.getUser();
 
   if (!user) return null;
-
-  const profile = await getProfile(user.id);
 
   // Mock analytics data - replace with real data from database
   const stats = {
@@ -41,7 +38,7 @@ export default async function GrowthAnalyticsPage() {
         <div className="space-y-2 rounded-lg border border-border bg-surface p-6">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-medium text-text-secondary">Link Clicks</h3>
-            <Click className="h-4 w-4 text-green-500" />
+            <Activity className="h-4 w-4 text-green-500" />
           </div>
           <p className="text-3xl font-bold text-text-primary">{stats.clicks}</p>
           <p className="text-xs text-text-secondary">This month</p>

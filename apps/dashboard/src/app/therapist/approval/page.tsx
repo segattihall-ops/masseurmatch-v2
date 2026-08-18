@@ -1,5 +1,4 @@
 import { createSessionClient } from "@masseurmatch/db/auth";
-import { getProfile } from "@masseurmatch/db/actions/profile";
 import { AlertCircle, CheckCircle, Clock, AlertTriangle } from "lucide-react";
 
 export default async function ApprovalStatusPage() {
@@ -10,7 +9,15 @@ export default async function ApprovalStatusPage() {
 
   if (!user) return null;
 
-  const profile = await getProfile(user.id);
+  // Fetch therapist profile from database
+  const { data: profile } = await supabase
+    .from("therapists")
+    .select("id, display_name, status")
+    .eq("user_id", user.id)
+    .single();
+
+  // Provide default profile if not found
+  const therapistProfile = profile || { status: "pending", display_name: null };
 
   const statusConfig = {
     approved: {
@@ -36,7 +43,7 @@ export default async function ApprovalStatusPage() {
     },
   };
 
-  const status = (profile?.profile_status || "pending") as keyof typeof statusConfig;
+  const status = (therapistProfile?.status || "pending") as keyof typeof statusConfig;
   const config = statusConfig[status];
   const Icon = config.icon;
 
@@ -65,15 +72,11 @@ export default async function ApprovalStatusPage() {
           <div className="space-y-3 text-sm">
             <div>
               <p className="text-text-secondary">Status</p>
-              <p className="font-medium capitalize text-text-primary">{profile?.profile_status || "pending"}</p>
+              <p className="font-medium capitalize text-text-primary">{therapistProfile?.status || "pending"}</p>
             </div>
             <div>
               <p className="text-text-secondary">Display Name</p>
-              <p className="font-medium text-text-primary">{profile?.display_name || "Not set"}</p>
-            </div>
-            <div>
-              <p className="text-text-secondary">Visibility</p>
-              <p className="font-medium capitalize text-text-primary">{profile?.visibility_status || "hidden"}</p>
+              <p className="font-medium text-text-primary">{therapistProfile?.display_name || "Not set"}</p>
             </div>
           </div>
         </div>

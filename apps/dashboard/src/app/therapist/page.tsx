@@ -1,5 +1,4 @@
 import { createSessionClient } from "@masseurmatch/db/auth";
-import { getProfile } from "@masseurmatch/db/actions/profile";
 import Link from "next/link";
 import { ArrowRight, CheckCircle, Clock, TrendingUp } from "lucide-react";
 
@@ -11,13 +10,19 @@ export default async function TherapistDashboard() {
 
   if (!user) return null;
 
-  const profile = await getProfile(user.id);
+  const { data: profile } = await supabase
+    .from("therapists")
+    .select("id, display_name, status, view_count")
+    .eq("user_id", user.id)
+    .single();
+
+  const therapistProfile = profile || { display_name: null, status: "pending", view_count: 0 };
 
   return (
     <div className="space-y-8 p-8">
       {/* Header */}
       <div className="space-y-2">
-        <h1 className="text-3xl font-bold text-text-primary">Welcome, {profile?.display_name || "Therapist"}</h1>
+        <h1 className="text-3xl font-bold text-text-primary">Welcome, {therapistProfile?.display_name || "Therapist"}</h1>
         <p className="text-text-secondary">Manage your profile and track your growth</p>
       </div>
 
@@ -27,14 +32,14 @@ export default async function TherapistDashboard() {
         <div className="space-y-4 rounded-lg border border-border bg-surface p-6">
           <div className="flex items-center justify-between">
             <h3 className="font-semibold text-text-primary">Approval Status</h3>
-            {profile?.profile_status === "approved" ? (
+            {therapistProfile?.status === "approved" ? (
               <CheckCircle className="h-5 w-5 text-green-500" />
             ) : (
               <Clock className="h-5 w-5 text-amber-500" />
             )}
           </div>
           <p className="text-sm text-text-secondary">
-            {profile?.profile_status === "approved"
+            {therapistProfile?.status === "approved"
               ? "Your profile is live and visible"
               : "Your profile is under review"}
           </p>
@@ -43,23 +48,23 @@ export default async function TherapistDashboard() {
           </Link>
         </div>
 
-        {/* Visibility Status */}
+        {/* Profile Completeness */}
         <div className="space-y-4 rounded-lg border border-border bg-surface p-6">
           <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-text-primary">Visibility</h3>
-            {profile?.visibility_status === "public" ? (
+            <h3 className="font-semibold text-text-primary">Profile</h3>
+            {therapistProfile?.display_name ? (
               <CheckCircle className="h-5 w-5 text-green-500" />
             ) : (
               <Clock className="h-5 w-5 text-text-secondary" />
             )}
           </div>
           <p className="text-sm text-text-secondary">
-            {profile?.visibility_status === "public"
-              ? "Your profile is publicly visible"
-              : "Your profile is hidden from the directory"}
+            {therapistProfile?.display_name
+              ? "Your profile is set up"
+              : "Complete your profile to get started"}
           </p>
           <Link href="/therapist/profile" className="inline-flex items-center gap-2 text-sm font-medium text-brand-primary hover:underline">
-            Manage Profile <ArrowRight className="h-4 w-4" />
+            Edit Profile <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
 

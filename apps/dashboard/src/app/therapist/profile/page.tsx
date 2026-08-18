@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createSessionClient } from "@masseurmatch/db/auth";
 import { Button, Input } from "@masseurmatch/ui";
 import { Save, AlertCircle } from "lucide-react";
 
