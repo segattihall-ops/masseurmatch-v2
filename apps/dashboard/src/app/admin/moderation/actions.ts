@@ -21,12 +21,14 @@ import type { StepState } from "../../onboarding/form-state";
  *                   record of who did it or why. That is precisely the case an
  *                   immutable audit log exists to prevent.
  *
- * Supabase's JS client cannot open a transaction, so the two statements are not
+ * Supabase's JS client cannot open a transaction, so the statements are not
  * atomic. `supabase/migrations/20260816030000_audit_log_and_moderation.sql`
- * defines `public.moderate_profile()`, a `security definer` function that does
- * both in one transaction. Once that is applied, this should call the RPC and
- * the two-statement path below can go. Log-first is not pretended to be
- * equivalent — it trades a false-positive log entry for never losing a real one.
+ * defines `public.moderate_profile()`, a `security definer` function for the
+ * profile decision. Once that RPC also owns photo decisions, this path can be
+ * collapsed into one database transaction. Until then, approval is deliberately
+ * ordered audit -> reviewed photos -> profile. A failure can leave checked
+ * photos approved while the profile remains non-public; it cannot publish a
+ * profile whose pending photos were never approved by the reviewer.
  */
 
 async function requireAdminId(): Promise<string> {
@@ -110,7 +112,26 @@ export async function moderateProfile(_prev: StepState, formData: FormData): Pro
     };
   }
 
-  // 2. Then act.
+  // 2. Approval includes the photos the reviewer just affirmed in the required
+  // checklist. Only pending photos are touched; an older rejected photo is not
+  // resurrected by approving a later profile edit.
+  if (action === "approve") {
+    const { error: photoError } = await supabase
+      .from("profile_photos")
+      .update({
+        moderation_status: "approved",
+        moderation_reason: reason,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("profile_id", profileId)
+      .eq("moderation_status", "pending");
+
+    if (photoError) {
+      return { error: `Logged, but the reviewed photos could not be approved: ${photoError.message}` };
+    }
+  }
+
+  // 3. Then publish or otherwise resolve the profile decision.
   const { data, error } = await supabase
     .from("profiles")
     .update({
