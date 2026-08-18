@@ -2,13 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  BarChart3,
-  Shield,
-  FileCheck,
-  TrendingUp,
-  LogOut,
-} from "lucide-react";
+import { BarChart3, Shield, FileCheck, TrendingUp, LogOut } from "lucide-react";
 import { signOut } from "@/app/sign-in/actions";
 
 const ADMIN_LINKS = [
