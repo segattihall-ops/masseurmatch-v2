@@ -2,6 +2,7 @@ import { createSessionClient } from "@masseurmatch/db/auth";
 import { NextResponse, type NextRequest } from "next/server";
 
 import { ensureProviderAccount } from "@/lib/account-setup";
+import { emailLinkType } from "@/lib/email-links";
 import { isNewAccount } from "@/lib/oauth";
 import { safeNext } from "@/lib/safe-next";
 
@@ -22,7 +23,13 @@ import { safeNext } from "@/lib/safe-next";
  *                        cookie set when the account was created, so the link
  *                        only works in the browser that signed up. That is a
  *                        property of PKCE, not a bug to route around.
- *   - `?token_hash=…&type=…` — the newer default template. Verified directly.
+ *   - `?token_hash=…&type=…` — the newer default template. NOT verified here:
+ *                        email scanners pre-fetch links with a GET, and a GET
+ *                        that verifies consumes the single-use token before the
+ *                        person clicks — every recent signup in the auth logs
+ *                        shows the token spent twice, one second apart. So this
+ *                        shape is bounced to `/auth/confirm`, an interstitial
+ *                        whose button spends the token in a POST instead.
  *
  * Account setup runs only for an arrival that created an account. The same
  * handler is where a **password recovery** link lands, and running setup there
@@ -47,22 +54,6 @@ import { safeNext } from "@/lib/safe-next";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/** The `type` values Supabase puts on an email link. */
-const EMAIL_LINK_TYPES = [
-  "signup",
-  "invite",
-  "magiclink",
-  "recovery",
-  "email_change",
-  "email",
-] as const;
-
-type EmailLinkType = (typeof EMAIL_LINK_TYPES)[number];
-
-function emailLinkType(value: string | null): EmailLinkType | null {
-  return EMAIL_LINK_TYPES.find((type) => type === value) ?? null;
-}
-
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const url = new URL(request.url);
   const next = safeNext(url.searchParams.get("next"));
@@ -74,16 +65,25 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   // or has expired, before any exchange is attempted.
   if (url.searchParams.get("error")) return failed("link-expired");
 
-  const supabase = createSessionClient();
   const code = url.searchParams.get("code");
   const tokenHash = url.searchParams.get("token_hash");
   const type = emailLinkType(url.searchParams.get("type"));
 
-  const result = code
-    ? await supabase.auth.exchangeCodeForSession(code)
-    : tokenHash && type
-      ? await supabase.auth.verifyOtp({ token_hash: tokenHash, type })
-      : null;
+  // Email links carry a single-use token, and this GET is exactly what inbox
+  // link-scanners replay — so it must not spend the token. Hand everything to
+  // the interstitial, whose button-press POST is the only thing that verifies.
+  if (tokenHash && type) {
+    const confirm = new URL("/auth/confirm", url.origin);
+    confirm.searchParams.set("token_hash", tokenHash);
+    confirm.searchParams.set("type", type);
+    confirm.searchParams.set("next", next);
+    const setup = url.searchParams.get("setup");
+    if (setup) confirm.searchParams.set("setup", setup);
+    return NextResponse.redirect(confirm);
+  }
+
+  const supabase = createSessionClient();
+  const result = code ? await supabase.auth.exchangeCodeForSession(code) : null;
 
   if (!result) return failed("link-invalid");
   if (result.error || !result.data.user) return failed("link-expired");
