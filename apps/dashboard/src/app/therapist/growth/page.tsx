@@ -1,6 +1,6 @@
 import { trendLabel } from "@masseurmatch/db/analytics";
 import { createSessionClient } from "@masseurmatch/db/auth";
-import { Eye, MessageSquare, MousePointerClick, TrendingUp, Users } from "lucide-react";
+import { Eye, MousePointerClick, TrendingUp, Users } from "lucide-react";
 
 import { ANALYTICS_WINDOW_DAYS, getMyViewAnalytics } from "@/lib/analytics";
 import { getOrCreateMyProfile } from "@/lib/profile";
@@ -15,18 +15,13 @@ export default async function GrowthAnalyticsPage() {
 
   const { profile } = await getOrCreateMyProfile(user.id);
 
-  const [views, clicksRow, inquiryCount] = await Promise.all([
+  const [views, clicksRow] = await Promise.all([
     getMyViewAnalytics(profile.id),
     supabase.from("profiles").select("contact_clicks").eq("id", user.id).maybeSingle(),
-    supabase
-      .from("contact_inquiries")
-      .select("id", { count: "exact", head: true })
-      .eq("profile_id", profile.id),
   ]);
 
   const contactClicks = (clicksRow.data as { contact_clicks?: number | null } | null)
     ?.contact_clicks;
-  const inquiries = inquiryCount.count ?? 0;
 
   const cards = [
     {
@@ -51,13 +46,6 @@ export default async function GrowthAnalyticsPage() {
       sub: "All time",
       icon: MousePointerClick,
       tint: "text-purple-500",
-    },
-    {
-      label: "Inquiries",
-      value: String(inquiries),
-      sub: "All time",
-      icon: MessageSquare,
-      tint: "text-orange-500",
     },
   ];
 
@@ -158,9 +146,9 @@ export default async function GrowthAnalyticsPage() {
             </p>
           </div>
           <div className="space-y-2 rounded-lg border border-border bg-surface p-6">
-            <h3 className="font-semibold text-text-primary">Respond to Inquiries</h3>
+            <h3 className="font-semibold text-text-primary">Use Available Now</h3>
             <p className="text-sm text-text-secondary">
-              Quick responses boost your rankings. Reply to inquiries within 2 hours when possible.
+              Turning on the Available Now badge highlights you to clients looking to book today.
             </p>
           </div>
         </div>
