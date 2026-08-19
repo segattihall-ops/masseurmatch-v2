@@ -7,7 +7,7 @@ import { signOut } from "@/app/sign-in/actions";
 
 const LINKS = [
   { href: "/therapist", label: "Dashboard", icon: BarChart3 },
-  { href: "/therapist/profile", label: "Profile", icon: Edit },
+  { href: "/profile", label: "Profile", icon: Edit },
   { href: "/therapist/approval", label: "Approval Status", icon: Settings },
   { href: "/therapist/growth", label: "Growth Analytics", icon: TrendingUp },
   { href: "/therapist/messages", label: "Messages", icon: MessageSquare },

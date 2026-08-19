@@ -9,17 +9,28 @@ export default async function ApprovalStatusPage() {
 
   if (!user) return null;
 
-  // Fetch therapist profile from database
+  // `profiles.profile_status` is the canonical review state — the same column
+  // admin moderation writes and the public directory filters on.
   const { data: profile } = await supabase
-    .from("therapists")
-    .select("id, display_name, status")
-    .eq("user_id", user.id)
-    .single();
+    .from("profiles")
+    .select("display_name, profile_status")
+    .eq("id", user.id)
+    .maybeSingle();
 
-  // Provide default profile if not found
-  const therapistProfile = profile || { status: "pending", display_name: null };
+  const therapistProfile = {
+    status: profile?.profile_status ?? "draft",
+    display_name: profile?.display_name ?? null,
+  };
 
   const statusConfig = {
+    draft: {
+      icon: Clock,
+      color: "text-text-secondary",
+      bgColor: "bg-bg-subtle",
+      title: "Profile Not Submitted",
+      description:
+        "Your profile is still a draft. Complete it and submit it for review to appear in the directory.",
+    },
     approved: {
       icon: CheckCircle,
       color: "text-green-600",
@@ -42,9 +53,18 @@ export default async function ApprovalStatusPage() {
       title: "Profile Needs Changes",
       description: "Your profile requires some updates before it can be approved.",
     },
+    suspended: {
+      icon: AlertCircle,
+      color: "text-red-600",
+      bgColor: "bg-red-50",
+      title: "Profile Suspended",
+      description:
+        "Your profile has been suspended by our team. Contact support to understand the next steps.",
+    },
   };
 
-  const status = (therapistProfile?.status || "pending") as keyof typeof statusConfig;
+  const raw = therapistProfile.status;
+  const status = (raw in statusConfig ? raw : "draft") as keyof typeof statusConfig;
   const config = statusConfig[status];
   const Icon = config.icon;
 

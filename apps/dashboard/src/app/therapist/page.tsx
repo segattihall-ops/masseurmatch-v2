@@ -10,13 +10,18 @@ export default async function TherapistDashboard() {
 
   if (!user) return null;
 
+  // `profiles` is the canonical table (keyed by auth user id) — the same one
+  // the public site, onboarding, and admin moderation read and write.
   const { data: profile } = await supabase
-    .from("therapists")
-    .select("id, display_name, status, view_count")
-    .eq("user_id", user.id)
-    .single();
+    .from("profiles")
+    .select("display_name, profile_status")
+    .eq("id", user.id)
+    .maybeSingle();
 
-  const therapistProfile = profile || { display_name: null, status: "pending", view_count: 0 };
+  const therapistProfile = {
+    display_name: profile?.display_name ?? null,
+    status: profile?.profile_status ?? "draft",
+  };
 
   return (
     <div className="space-y-8 p-8">
@@ -69,7 +74,7 @@ export default async function TherapistDashboard() {
               : "Complete your profile to get started"}
           </p>
           <Link
-            href="/therapist/profile"
+            href="/profile"
             className="inline-flex items-center gap-2 text-sm font-medium text-brand-primary hover:underline"
           >
             Edit Profile <ArrowRight className="h-4 w-4" />
@@ -97,7 +102,7 @@ export default async function TherapistDashboard() {
         <h2 className="text-lg font-semibold text-text-primary">Quick Actions</h2>
         <div className="grid gap-4 md:grid-cols-2">
           <Link
-            href="/therapist/profile"
+            href="/profile"
             className="flex items-center gap-4 rounded-lg border border-border bg-surface p-6 hover:border-brand-primary"
           >
             <div className="flex-1">
