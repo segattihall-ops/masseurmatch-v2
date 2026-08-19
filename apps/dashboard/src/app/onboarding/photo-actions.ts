@@ -66,6 +66,48 @@ export async function confirmPhoto(_prev: StepState, formData: FormData): Promis
   }
 
   revalidatePath("/onboarding");
+  revalidatePath("/therapist/photos");
+  return { ok: true };
+}
+
+/**
+ * Make one of the caller's photos the primary.
+ *
+ * Two statements, deliberately ordered new-first: if the second one fails the
+ * profile briefly has two primaries, which the UI resolves on next read. The
+ * other order — clear-all then set — fails into zero primaries, which is the
+ * state the public card cannot render from.
+ */
+export async function setPrimaryPhoto(_prev: StepState, formData: FormData): Promise<StepState> {
+  const userId = await requireTherapistId();
+  const photoId = String(formData.get("photo_id") ?? "").trim();
+  if (!photoId) return { error: "Nothing to select." };
+
+  const supabase = createSessionClient();
+
+  const { data: chosen, error: setError } = await supabase
+    .from("profile_photos")
+    .update({ is_primary: true })
+    .eq("id", photoId)
+    .eq("user_id", userId)
+    .select("id,url");
+
+  if (setError) return { error: `Could not set that photo as primary: ${setError.message}` };
+  if ((chosen ?? []).length === 0) return { error: "That photo was not found." };
+
+  const { error: clearError } = await supabase
+    .from("profile_photos")
+    .update({ is_primary: false })
+    .eq("user_id", userId)
+    .neq("id", photoId);
+
+  if (clearError) return { error: `Set as primary, but could not unmark the previous one.` };
+
+  // Keep the public card's denormalised copy in step with the new choice.
+  const url = chosen?.[0]?.url;
+  if (url) await updateMyProfile(userId, { photo_url: url, avatar_url: url });
+
+  revalidatePath("/therapist/photos");
   return { ok: true };
 }
 
@@ -87,5 +129,6 @@ export async function deletePhoto(_prev: StepState, formData: FormData): Promise
   if ((data ?? []).length === 0) return { error: "That photo was not found." };
 
   revalidatePath("/onboarding");
+  revalidatePath("/therapist/photos");
   return { ok: true };
 }

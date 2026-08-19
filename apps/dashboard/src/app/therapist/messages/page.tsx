@@ -1,5 +1,19 @@
 import { createSessionClient } from "@masseurmatch/db/auth";
-import { MessageCircle, Mail, Clock } from "lucide-react";
+import { Clock, Mail, MessageCircle } from "lucide-react";
+
+import { getOrCreateMyProfile } from "@/lib/profile";
+
+import { InquiryCard } from "./inquiry-card";
+
+type Inquiry = {
+  id: string;
+  client_name: string | null;
+  client_email: string | null;
+  client_phone: string | null;
+  message: string | null;
+  status: string | null;
+  created_at: string;
+};
 
 export default async function MessagesPage() {
   const supabase = createSessionClient();
@@ -9,101 +23,63 @@ export default async function MessagesPage() {
 
   if (!user) return null;
 
-  // TODO: Fetch real messages from database
-  const mockMessages = [
-    {
-      id: "1",
-      senderName: "John Smith",
-      subject: "Inquiry about Deep Tissue Massage",
-      preview: "I'm looking for a therapist who specializes in deep tissue massage...",
-      timestamp: "2 hours ago",
-      unread: true,
-    },
-    {
-      id: "2",
-      senderName: "Sarah Johnson",
-      subject: "Booking request for this weekend",
-      preview: "Would you be available for a 60-minute massage this Saturday?",
-      timestamp: "5 hours ago",
-      unread: false,
-    },
-    {
-      id: "3",
-      senderName: "Michael Chen",
-      subject: "Question about your services",
-      preview: "Do you offer outcall services in my area?",
-      timestamp: "1 day ago",
-      unread: false,
-    },
-  ];
+  // Resolve the profile row first: contact_inquiries is keyed by profile_id =
+  // profiles.id, which is not guaranteed to equal the auth user id for rows
+  // the previous site created. RLS scopes reads to the owner's rows regardless.
+  const { profile } = await getOrCreateMyProfile(user.id);
+
+  const { data, error } = await supabase
+    .from("contact_inquiries")
+    .select("id, client_name, client_email, client_phone, message, status, created_at")
+    .eq("profile_id", profile.id)
+    .order("created_at", { ascending: false })
+    .limit(100);
+
+  const inquiries = (error ? [] : ((data ?? []) as Inquiry[])).filter(Boolean);
+  const unread = inquiries.filter((i) => (i.status ?? "new") === "new").length;
 
   return (
     <div className="space-y-8 p-8">
       <div className="space-y-2">
         <h1 className="text-3xl font-bold text-text-primary">Messages & Inquiries</h1>
-        <p className="text-text-secondary">Manage client inquiries and booking requests</p>
+        <p className="text-text-secondary">Client inquiries from your public profile</p>
       </div>
 
-      {/* Message Stats */}
       <div className="grid gap-4 md:grid-cols-3">
         <div className="space-y-2 rounded-lg border border-border bg-surface p-6">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-medium text-text-secondary">Unread Messages</h3>
+            <h3 className="text-sm font-medium text-text-secondary">New</h3>
             <Mail className="h-4 w-4 text-blue-500" />
           </div>
-          <p className="text-3xl font-bold text-text-primary">1</p>
+          <p className="text-3xl font-bold text-text-primary">{unread}</p>
         </div>
 
         <div className="space-y-2 rounded-lg border border-border bg-surface p-6">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-medium text-text-secondary">Total Messages</h3>
+            <h3 className="text-sm font-medium text-text-secondary">Total</h3>
             <MessageCircle className="h-4 w-4 text-green-500" />
           </div>
-          <p className="text-3xl font-bold text-text-primary">{mockMessages.length}</p>
+          <p className="text-3xl font-bold text-text-primary">{inquiries.length}</p>
         </div>
 
         <div className="space-y-2 rounded-lg border border-border bg-surface p-6">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-medium text-text-secondary">Avg Response Time</h3>
+            <h3 className="text-sm font-medium text-text-secondary">Responded</h3>
             <Clock className="h-4 w-4 text-purple-500" />
           </div>
-          <p className="text-3xl font-bold text-text-primary">2h</p>
+          <p className="text-3xl font-bold text-text-primary">
+            {inquiries.filter((i) => i.status === "responded").length}
+          </p>
         </div>
       </div>
 
-      {/* Messages List */}
       <div className="space-y-4">
-        <h2 className="text-lg font-semibold text-text-primary">Recent Inquiries</h2>
+        <h2 className="text-lg font-semibold text-text-primary">Recent inquiries</h2>
 
-        {mockMessages.length > 0 ? (
+        {inquiries.length > 0 ? (
           <div className="space-y-2">
-            {mockMessages.map((message) => (
-              <div
-                key={message.id}
-                className={`flex items-start gap-4 rounded-lg border p-4 transition hover:border-brand-primary ${
-                  message.unread
-                    ? "border-blue-200 bg-blue-50"
-                    : "border-border bg-surface hover:bg-surface-hover"
-                }`}
-              >
-                <div className="flex-1">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p
-                        className={`font-semibold ${message.unread ? "text-blue-900" : "text-text-primary"}`}
-                      >
-                        {message.senderName}
-                      </p>
-                      <p className="text-sm text-text-secondary">{message.subject}</p>
-                    </div>
-                    {message.unread && (
-                      <div className="mt-1 h-3 w-3 flex-shrink-0 rounded-full bg-blue-500" />
-                    )}
-                  </div>
-                  <p className="mt-2 text-sm text-text-secondary">{message.preview}</p>
-                  <p className="mt-2 text-xs text-text-secondary">{message.timestamp}</p>
-                </div>
-              </div>
+            {inquiries.map((inquiry) => (
+              <InquiryCard key={inquiry.id} inquiry={inquiry} />
             ))}
           </div>
         ) : (
