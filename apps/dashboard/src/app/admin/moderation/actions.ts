@@ -5,7 +5,11 @@ import { HIDDEN, PUBLIC, SUSPENDED } from "@masseurmatch/db/visibility";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { FOSTA_CHECKS, MODERATION_ACTIONS, type ModerationAction } from "@/lib/moderation";
+import {
+  FOSTA_CHECKS,
+  MODERATION_ACTIONS,
+  type ModerationAction,
+} from "@/lib/moderation";
 
 import type { StepState } from "../../onboarding/form-state";
 
@@ -21,12 +25,14 @@ import type { StepState } from "../../onboarding/form-state";
  *                   record of who did it or why. That is precisely the case an
  *                   immutable audit log exists to prevent.
  *
- * Supabase's JS client cannot open a transaction, so the two statements are not
+ * Supabase's JS client cannot open a transaction, so the statements are not
  * atomic. `supabase/migrations/20260816030000_audit_log_and_moderation.sql`
- * defines `public.moderate_profile()`, a `security definer` function that does
- * both in one transaction. Once that is applied, this should call the RPC and
- * the two-statement path below can go. Log-first is not pretended to be
- * equivalent — it trades a false-positive log entry for never losing a real one.
+ * defines `public.moderate_profile()`, a `security definer` function for the
+ * profile decision. Once that RPC also owns photo decisions, this path can be
+ * collapsed into one database transaction. Until then, approval is deliberately
+ * ordered audit -> reviewed photos -> profile. A failure can leave checked
+ * photos approved while the profile remains non-public; it cannot publish a
+ * profile whose pending photos were never approved by the reviewer.
  */
 
 async function requireAdminId(): Promise<string> {
@@ -57,7 +63,10 @@ const OUTCOMES: Record<ModerationAction, Record<string, unknown>> = {
   },
 };
 
-export async function moderateProfile(_prev: StepState, formData: FormData): Promise<StepState> {
+export async function moderateProfile(
+  _prev: StepState,
+  formData: FormData
+): Promise<StepState> {
   const adminId = await requireAdminId();
 
   const profileId = String(formData.get("profile_id") ?? "").trim();
@@ -66,12 +75,16 @@ export async function moderateProfile(_prev: StepState, formData: FormData): Pro
   const checked = formData.getAll("fosta").map(String);
 
   if (!profileId) return { error: "No profile selected." };
-  if (!MODERATION_ACTIONS.includes(action)) return { error: "Unknown action." };
+  if (!MODERATION_ACTIONS.includes(action))
+    return { error: "Unknown action." };
 
   // Mandatory reason, enforced server-side. The textarea is `required`, but a
   // required attribute is a hint to a browser, not a rule.
   if (reason.length < 10) {
-    return { error: "Give a reason of at least 10 characters — it goes in the audit log." };
+    return {
+      error:
+        "Give a reason of at least 10 characters — it goes in the audit log.",
+    };
   }
 
   // The FOSTA-SESTA checklist gates approval only. Rejecting or suspending
@@ -110,7 +123,28 @@ export async function moderateProfile(_prev: StepState, formData: FormData): Pro
     };
   }
 
-  // 2. Then act.
+  // 2. Approval includes the photos the reviewer just affirmed in the required
+  // checklist. Only pending photos are touched; an older rejected photo is not
+  // resurrected by approving a later profile edit.
+  if (action === "approve") {
+    const { error: photoError } = await supabase
+      .from("profile_photos")
+      .update({
+        moderation_status: "approved",
+        moderation_reason: reason,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("profile_id", profileId)
+      .eq("moderation_status", "pending");
+
+    if (photoError) {
+      return {
+        error: `Logged, but the reviewed photos could not be approved: ${photoError.message}`,
+      };
+    }
+  }
+
+  // 3. Then publish or otherwise resolve the profile decision.
   const { data, error } = await supabase
     .from("profiles")
     .update({
@@ -123,9 +157,13 @@ export async function moderateProfile(_prev: StepState, formData: FormData): Pro
     .eq("id", profileId)
     .select("id");
 
-  if (error) return { error: `Logged, but the change failed: ${error.message}` };
+  if (error)
+    return { error: `Logged, but the change failed: ${error.message}` };
   if ((data ?? []).length === 0) {
-    return { error: "Logged, but no profile was updated — it may have been changed already." };
+    return {
+      error:
+        "Logged, but no profile was updated — it may have been changed already.",
+    };
   }
 
   revalidatePath("/admin/moderation");
