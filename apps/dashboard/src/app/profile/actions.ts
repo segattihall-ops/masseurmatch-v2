@@ -5,11 +5,7 @@ import { createServiceClient } from "@masseurmatch/db/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import {
-  basicsSchema,
-  changedSensitiveFields,
-  servicesSchema,
-} from "@/lib/onboarding";
+import { basicsSchema, changedSensitiveFields, servicesSchema } from "@/lib/onboarding";
 import { getOrCreateMyProfile } from "@/lib/profile";
 
 import type { StepState } from "../onboarding/form-state";
@@ -17,8 +13,7 @@ import type { StepState } from "../onboarding/form-state";
 async function requireTherapistId(): Promise<string> {
   const viewer = await getViewer();
   if (!viewer) redirect("/sign-in?next=%2Fprofile");
-  if (viewer.role !== "provider" && viewer.role !== "admin")
-    redirect("/not-authorized");
+  if (viewer.role !== "provider" && viewer.role !== "admin") redirect("/not-authorized");
   return viewer.user.id;
 }
 
@@ -27,8 +22,8 @@ function fieldErrors(error: {
 }): Record<string, string[]> {
   return Object.fromEntries(
     Object.entries(error.flatten().fieldErrors).filter((e): e is [string, string[]] =>
-      Boolean(e[1])
-    )
+      Boolean(e[1]),
+    ),
   );
 }
 
@@ -58,10 +53,7 @@ function fieldErrors(error: {
  * id. That keeps the guard meaningful without breaking the legitimate
  * re-review transition.
  */
-export async function saveProfile(
-  _prev: StepState,
-  formData: FormData
-): Promise<StepState> {
+export async function saveProfile(_prev: StepState, formData: FormData): Promise<StepState> {
   const userId = await requireTherapistId();
   const { profile, status } = await getOrCreateMyProfile(userId);
 
@@ -83,10 +75,7 @@ export async function saveProfile(
   };
 
   const services = servicesSchema.safeParse({
-    service_categories: formData
-      .getAll("service_categories")
-      .map(String)
-      .filter(Boolean),
+    service_categories: formData.getAll("service_categories").map(String).filter(Boolean),
     additional_services: [],
     incall_price: toPrice(formData.get("incall_price")),
     outcall_price: toPrice(formData.get("outcall_price")),
@@ -95,10 +84,9 @@ export async function saveProfile(
 
   const patch: Record<string, unknown> = { ...basics.data, ...services.data };
 
-  const prices = [
-    services.data.incall_price,
-    services.data.outcall_price,
-  ].filter((p): p is number => p !== null);
+  const prices = [services.data.incall_price, services.data.outcall_price].filter(
+    (p): p is number => p !== null,
+  );
   patch.starting_price = prices.length > 0 ? Math.min(...prices) : null;
 
   const changed = changedSensitiveFields(
@@ -112,7 +100,7 @@ export async function saveProfile(
       service_categories: profile.service_categories,
       additional_services: profile.additional_services,
     },
-    patch
+    patch,
   );
 
   const needsReview = status === "approved" && changed.length > 0;
