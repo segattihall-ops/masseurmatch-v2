@@ -2,12 +2,14 @@ import "server-only";
 
 import { unstable_cache } from "next/cache";
 
+import { isAvailableNow } from "../available-now";
 import { createAnonClient, hasSupabaseCredentials } from "../client";
 import {
   DIRECTORY_CACHE_TAG,
   DIRECTORY_REVALIDATE_SECONDS,
   citySlug,
   compareByRank,
+  startingPrice,
   type CityListing,
   type DirectoryFilters,
   type ProfileDetail,
@@ -114,6 +116,7 @@ const LISTING_COLUMNS = [
   "outcall_price",
   "available_now",
   "available_now_expires",
+  "lgbtq_affirming",
   // Free-form jsonb. Parsed defensively in `travel.ts` rather than trusted:
   // the dashboard, an admin CMS and (in the old system) a voice agent all
   // write to it, and this value reaches public pages.
@@ -127,7 +130,6 @@ const DETAIL_COLUMNS = [
   "tagline",
   "years_experience",
   "languages",
-  "lgbtq_affirming",
   "website",
   "latitude",
   "longitude",
@@ -370,9 +372,71 @@ export async function searchTherapists(filters: DirectoryFilters): Promise<Thera
   if (filters.query) {
     const wanted = filters.query.toLowerCase();
     therapists = therapists.filter((therapist) =>
-      [therapist.display_name, therapist.headline, therapist.city]
+      [
+        therapist.display_name,
+        therapist.headline,
+        therapist.city,
+        therapist.neighborhood,
+        ...(therapist.specialties ?? []),
+        ...(therapist.massage_techniques ?? []),
+        ...(therapist.service_categories ?? []),
+      ]
         .filter(Boolean)
         .some((field) => String(field).toLowerCase().includes(wanted)),
+    );
+  }
+
+  if (filters.session === "incall") {
+    therapists = therapists.filter((therapist) => therapist.offers_incall !== false);
+  } else if (filters.session === "outcall") {
+    therapists = therapists.filter((therapist) => therapist.offers_outcall !== false);
+  }
+
+  if (filters.availableNow) {
+    // One clock for the whole result set, so two listings with the same expiry
+    // cannot land on different sides of the cut.
+    const now = new Date();
+    therapists = therapists.filter((therapist) => isAvailableNow(therapist, now));
+  }
+
+  if (filters.verified) {
+    therapists = therapists.filter(
+      (therapist) =>
+        therapist.is_verified_identity === true || therapist.is_verified_profile === true,
+    );
+  }
+
+  if (filters.lgbtq) {
+    therapists = therapists.filter((therapist) => therapist.lgbtq_affirming === true);
+  }
+
+  if (typeof filters.maxPrice === "number" && Number.isFinite(filters.maxPrice)) {
+    const cap = filters.maxPrice;
+    therapists = therapists.filter((therapist) => {
+      const price = startingPrice(therapist);
+      return price !== null && price <= cap;
+    });
+  }
+
+  // `getVisibleTherapists` already comes back in `compareByRank` order, which
+  // is what "recommended" means. The alternatives re-sort a copy; listings
+  // without the sorted field go last rather than pretending to be cheap or
+  // highly rated.
+  if (filters.sort === "price") {
+    therapists = [...therapists].sort((a, b) => {
+      const pa = startingPrice(a);
+      const pb = startingPrice(b);
+      if (pa === null && pb === null) return compareByRank(a, b);
+      if (pa === null) return 1;
+      if (pb === null) return -1;
+      return pa - pb || compareByRank(a, b);
+    });
+  } else if (filters.sort === "rating") {
+    therapists = [...therapists].sort(
+      (a, b) =>
+        (b.rating_average ?? 0) - (a.rating_average ?? 0) ||
+        (b.review_count ?? 0) - (a.review_count ?? 0) ||
+        compareByRank(a, b),
     );
   }
 

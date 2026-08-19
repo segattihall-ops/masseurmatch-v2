@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { FadeIn, Input, StaggerItem, StaggerList, buttonVariants } from "@masseurmatch/ui";
+import type { DirectoryFilters, DirectorySort } from "@masseurmatch/db/actions/directory-config";
 import {
   getCities,
   getServiceCategories,
@@ -15,21 +16,50 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Find a Massage Therapist",
-  description: `Search verified male massage therapists by city and service on ${SITE_NAME}.`,
+  description: `Search verified male massage therapists by city, service, session type, price and availability on ${SITE_NAME}.`,
   alternates: { canonical: absoluteUrl("/search") },
   // Filter permutations are not useful in an index; the city pages are.
   robots: { index: false, follow: true },
 };
 
 interface SearchParams {
-  searchParams: { city?: string; service?: string; q?: string };
+  searchParams: {
+    city?: string;
+    service?: string;
+    q?: string;
+    session?: string;
+    available?: string;
+    verified?: string;
+    lgbtq?: string;
+    max?: string;
+    sort?: string;
+  };
 }
 
+const SORTS: { value: DirectorySort; label: string }[] = [
+  { value: "recommended", label: "Recommended" },
+  { value: "price", label: "Lowest price" },
+  { value: "rating", label: "Highest rated" },
+];
+
 export default async function SearchPage({ searchParams }: SearchParams) {
-  const filters = {
+  const maxPrice = Number.parseInt(searchParams.max ?? "", 10);
+  const filters: DirectoryFilters = {
     city: searchParams.city?.trim() || undefined,
     service: searchParams.service?.trim() || undefined,
     query: searchParams.q?.trim() || undefined,
+    session:
+      searchParams.session === "incall" || searchParams.session === "outcall"
+        ? searchParams.session
+        : undefined,
+    availableNow: searchParams.available === "1",
+    verified: searchParams.verified === "1",
+    lgbtq: searchParams.lgbtq === "1",
+    maxPrice: Number.isFinite(maxPrice) && maxPrice > 0 ? maxPrice : undefined,
+    sort:
+      searchParams.sort === "price" || searchParams.sort === "rating"
+        ? searchParams.sort
+        : undefined,
   };
 
   const [rawResults, cities, services] = await Promise.all([
@@ -100,6 +130,89 @@ export default async function SearchPage({ searchParams }: SearchParams) {
             ))}
           </select>
         </div>
+
+        <div>
+          <label htmlFor="session" className="mb-1.5 block text-sm font-medium text-text-primary">
+            Session type
+          </label>
+          <select
+            id="session"
+            name="session"
+            defaultValue={filters.session ?? ""}
+            className="motion-premium h-12 w-full rounded-xl border border-border/90 bg-white/92 px-4 text-sm text-foreground focus-visible:border-brand-secondary/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/25 focus-visible:ring-offset-2"
+          >
+            <option value="">Studio or outcall</option>
+            <option value="incall">Studio (incall)</option>
+            <option value="outcall">Outcall (they travel to you)</option>
+          </select>
+        </div>
+
+        <div>
+          <label htmlFor="max" className="mb-1.5 block text-sm font-medium text-text-primary">
+            Max price / hour
+          </label>
+          <Input
+            id="max"
+            name="max"
+            type="number"
+            min={0}
+            step={10}
+            placeholder="Any"
+            defaultValue={filters.maxPrice ?? ""}
+          />
+        </div>
+
+        <div>
+          <label htmlFor="sort" className="mb-1.5 block text-sm font-medium text-text-primary">
+            Sort by
+          </label>
+          <select
+            id="sort"
+            name="sort"
+            defaultValue={filters.sort ?? "recommended"}
+            className="motion-premium h-12 w-full rounded-xl border border-border/90 bg-white/92 px-4 text-sm text-foreground focus-visible:border-brand-secondary/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/25 focus-visible:ring-offset-2"
+          >
+            {SORTS.map((sort) => (
+              <option key={sort.value} value={sort.value}>
+                {sort.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <fieldset className="flex flex-wrap items-center gap-x-6 gap-y-3 sm:col-span-4">
+          <legend className="sr-only">More filters</legend>
+          <label className="flex items-center gap-2 text-sm text-text-primary">
+            <input
+              type="checkbox"
+              name="available"
+              value="1"
+              defaultChecked={filters.availableNow}
+              className="h-4 w-4 rounded border-border accent-brand-primary"
+            />
+            Available now
+          </label>
+          <label className="flex items-center gap-2 text-sm text-text-primary">
+            <input
+              type="checkbox"
+              name="verified"
+              value="1"
+              defaultChecked={filters.verified}
+              className="h-4 w-4 rounded border-border accent-brand-primary"
+            />
+            Verified only
+          </label>
+          <label className="flex items-center gap-2 text-sm text-text-primary">
+            <input
+              type="checkbox"
+              name="lgbtq"
+              value="1"
+              defaultChecked={filters.lgbtq}
+              className="h-4 w-4 rounded border-border accent-brand-primary"
+            />
+            LGBTQ+ affirming
+          </label>
+        </fieldset>
 
         <div className="sm:col-span-4">
           <button type="submit" className={buttonVariants({ size: "lg" })}>
