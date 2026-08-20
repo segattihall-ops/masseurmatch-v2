@@ -73,7 +73,9 @@ export async function moderateProfile(_prev: StepState, formData: FormData): Pro
   // Mandatory reason, enforced server-side. The textarea is `required`, but a
   // required attribute is a hint to a browser, not a rule.
   if (reason.length < 10) {
-    return { error: "Give a reason of at least 10 characters — it goes in the audit log." };
+    return {
+      error: "Give a reason of at least 10 characters — it goes in the audit log.",
+    };
   }
 
   // The FOSTA-SESTA checklist gates approval only. Rejecting or suspending
@@ -127,7 +129,9 @@ export async function moderateProfile(_prev: StepState, formData: FormData): Pro
       .eq("moderation_status", "pending");
 
     if (photoError) {
-      return { error: `Logged, but the reviewed photos could not be approved: ${photoError.message}` };
+      return {
+        error: `Logged, but the reviewed photos could not be approved: ${photoError.message}`,
+      };
     }
   }
 
@@ -146,7 +150,9 @@ export async function moderateProfile(_prev: StepState, formData: FormData): Pro
 
   if (error) return { error: `Logged, but the change failed: ${error.message}` };
   if ((data ?? []).length === 0) {
-    return { error: "Logged, but no profile was updated — it may have been changed already." };
+    return {
+      error: "Logged, but no profile was updated — it may have been changed already.",
+    };
   }
 
   revalidatePath("/admin/moderation");
