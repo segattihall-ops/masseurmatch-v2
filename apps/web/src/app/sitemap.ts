@@ -25,6 +25,8 @@ const MARKETING = [
   "/near-me",
   "/advertise",
   "/contact",
+  "/how-ranking-works",
+  "/services",
 ];
 
 const LEGAL = [
@@ -54,6 +56,9 @@ const LEGAL = [
   "/badge-disclaimer",
   "/verification",
   "/accessibility",
+  "/moderation-policy",
+  "/law-enforcement",
+  "/therapist-agreement",
 ];
 
 /**
