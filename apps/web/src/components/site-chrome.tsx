@@ -70,6 +70,8 @@ const FOOTER_GROUPS: { heading: string; links: { href: string; label: string }[]
       { href: "/terms", label: "Terms" },
       { href: "/privacy", label: "Privacy" },
       { href: "/cookie-policy", label: "Cookies" },
+      { href: "/moderation-policy", label: "Moderation policy" },
+      { href: "/law-enforcement", label: "Law enforcement" },
       { href: "/report-block-safety", label: "Report a problem" },
     ],
   },
