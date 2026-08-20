@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createSessionClient } from "@masseurmatch/db/auth";
+import { createServiceClient } from "@masseurmatch/db/client";
 import { toProfileStatus, type ProfileStatus } from "@masseurmatch/db/profile-status";
 import { HIDDEN } from "@masseurmatch/db/visibility";
 
@@ -176,6 +177,44 @@ export async function updateMyProfile(
   patch: Record<string, unknown>,
 ): Promise<number> {
   const { data, error } = await createSessionClient()
+    .from("profiles")
+    .update({ ...patch, updated_at: new Date().toISOString() })
+    .eq("id", userId)
+    .select("id");
+
+  if (error) throw new Error(`Could not save: ${error.message}`);
+  return (data ?? []).length;
+}
+
+/**
+ * Write the columns a therapist must never be able to write for themselves.
+ *
+ * `profile_status`, `visibility_status` and the `moderation_*` fields decide
+ * whether a listing is public and whether a human has looked at it. They are
+ * changed here — through the service client, from inside a server action that
+ * has already authorised the caller — rather than through `updateMyProfile`,
+ * so that the therapist's own permission on `profiles` never has to include
+ * them.
+ *
+ * That distinction is the application half of the fix in `docs/SELF-GRANT.md`.
+ * Until the column grant lands, this changes nothing an attacker cannot already
+ * do directly; after it lands, it is what keeps "submit for review" working
+ * when `authenticated` can no longer write those columns.
+ *
+ * Deliberately takes no arbitrary patch from a caller's form data — every call
+ * site below passes literals.
+ */
+export async function updateModerationState(
+  userId: string,
+  patch: {
+    profile_status?: string;
+    visibility_status?: string;
+    moderation_status?: string;
+    moderation_notes?: string;
+    reviewed_at?: string | null;
+  },
+): Promise<number> {
+  const { data, error } = await createServiceClient()
     .from("profiles")
     .update({ ...patch, updated_at: new Date().toISOString() })
     .eq("id", userId)

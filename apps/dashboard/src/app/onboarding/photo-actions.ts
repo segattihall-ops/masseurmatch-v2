@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { photoLimitForProfile, verifyUploadedAsset } from "@/lib/cloudinary";
-import { getOrCreateMyProfile, updateMyProfile } from "@/lib/profile";
+import { getOrCreateMyProfile } from "@/lib/profile";
 
 import type { StepState } from "./form-state";
 
