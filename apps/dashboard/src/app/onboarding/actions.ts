@@ -1,13 +1,12 @@
 "use server";
 
 import { getViewer } from "@masseurmatch/db/auth";
-import { createServiceClient } from "@masseurmatch/db/client";
 import { HIDDEN } from "@masseurmatch/db/visibility";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { basicsSchema, canSubmit, servicesSchema } from "@/lib/onboarding";
-import { getOrCreateMyProfile, updateMyProfile } from "@/lib/profile";
+import { getOrCreateMyProfile, updateMyProfile, updateModerationState } from "@/lib/profile";
 
 import type { StepState } from "./form-state";
 
@@ -104,11 +103,6 @@ export async function saveServices(_prev: StepState, formData: FormData): Promis
  * missing, but a hidden button is not a control. Sets `pending`, which is what
  * the phase 6 moderation queue reads, and keeps visibility `hidden` until a
  * reviewer approves — so submitting can never itself publish a profile.
- *
- * The status transition is platform-controlled state. Production already has
- * a database trigger that correctly rejects owner PATCHes to profile_status;
- * after the authenticated caller and completeness are validated here, the
- * trusted backend performs only this exact transition for this exact user id.
  */
 export async function submitForReview(_prev: StepState): Promise<StepState> {
   const userId = await requireTherapistId();
@@ -121,19 +115,14 @@ export async function submitForReview(_prev: StepState): Promise<StepState> {
     return { error: "Finish the earlier steps before submitting." };
   }
 
-  const { data, error } = await createServiceClient()
-    .from("profiles")
-    .update({
-      profile_status: "pending",
-      visibility_status: HIDDEN,
-      submitted_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", userId)
-    .select("id");
-
-  if (error) return { error: `Could not submit: ${error.message}` };
-  if ((data ?? []).length === 0) return { error: "Could not submit. Please sign in again." };
+  // Through the privileged writer, not the therapist's own permission: these
+  // two columns are exactly what decides whether a listing is public. See
+  // `updateModerationState` and docs/SELF-GRANT.md.
+  const written = await updateModerationState(userId, {
+    profile_status: "pending",
+    visibility_status: HIDDEN,
+  });
+  if (written === 0) return { error: "Could not submit. Please sign in again." };
 
   revalidatePath("/onboarding");
   return { ok: true };
