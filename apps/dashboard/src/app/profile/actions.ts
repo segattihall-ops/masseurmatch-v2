@@ -117,7 +117,8 @@ export async function saveProfile(_prev: StepState, formData: FormData): Promise
     .select("id");
 
   if (error) return { error: `That change was not saved: ${error.message}` };
-  if ((data ?? []).length === 0) return { error: "That change was not saved. Please sign in again." };
+  if ((data ?? []).length === 0)
+    return { error: "That change was not saved. Please sign in again." };
 
   revalidatePath("/profile");
   // The public page is ISR'd; without this the edit would not surface until the
