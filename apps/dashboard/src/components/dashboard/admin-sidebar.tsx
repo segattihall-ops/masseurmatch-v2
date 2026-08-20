@@ -2,13 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, Shield, FileCheck, TrendingUp, LogOut } from "lucide-react";
+import { BarChart3, FileCheck, LifeBuoy, LogOut, Shield, TrendingUp, Users } from "lucide-react";
 import { signOut } from "@/app/sign-in/actions";
 
 const ADMIN_LINKS = [
   { href: "/admin", label: "Overview", icon: BarChart3 },
+  { href: "/admin/people", label: "People", icon: Users },
   { href: "/admin/moderation", label: "Moderation", icon: Shield },
   { href: "/admin/verifications", label: "Verifications", icon: FileCheck },
+  { href: "/admin/tickets", label: "Tickets", icon: LifeBuoy },
   { href: "/admin/demand-radar", label: "Demand Radar", icon: TrendingUp },
 ];
 

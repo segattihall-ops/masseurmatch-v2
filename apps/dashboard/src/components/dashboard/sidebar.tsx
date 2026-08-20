@@ -2,15 +2,16 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, Edit, LogOut, MessageSquare, Settings, TrendingUp } from "lucide-react";
+import { BarChart3, CalendarClock, Edit, Image, LogOut, Settings, TrendingUp } from "lucide-react";
 import { signOut } from "@/app/sign-in/actions";
 
 const LINKS = [
   { href: "/therapist", label: "Dashboard", icon: BarChart3 },
-  { href: "/therapist/profile", label: "Profile", icon: Edit },
+  { href: "/profile", label: "Profile", icon: Edit },
+  { href: "/therapist/photos", label: "Photos", icon: Image },
+  { href: "/therapist/availability", label: "Availability & Travel", icon: CalendarClock },
   { href: "/therapist/approval", label: "Approval Status", icon: Settings },
   { href: "/therapist/growth", label: "Growth Analytics", icon: TrendingUp },
-  { href: "/therapist/messages", label: "Messages", icon: MessageSquare },
 ];
 
 export function Sidebar() {

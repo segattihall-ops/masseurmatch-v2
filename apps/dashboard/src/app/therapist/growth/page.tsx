@@ -1,5 +1,9 @@
+import { trendLabel } from "@masseurmatch/db/analytics";
 import { createSessionClient } from "@masseurmatch/db/auth";
-import { Eye, Activity, MessageSquare, TrendingUp, Calendar } from "lucide-react";
+import { Eye, MousePointerClick, TrendingUp, Users } from "lucide-react";
+
+import { ANALYTICS_WINDOW_DAYS, getMyViewAnalytics } from "@/lib/analytics";
+import { getOrCreateMyProfile } from "@/lib/profile";
 
 export default async function GrowthAnalyticsPage() {
   const supabase = createSessionClient();
@@ -9,100 +13,115 @@ export default async function GrowthAnalyticsPage() {
 
   if (!user) return null;
 
-  // Mock analytics data - replace with real data from database
-  const stats = {
-    views: 234,
-    clicks: 45,
-    inquiries: 12,
-    bookings: 3,
-  };
+  const { profile } = await getOrCreateMyProfile(user.id);
+
+  const [views, clicksRow] = await Promise.all([
+    getMyViewAnalytics(profile.id),
+    supabase.from("profiles").select("contact_clicks").eq("id", user.id).maybeSingle(),
+  ]);
+
+  const contactClicks = (clicksRow.data as { contact_clicks?: number | null } | null)
+    ?.contact_clicks;
+
+  const cards = [
+    {
+      label: `Profile views · last ${ANALYTICS_WINDOW_DAYS} days`,
+      value: views.available ? String(views.total) : "—",
+      sub: views.available
+        ? trendLabel(views.trend, ANALYTICS_WINDOW_DAYS)
+        : "Analytics is warming up",
+      icon: Eye,
+      tint: "text-blue-500",
+    },
+    {
+      label: "Unique visitors",
+      value: views.available ? String(views.people) : "—",
+      sub: `Distinct sessions, last ${ANALYTICS_WINDOW_DAYS} days`,
+      icon: Users,
+      tint: "text-green-500",
+    },
+    {
+      label: "Contact clicks",
+      value: contactClicks == null ? "—" : String(contactClicks),
+      sub: "All time",
+      icon: MousePointerClick,
+      tint: "text-purple-500",
+    },
+  ];
 
   return (
     <div className="space-y-8 p-8">
       <div className="space-y-2">
         <h1 className="text-3xl font-bold text-text-primary">Growth Analytics</h1>
-        <p className="text-text-secondary">Track your profile performance and engagement</p>
+        <p className="text-text-secondary">
+          Live numbers from your public profile — views, visitors, and how people reach out
+        </p>
       </div>
 
-      {/* Key Metrics */}
       <div className="grid gap-4 md:grid-cols-4">
-        <div className="space-y-2 rounded-lg border border-border bg-surface p-6">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-medium text-text-secondary">Profile Views</h3>
-            <Eye className="h-4 w-4 text-blue-500" />
-          </div>
-          <p className="text-3xl font-bold text-text-primary">{stats.views}</p>
-          <p className="text-xs text-text-secondary">This month</p>
-        </div>
-
-        <div className="space-y-2 rounded-lg border border-border bg-surface p-6">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-medium text-text-secondary">Link Clicks</h3>
-            <Activity className="h-4 w-4 text-green-500" />
-          </div>
-          <p className="text-3xl font-bold text-text-primary">{stats.clicks}</p>
-          <p className="text-xs text-text-secondary">This month</p>
-        </div>
-
-        <div className="space-y-2 rounded-lg border border-border bg-surface p-6">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-medium text-text-secondary">Inquiries</h3>
-            <MessageSquare className="h-4 w-4 text-purple-500" />
-          </div>
-          <p className="text-3xl font-bold text-text-primary">{stats.inquiries}</p>
-          <p className="text-xs text-text-secondary">This month</p>
-        </div>
-
-        <div className="space-y-2 rounded-lg border border-border bg-surface p-6">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-medium text-text-secondary">Bookings</h3>
-            <TrendingUp className="h-4 w-4 text-orange-500" />
-          </div>
-          <p className="text-3xl font-bold text-text-primary">{stats.bookings}</p>
-          <p className="text-xs text-text-secondary">This month</p>
-        </div>
-      </div>
-
-      {/* Performance Timeline */}
-      <div className="space-y-4 rounded-lg border border-border bg-surface p-6">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-text-primary">Performance Timeline</h2>
-          <Calendar className="h-5 w-5 text-text-secondary" />
-        </div>
-
-        <div className="space-y-4">
-          {/* Weekly breakdown */}
-          {[
-            { week: "This Week", views: 45, clicks: 8, inquiries: 2 },
-            { week: "Last Week", views: 189, clicks: 37, inquiries: 10 },
-          ].map((item) => (
+        {cards.map((card) => {
+          const Icon = card.icon;
+          return (
             <div
-              key={item.week}
-              className="flex items-center justify-between border-b border-border pb-4"
+              key={card.label}
+              className="space-y-2 rounded-lg border border-border bg-surface p-6"
             >
-              <div>
-                <p className="font-medium text-text-primary">{item.week}</p>
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-medium text-text-secondary">{card.label}</h3>
+                <Icon className={`h-4 w-4 ${card.tint}`} />
               </div>
-              <div className="flex gap-6 text-sm text-text-secondary">
-                <div>
-                  <p className="text-text-secondary">Views</p>
-                  <p className="font-medium text-text-primary">{item.views}</p>
-                </div>
-                <div>
-                  <p className="text-text-secondary">Clicks</p>
-                  <p className="font-medium text-text-primary">{item.clicks}</p>
-                </div>
-                <div>
-                  <p className="text-text-secondary">Inquiries</p>
-                  <p className="font-medium text-text-primary">{item.inquiries}</p>
-                </div>
-              </div>
+              <p className="text-3xl font-bold text-text-primary">{card.value}</p>
+              <p className="text-xs text-text-secondary">{card.sub}</p>
             </div>
-          ))}
-        </div>
+          );
+        })}
       </div>
 
-      {/* Tips */}
+      {views.available && (views.topSources.length > 0 || views.topPlaces.length > 0) ? (
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-4 rounded-lg border border-border bg-surface p-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-text-primary">Where views come from</h2>
+              <TrendingUp className="h-5 w-5 text-text-secondary" />
+            </div>
+            {views.topSources.length > 0 ? (
+              <ul className="space-y-2">
+                {views.topSources.map((source) => (
+                  <li
+                    key={source.label}
+                    className="flex items-center justify-between border-b border-border pb-2 text-sm last:border-b-0"
+                  >
+                    <span className="text-text-primary">{source.label}</span>
+                    <span className="font-medium text-text-secondary">{source.count}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-text-secondary">No source data yet.</p>
+            )}
+          </div>
+
+          <div className="space-y-4 rounded-lg border border-border bg-surface p-6">
+            <h2 className="text-lg font-semibold text-text-primary">Where your visitors are</h2>
+            {views.topPlaces.length > 0 ? (
+              <ul className="space-y-2">
+                {views.topPlaces.map((place) => (
+                  <li
+                    key={place.label}
+                    className="flex items-center justify-between border-b border-border pb-2 text-sm last:border-b-0"
+                  >
+                    <span className="text-text-primary">{place.label}</span>
+                    <span className="font-medium text-text-secondary">{place.count}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-text-secondary">No location data yet.</p>
+            )}
+          </div>
+        </div>
+      ) : null}
+
       <div className="space-y-4">
         <h2 className="text-lg font-semibold text-text-primary">Tips to Increase Your Views</h2>
         <div className="grid gap-4 md:grid-cols-2">
@@ -127,9 +146,9 @@ export default async function GrowthAnalyticsPage() {
             </p>
           </div>
           <div className="space-y-2 rounded-lg border border-border bg-surface p-6">
-            <h3 className="font-semibold text-text-primary">Respond to Inquiries</h3>
+            <h3 className="font-semibold text-text-primary">Use Available Now</h3>
             <p className="text-sm text-text-secondary">
-              Quick responses boost your rankings. Reply to inquiries within 2 hours when possible.
+              Turning on the Available Now badge highlights you to clients looking to book today.
             </p>
           </div>
         </div>

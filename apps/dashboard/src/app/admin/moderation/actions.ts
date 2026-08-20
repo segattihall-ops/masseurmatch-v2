@@ -5,11 +5,7 @@ import { HIDDEN, PUBLIC, SUSPENDED } from "@masseurmatch/db/visibility";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import {
-  FOSTA_CHECKS,
-  MODERATION_ACTIONS,
-  type ModerationAction,
-} from "@/lib/moderation";
+import { FOSTA_CHECKS, MODERATION_ACTIONS, type ModerationAction } from "@/lib/moderation";
 
 import type { StepState } from "../../onboarding/form-state";
 
@@ -63,10 +59,7 @@ const OUTCOMES: Record<ModerationAction, Record<string, unknown>> = {
   },
 };
 
-export async function moderateProfile(
-  _prev: StepState,
-  formData: FormData
-): Promise<StepState> {
+export async function moderateProfile(_prev: StepState, formData: FormData): Promise<StepState> {
   const adminId = await requireAdminId();
 
   const profileId = String(formData.get("profile_id") ?? "").trim();
@@ -75,15 +68,13 @@ export async function moderateProfile(
   const checked = formData.getAll("fosta").map(String);
 
   if (!profileId) return { error: "No profile selected." };
-  if (!MODERATION_ACTIONS.includes(action))
-    return { error: "Unknown action." };
+  if (!MODERATION_ACTIONS.includes(action)) return { error: "Unknown action." };
 
   // Mandatory reason, enforced server-side. The textarea is `required`, but a
   // required attribute is a hint to a browser, not a rule.
   if (reason.length < 10) {
     return {
-      error:
-        "Give a reason of at least 10 characters — it goes in the audit log.",
+      error: "Give a reason of at least 10 characters — it goes in the audit log.",
     };
   }
 
@@ -157,12 +148,10 @@ export async function moderateProfile(
     .eq("id", profileId)
     .select("id");
 
-  if (error)
-    return { error: `Logged, but the change failed: ${error.message}` };
+  if (error) return { error: `Logged, but the change failed: ${error.message}` };
   if ((data ?? []).length === 0) {
     return {
-      error:
-        "Logged, but no profile was updated — it may have been changed already.",
+      error: "Logged, but no profile was updated — it may have been changed already.",
     };
   }
 

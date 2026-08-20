@@ -48,6 +48,7 @@ export interface TherapistListing {
   available_now: boolean | null;
   /** Read through `isAvailableNow` — the flag alone is not the answer. */
   available_now_expires: string | null;
+  lgbtq_affirming: boolean | null;
   /** Raw `jsonb`. Read it through `parseTravelSchedule` — never index it directly. */
   travel_schedule: unknown;
   updated_at: string | null;
@@ -66,7 +67,6 @@ export interface ProfileDetail extends TherapistListing {
   tagline: string | null;
   years_experience: number | null;
   languages: string[] | null;
-  lgbtq_affirming: boolean | null;
   website: string | null;
   latitude: number | null;
   longitude: number | null;
@@ -85,11 +85,42 @@ export interface CityListing {
   therapistCount: number;
 }
 
+/** How search results may be ordered. `recommended` is `compareByRank`. */
+export type DirectorySort = "recommended" | "price" | "rating";
+
+export const DIRECTORY_SORTS: DirectorySort[] = ["recommended", "price", "rating"];
+
 /** Filters accepted by the search page, parsed from searchParams. */
 export interface DirectoryFilters {
   city?: string;
   service?: string;
   query?: string;
+  /** Where the session happens. Omitted means either. */
+  session?: "incall" | "outcall";
+  /** Only therapists whose Available Now badge is on and unexpired. */
+  availableNow?: boolean;
+  /** Only identity- or profile-verified therapists. */
+  verified?: boolean;
+  /** Only therapists who marked their practice LGBTQ+ affirming. */
+  lgbtq?: boolean;
+  /** Keep listings whose cheapest offered session is at or under this. */
+  maxPrice?: number;
+  sort?: DirectorySort;
+}
+
+/**
+ * The cheapest session a listing offers, or null when it lists no prices.
+ * A price only counts for a session type the therapist actually offers.
+ */
+export function startingPrice(listing: TherapistListing): number | null {
+  const prices: number[] = [];
+  if (listing.offers_incall !== false && typeof listing.incall_price === "number") {
+    prices.push(listing.incall_price);
+  }
+  if (listing.offers_outcall !== false && typeof listing.outcall_price === "number") {
+    prices.push(listing.outcall_price);
+  }
+  return prices.length > 0 ? Math.min(...prices) : null;
 }
 
 /** URL-safe city slug. `"Fort Lauderdale"` → `"fort-lauderdale"`. */
