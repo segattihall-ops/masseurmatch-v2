@@ -6,7 +6,7 @@
     <title>Edit Profile · MasseurMatch</title>
     <meta
       name="description"
-      content="MasseurMatch therapist profile editor — six guided sections, live validation, autosave and a client-eye preview."
+      content="The MasseurMatch provider listing editor — six sections, live validation, autosave and a client-eye preview."
     />
     <meta name="color-scheme" content="light dark" />
     <link rel="stylesheet" href="styles.css" />
@@ -34,16 +34,16 @@
             <button type="button" class="ghost-btn" id="btn-undo" title="Undo (Ctrl+Z)" disabled>
               <span class="ico" aria-hidden="true">↶</span><span class="ghost-btn__label">Undo</span>
             </button>
+            <button type="button" class="ghost-btn" id="btn-redo" title="Redo (Ctrl+Shift+Z)" disabled>
+              <span class="ico" aria-hidden="true">↷</span><span class="ghost-btn__label">Redo</span>
+            </button>
             <button
               type="button"
               class="ghost-btn"
-              id="btn-redo"
-              title="Redo (Ctrl+Shift+Z)"
-              disabled
+              id="btn-theme"
+              aria-pressed="false"
+              title="Switch colour theme"
             >
-              <span class="ico" aria-hidden="true">↷</span><span class="ghost-btn__label">Redo</span>
-            </button>
-            <button type="button" class="ghost-btn" id="btn-theme" aria-pressed="false" title="Switch colour theme">
               <span class="ico" aria-hidden="true">◐</span
               ><span class="ghost-btn__label" id="theme-label">Dark</span>
             </button>
@@ -51,14 +51,18 @@
               <span class="ico" aria-hidden="true">?</span
               ><span class="ghost-btn__label">Shortcuts</span>
             </button>
-            <button type="button" class="ghost-btn ghost-btn--solid" id="btn-preview" title="Preview your public listing (Ctrl+P)">
-              <span class="ico" aria-hidden="true">👁</span
+            <button
+              type="button"
+              class="ghost-btn ghost-btn--solid"
+              id="btn-preview"
+              title="Preview your public listing (Ctrl+P)"
+            >
+              <span class="ico" aria-hidden="true">◉</span
               ><span class="ghost-btn__label">Preview</span>
             </button>
           </div>
         </div>
 
-        <!-- Progress -->
         <div class="progress" role="group" aria-labelledby="progress-label">
           <div class="progress__row">
             <p class="progress__label" id="progress-label">
@@ -78,7 +82,8 @@
             <span class="progress__fill" id="progress-fill"></span>
           </div>
           <p class="progress__hint" id="progress-hint">
-            Fill the required fields (marked <span class="req">*</span>) to publish your profile.
+            Display name, city and phone are the three the API insists on; the rest shapes how you
+            appear in search.
           </p>
         </div>
       </div>
@@ -87,11 +92,9 @@
     <!-- ────────────────────────────────  STICKY NAV  ────────────────────────── -->
     <div class="stickybar" id="stickybar">
       <div class="shell stickybar__inner">
-        <nav class="tabs" id="tabs" aria-label="Profile sections">
-          <!-- tab buttons injected by app.js -->
-        </nav>
+        <nav class="tabs" id="tabs" aria-label="Profile sections"></nav>
         <div class="stickybar__actions">
-          <span class="savestate" id="savestate" role="status" aria-live="polite">All changes saved</span>
+          <span class="savestate" id="savestate" role="status" aria-live="polite"></span>
           <button type="button" class="btn btn--ghost" id="btn-toggle-all">Collapse all</button>
           <button type="submit" class="btn btn--primary" form="profile-form" id="btn-save-top">
             Save profile
@@ -108,7 +111,7 @@
       </div>
 
       <form id="profile-form" novalidate autocomplete="on">
-        <!-- ══════════ SECTION 1 · ABOUT YOU ══════════ -->
+        <!-- ══════════ 1 · ABOUT YOU ══════════ -->
         <section class="card" id="section-about" data-section="about" aria-labelledby="about-title">
           <button
             type="button"
@@ -129,77 +132,126 @@
           <div class="card__body" id="about-body">
             <div class="card__inner">
               <p class="card__lead">
-                This is the top of your listing. A clear name, one headline and a specific bio do
-                more for bookings than anything else on this page.
+                This is the top of your listing. Your headline is one of 70 presets rather than free
+                text — the listing composes it with your display name.
               </p>
 
-              <div class="grid grid--3">
+              <div class="grid grid--2">
                 <div class="field" data-field="display_name">
                   <div class="field__top">
                     <label class="field__label" for="display_name"
                       >Display name <span class="req" aria-hidden="true">*</span
                       ><span class="sr-only">(required)</span></label
                     >
-                    <span class="counter" data-counter-for="display_name">0/50</span>
+                    <span class="counter" data-counter-for="display_name">0/120</span>
                   </div>
                   <input
                     id="display_name"
                     name="display_name"
                     type="text"
-                    maxlength="50"
+                    maxlength="120"
                     placeholder="Bruno"
                     autocomplete="nickname"
-                    data-required
                   />
-                  <p class="field__hint">First name or working name — this is what clients see.</p>
+                  <p class="field__hint">Saved to both <code>display_name</code> and <code>full_name</code>.</p>
                 </div>
 
-                <div class="field" data-field="height">
+                <div class="field" data-field="headline">
                   <div class="field__top">
-                    <label class="field__label" for="height">Height</label>
+                    <label class="field__label" for="headline">Headline</label>
                   </div>
-                  <input id="height" name="height" type="text" placeholder="6'8&quot; (203cm)" />
-                  <p class="field__hint">Optional. Free text, any unit.</p>
-                </div>
-
-                <div class="field" data-field="weight">
-                  <div class="field__top">
-                    <label class="field__label" for="weight">Weight</label>
-                  </div>
-                  <input id="weight" name="weight" type="text" placeholder="175 lb (79kg)" />
-                  <p class="field__hint">Optional. Free text, any unit.</p>
+                  <select id="headline" name="headline" data-mount="headline"></select>
+                  <p class="field__hint">70 presets. Not free text.</p>
                 </div>
               </div>
 
-              <fieldset class="field field--fieldset" data-field="headline">
-                <div class="field__top">
-                  <legend class="field__label">
-                    Headline <span class="req" aria-hidden="true">*</span
-                    ><span class="sr-only">(required)</span>
-                  </legend>
-                </div>
-                <div class="segmented" data-mount="headline"></div>
-                <p class="field__hint">
-                  The one line under your name. Pick the style that describes most of your work.
-                </p>
-              </fieldset>
+              <div class="composed">
+                <span class="composed__label">Clients see</span>
+                <span class="composed__value" data-composed>Pick a headline to see this</span>
+              </div>
 
-              <div class="grid grid--2">
-                <div class="field" data-field="tagline">
+              <div class="field" data-field="tagline">
+                <div class="field__top">
+                  <label class="field__label" for="tagline">Tagline</label>
+                  <span class="counter" data-counter-for="tagline">0/120</span>
+                </div>
+                <input
+                  id="tagline"
+                  name="tagline"
+                  type="text"
+                  maxlength="120"
+                  placeholder="Deep tissue and sports recovery in Oak Lawn"
+                />
+                <p class="field__hint">
+                  One sentence on what you do and for whom. The API accepts 200 characters; this
+                  editor stops at 120, same as production.
+                </p>
+              </div>
+
+              <div class="field" data-field="bio">
+                <div class="field__top">
+                  <label class="field__label" for="bio">Bio</label>
+                  <span class="counter" data-counter-for="bio">0/4000</span>
+                </div>
+                <textarea
+                  id="bio"
+                  name="bio"
+                  rows="10"
+                  maxlength="4000"
+                  placeholder="Where you trained, what a session with you feels like, who you work best with…"
+                ></textarea>
+                <p class="notice">
+                  <span class="notice__icon" aria-hidden="true">▲</span>
+                  <span
+                    ><strong>Live editor defect.</strong> The provider PATCH only writes
+                    <code>bio</code> when the new value contains text, so today a bio cannot be
+                    cleared once set. Emptying this field here produces an explicit empty string in
+                    the payload.</span
+                  >
+                </p>
+              </div>
+
+              <div class="grid grid--3">
+                <div class="field" data-field="height_in">
                   <div class="field__top">
-                    <label class="field__label" for="tagline">Tagline</label>
-                    <span class="counter" data-counter-for="tagline">0/200</span>
+                    <label class="field__label" for="height_in">Height</label>
+                    <span class="convert" data-convert="height"></span>
                   </div>
-                  <input
-                    id="tagline"
-                    name="tagline"
-                    type="text"
-                    maxlength="200"
-                    placeholder="Deep tissue and sports recovery in Oak Lawn, Dallas"
-                  />
-                  <p class="field__hint">
-                    Optional but recommended — one sentence on what you do and for whom.
-                  </p>
+                  <div class="suffixed">
+                    <input
+                      id="height_in"
+                      name="height_in"
+                      type="number"
+                      inputmode="numeric"
+                      min="36"
+                      max="96"
+                      step="1"
+                      placeholder="80"
+                    />
+                    <span class="suffixed__unit" aria-hidden="true">in</span>
+                  </div>
+                  <p class="field__hint">Stored in inches, 36–96.</p>
+                </div>
+
+                <div class="field" data-field="weight_lb">
+                  <div class="field__top">
+                    <label class="field__label" for="weight_lb">Weight</label>
+                    <span class="convert" data-convert="weight"></span>
+                  </div>
+                  <div class="suffixed">
+                    <input
+                      id="weight_lb"
+                      name="weight_lb"
+                      type="number"
+                      inputmode="numeric"
+                      min="60"
+                      max="600"
+                      step="1"
+                      placeholder="175"
+                    />
+                    <span class="suffixed__unit" aria-hidden="true">lb</span>
+                  </div>
+                  <p class="field__hint">Stored in pounds, 60–600.</p>
                 </div>
 
                 <div class="field" data-field="body_type">
@@ -207,37 +259,13 @@
                     <label class="field__label" for="body_type">Body type</label>
                   </div>
                   <select id="body_type" name="body_type" data-mount="body_type"></select>
-                  <p class="field__hint">Optional. Choose “Prefer not to say” to hide it.</p>
                 </div>
-              </div>
-
-              <div class="field" data-field="bio">
-                <div class="field__top">
-                  <label class="field__label" for="bio"
-                    >Bio / About me <span class="req" aria-hidden="true">*</span
-                    ><span class="sr-only">(required)</span></label
-                  >
-                  <span class="counter" data-counter-for="bio">0/4000</span>
-                </div>
-                <textarea
-                  id="bio"
-                  name="bio"
-                  rows="9"
-                  maxlength="4000"
-                  data-required
-                  data-minlength="120"
-                  placeholder="Where you trained, what a session with you feels like, who you work best with…"
-                ></textarea>
-                <p class="field__hint">
-                  Aim for 150–600 words. Say where you trained, how a session runs and who you work
-                  best with. Contact details belong in the next section, not here.
-                </p>
               </div>
             </div>
           </div>
         </section>
 
-        <!-- ══════════ SECTION 2 · LOCATION & CONTACT ══════════ -->
+        <!-- ══════════ 2 · LOCATION & CONTACT ══════════ -->
         <section
           class="card"
           id="section-location"
@@ -266,22 +294,20 @@
               <div class="grid grid--3">
                 <div class="field" data-field="zip">
                   <div class="field__top">
-                    <label class="field__label" for="zip"
-                      >ZIP code <span class="req" aria-hidden="true">*</span
-                      ><span class="sr-only">(required)</span></label
-                    >
+                    <label class="field__label" for="zip">ZIP code</label>
                   </div>
                   <input
                     id="zip"
                     name="zip"
                     type="text"
                     inputmode="numeric"
-                    maxlength="10"
+                    maxlength="5"
                     placeholder="75219"
                     autocomplete="postal-code"
-                    data-required
                   />
-                  <p class="field__hint">5 digits, or ZIP+4. Drives search results near you.</p>
+                  <p class="lookup is-idle" data-zip-status aria-live="polite">
+                    City, State and Neighborhood fill in from the ZIP code.
+                  </p>
                 </div>
 
                 <div class="field" data-field="city">
@@ -297,23 +323,18 @@
                     type="text"
                     placeholder="Dallas"
                     autocomplete="address-level2"
-                    data-required
                   />
                 </div>
 
                 <div class="field" data-field="state">
                   <div class="field__top">
-                    <label class="field__label" for="state"
-                      >State <span class="req" aria-hidden="true">*</span
-                      ><span class="sr-only">(required)</span></label
-                    >
+                    <label class="field__label" for="state">State</label>
                   </div>
                   <select
                     id="state"
                     name="state"
                     data-mount="states"
                     autocomplete="address-level1"
-                    data-required
                   ></select>
                 </div>
 
@@ -324,63 +345,76 @@
                   <input id="neighborhood" name="neighborhood" type="text" placeholder="Oak Lawn" />
                 </div>
 
-                <div class="field field--span2" data-field="cross_streets">
+                <div class="field" data-field="street_1">
                   <div class="field__top">
-                    <label class="field__label" for="cross_streets">Street intersection</label>
+                    <label class="field__label" for="street_1">Street intersection · 1</label>
                   </div>
-                  <input
-                    id="cross_streets"
-                    name="cross_streets"
-                    type="text"
-                    placeholder="Cedar Springs Rd &amp; Throckmorton St"
-                  />
-                  <p class="field__hint">
-                    Optional. Shown instead of a street address — close enough to find you, private
-                    enough to stay safe.
-                  </p>
+                  <input id="street_1" name="street_1" type="text" placeholder="8th Avenue" />
+                </div>
+
+                <div class="field" data-field="street_2">
+                  <div class="field__top">
+                    <label class="field__label" for="street_2">Street intersection · 2</label>
+                  </div>
+                  <input id="street_2" name="street_2" type="text" placeholder="W 23rd Street" />
                 </div>
               </div>
 
+              <div class="derived">
+                <p class="derived__label">Saved as street_reference</p>
+                <p class="derived__value" data-derived="street_reference">Both streets are blank.</p>
+              </div>
+
+              <p class="notice">
+                <span class="notice__icon" aria-hidden="true">▲</span>
+                <span
+                  ><strong>Live editor defect.</strong> Both street fields render in production but
+                  are never included in the PATCH, so nothing is saved. The column
+                  <code>street_reference</code> already exists and is the obvious destination — this
+                  build writes to it.</span
+                >
+              </p>
+
               <h3 class="subhead">How you see clients</h3>
               <div class="switches">
-                <label class="toggle" for="offer_incall">
-                  <input type="checkbox" id="offer_incall" name="offer_incall" class="toggle__input" />
+                <label class="toggle" for="offers_incall">
+                  <input type="checkbox" id="offers_incall" name="offers_incall" class="toggle__input" />
                   <span class="toggle__track" aria-hidden="true"><span class="toggle__thumb"></span></span>
                   <span class="toggle__text">
-                    <span class="toggle__title">Offer in-call</span>
+                    <span class="toggle__title">Offers in-call</span>
                     <span
                       class="toggle__desc"
                       data-toggle-desc
-                      data-on="Clientes vêm até mim"
-                      data-off="Não recebo clientes no meu espaço"
+                      data-on="Clients come to me"
+                      data-off="I do not host clients"
                     ></span>
                   </span>
                 </label>
 
-                <label class="toggle" for="offer_outcall">
-                  <input type="checkbox" id="offer_outcall" name="offer_outcall" class="toggle__input" />
+                <label class="toggle" for="offers_outcall">
+                  <input type="checkbox" id="offers_outcall" name="offers_outcall" class="toggle__input" />
                   <span class="toggle__track" aria-hidden="true"><span class="toggle__thumb"></span></span>
                   <span class="toggle__text">
-                    <span class="toggle__title">Offer out-call</span>
+                    <span class="toggle__title">Offers out-call</span>
                     <span
                       class="toggle__desc"
                       data-toggle-desc
-                      data-on="Viajo até o cliente"
-                      data-off="Não viajo até o cliente"
+                      data-on="I travel to the client"
+                      data-off="I do not travel to clients"
                     ></span>
                   </span>
                 </label>
 
-                <label class="toggle" for="show_on_map">
-                  <input type="checkbox" id="show_on_map" name="show_on_map" class="toggle__input" />
+                <label class="toggle" for="map_enabled">
+                  <input type="checkbox" id="map_enabled" name="map_enabled" class="toggle__input" />
                   <span class="toggle__track" aria-hidden="true"><span class="toggle__thumb"></span></span>
                   <span class="toggle__text">
                     <span class="toggle__title">Show on map</span>
                     <span
                       class="toggle__desc"
                       data-toggle-desc
-                      data-on="Mostrar localização no mapa"
-                      data-off="Ocultar localização no mapa"
+                      data-on="My location appears on the map"
+                      data-off="My location is hidden from the map"
                     ></span>
                   </span>
                 </label>
@@ -393,7 +427,7 @@
                     <span class="pill pill--info">Shown because out-call is on</span>
                   </div>
                   <select id="outcall_radius" name="outcall_radius" data-mount="outcall_radius"></select>
-                  <p class="field__hint">How far you are willing to travel from your ZIP code.</p>
+                  <p class="field__hint">How far you travel from your ZIP code.</p>
                 </div>
               </div>
 
@@ -402,7 +436,7 @@
                 <div class="field" data-field="phone">
                   <div class="field__top">
                     <label class="field__label" for="phone"
-                      >Phone number <span class="req" aria-hidden="true">*</span
+                      >Phone <span class="req" aria-hidden="true">*</span
                       ><span class="sr-only">(required)</span></label
                     >
                   </div>
@@ -414,9 +448,11 @@
                     placeholder="(555) 123-4567"
                     autocomplete="tel-national"
                     data-phone
-                    data-required
                   />
-                  <p class="field__hint">Formats itself as you type: (XXX) XXX-XXXX.</p>
+                  <p class="field__hint">
+                    Required to save a provider profile. Normalised to international format on the
+                    way in; saved to <code>phone</code> and <code>phone_number</code>.
+                  </p>
                 </div>
 
                 <div class="field" data-field="whatsapp">
@@ -431,15 +467,11 @@
                     placeholder="(555) 123-4567"
                     data-phone
                   />
-                  <p class="field__hint">Optional. Leave blank to hide the WhatsApp button.</p>
                 </div>
 
                 <div class="field" data-field="email">
                   <div class="field__top">
-                    <label class="field__label" for="email"
-                      >Email <span class="req" aria-hidden="true">*</span
-                      ><span class="sr-only">(required)</span></label
-                    >
+                    <label class="field__label" for="email">Email</label>
                   </div>
                   <input
                     id="email"
@@ -447,22 +479,22 @@
                     type="email"
                     placeholder="you@example.com"
                     autocomplete="email"
-                    data-required
                   />
+                  <p class="field__hint">Contact address for the profile, not your sign-in email.</p>
                 </div>
               </div>
 
-              <div class="switches switches--single">
-                <label class="toggle" for="email_public">
-                  <input type="checkbox" id="email_public" name="email_public" class="toggle__input" />
+              <div class="conditional" data-conditional="show_email" hidden>
+                <label class="toggle" for="show_email">
+                  <input type="checkbox" id="show_email" name="show_email" class="toggle__input" />
                   <span class="toggle__track" aria-hidden="true"><span class="toggle__thumb"></span></span>
                   <span class="toggle__text">
-                    <span class="toggle__title">Email visibility</span>
+                    <span class="toggle__title">Show email on public profile</span>
                     <span
                       class="toggle__desc"
                       data-toggle-desc
-                      data-on="Email visível publicamente"
-                      data-off="Email privado — usado apenas pela MasseurMatch"
+                      data-on="Anyone viewing your listing can see it"
+                      data-off="Kept private — MasseurMatch only"
                     ></span>
                   </span>
                 </label>
@@ -474,13 +506,7 @@
                   <div class="field__top">
                     <label class="field__label" for="website">Website</label>
                   </div>
-                  <input
-                    id="website"
-                    name="website"
-                    type="url"
-                    placeholder="https://yoursite.com"
-                    data-url
-                  />
+                  <input id="website" name="website" type="url" placeholder="https://yoursite.com" />
                 </div>
 
                 <div class="field" data-field="booking_url">
@@ -492,7 +518,6 @@
                     name="booking_url"
                     type="url"
                     placeholder="https://book.yoursite.com"
-                    data-url
                   />
                 </div>
 
@@ -500,18 +525,21 @@
                   <div class="field__top">
                     <label class="field__label" for="booking_platform">Booking platform</label>
                   </div>
-                  <select
+                  <input
                     id="booking_platform"
                     name="booking_platform"
-                    data-mount="booking_platform"
-                  ></select>
+                    type="text"
+                    list="booking-platforms"
+                    placeholder="Calendly"
+                  />
+                  <p class="field__hint">Free text. Calendly, Square and Acuity are the common ones.</p>
                 </div>
               </div>
             </div>
           </div>
         </section>
 
-        <!-- ══════════ SECTION 3 · SERVICES ══════════ -->
+        <!-- ══════════ 3 · SERVICES ══════════ -->
         <section
           class="card"
           id="section-services"
@@ -528,7 +556,7 @@
             <span class="card__num" aria-hidden="true">3</span>
             <span class="card__heads">
               <span class="card__title" id="services-title">Services</span>
-              <span class="card__summary" data-summary>Techniques, setup and what you provide.</span>
+              <span class="card__summary" data-summary>Techniques, setup, amenities and products.</span>
             </span>
             <span class="card__status" data-status></span>
             <span class="card__chev" aria-hidden="true">⌄</span>
@@ -537,54 +565,65 @@
           <div class="card__body" id="services-body">
             <div class="card__inner">
               <p class="card__lead">
-                Everything you tick here becomes a filter clients can search by. Pick what you
-                genuinely offer — accuracy beats volume.
+                Everything you tick here becomes a filter clients search by. Pick what you genuinely
+                offer — accuracy beats volume.
               </p>
 
               <div class="field field--fieldset" data-field="techniques">
-                <div class="field__top">
-                  <span class="field__label">Massage techniques</span>
-                </div>
+                <div class="field__top"><span class="field__label">Massage techniques</span></div>
                 <div class="checkgroup" data-group="techniques" data-cols="3" data-searchable="true"></div>
-                <p class="field__hint">Your first six show as badges on your listing card.</p>
+              </div>
+
+              <div class="derived">
+                <p class="derived__label">Derived from your techniques</p>
+                <p class="derived__value" data-derived="service_categories"></p>
               </div>
 
               <div class="grid grid--2">
                 <div class="field field--fieldset" data-field="setup">
-                  <div class="field__top"><span class="field__label">Massage setup / position</span></div>
+                  <div class="field__top"><span class="field__label">Massage setup</span></div>
                   <div class="checkgroup" data-group="setup" data-cols="2"></div>
                 </div>
 
-                <div class="field field--fieldset" data-field="products">
-                  <div class="field__top"><span class="field__label">Products used</span></div>
-                  <div class="checkgroup" data-group="products" data-cols="2"></div>
+                <div class="field field--fieldset" data-field="outcall_extras">
+                  <div class="field__top">
+                    <span class="field__label">Mobile / out-call extras</span>
+                    <span class="pill pill--muted" data-outcall-note hidden>Out-call is currently off</span>
+                  </div>
+                  <div class="checkgroup" data-group="outcall_extras" data-cols="2"></div>
                 </div>
-              </div>
-
-              <div class="field field--fieldset" data-field="outcall_extras">
-                <div class="field__top">
-                  <span class="field__label">Mobile / out-call extras</span>
-                  <span class="pill pill--muted" data-outcall-note hidden>Out-call is currently off</span>
-                </div>
-                <div class="checkgroup" data-group="outcall_extras" data-cols="3"></div>
-                <p class="field__hint">What you bring with you when you travel to a client.</p>
               </div>
 
               <div class="field field--fieldset" data-field="amenities">
                 <div class="field__top"><span class="field__label">Studio amenities</span></div>
                 <div class="checkgroup" data-group="amenities" data-cols="3"></div>
-                <p class="field__hint">What clients find when they come to your space.</p>
+                <p class="field__hint">
+                  Written to <code>studio_amenities</code>. The older <code>incall_amenities</code>
+                  column still exists in the database but nothing in this editor fills it.
+                </p>
               </div>
 
               <div class="field field--fieldset" data-field="additional_services">
                 <div class="field__top"><span class="field__label">Additional services</span></div>
                 <div class="checkgroup" data-group="additional_services" data-cols="3"></div>
               </div>
+
+              <div class="grid grid--2">
+                <div class="field field--fieldset" data-field="products_used">
+                  <div class="field__top"><span class="field__label">Products used</span></div>
+                  <div class="checkgroup" data-group="products_used" data-cols="1" data-searchable="true"></div>
+                </div>
+
+                <div class="field field--fieldset" data-field="products_sold">
+                  <div class="field__top"><span class="field__label">Products sold</span></div>
+                  <div class="checkgroup" data-group="products_sold" data-cols="1" data-searchable="true"></div>
+                </div>
+              </div>
             </div>
           </div>
         </section>
 
-        <!-- ══════════ SECTION 4 · RATES & PAYMENTS ══════════ -->
+        <!-- ══════════ 4 · RATES & PAYMENTS ══════════ -->
         <section class="card" id="section-rates" data-section="rates" aria-labelledby="rates-title">
           <button
             type="button"
@@ -604,130 +643,75 @@
 
           <div class="card__body" id="rates-body">
             <div class="card__inner">
-              <p class="card__lead">
-                Leave a cell empty for a length you do not offer. Listings with visible rates get
-                noticeably more enquiries than “ask me”.
-              </p>
-
-              <div class="field field--fieldset" data-field="rates">
+              <div class="field field--fieldset" data-field="sessions">
                 <div class="field__top">
                   <span class="field__label">Session pricing</span>
                   <button type="button" class="linkbtn" id="btn-copy-rates">
                     Copy in-call → out-call
                   </button>
                 </div>
-                <div class="table-wrap">
-                  <table class="rates" id="rates-table">
-                    <caption class="sr-only">Session pricing by length and session type</caption>
-                    <thead>
-                      <tr>
-                        <th scope="col">Session</th>
-                        <th scope="col">In-call</th>
-                        <th scope="col">Out-call</th>
-                      </tr>
-                    </thead>
-                    <tbody data-mount="rates-rows"></tbody>
-                  </table>
-                </div>
-                <p class="field__hint">Whole dollars. Negative values are rejected.</p>
-              </div>
-
-              <div class="switches">
-                <label class="toggle" for="longer_sessions">
-                  <input
-                    type="checkbox"
-                    id="longer_sessions"
-                    name="longer_sessions"
-                    class="toggle__input"
-                  />
-                  <span class="toggle__track" aria-hidden="true"><span class="toggle__thumb"></span></span>
-                  <span class="toggle__text">
-                    <span class="toggle__title">Longer sessions available</span>
-                    <span
-                      class="toggle__desc"
-                      data-toggle-desc
-                      data-on="Sessões mais longas disponíveis"
-                      data-off="Apenas as durações da tabela"
-                    ></span>
-                  </span>
-                </label>
-
-                <label class="toggle" for="rates_vary_distance">
-                  <input
-                    type="checkbox"
-                    id="rates_vary_distance"
-                    name="rates_vary_distance"
-                    class="toggle__input"
-                  />
-                  <span class="toggle__track" aria-hidden="true"><span class="toggle__thumb"></span></span>
-                  <span class="toggle__text">
-                    <span class="toggle__title">Rates vary by distance</span>
-                    <span
-                      class="toggle__desc"
-                      data-toggle-desc
-                      data-on="Tarifa varia pela distância percorrida"
-                      data-off="Mesma tarifa em qualquer distância"
-                    ></span>
-                  </span>
-                </label>
-              </div>
-
-              <h3 class="subhead">Discounts</h3>
-              <div class="field" data-field="first_time_discount">
-                <label class="check check--standalone">
-                  <input type="checkbox" id="first_time_discount" name="first_time_discount" />
-                  <span class="check__box" aria-hidden="true"></span>
-                  <span class="check__text">Discount for first-time clients</span>
-                </label>
-              </div>
-
-              <div class="conditional" data-conditional="first_time_discount_pct" hidden>
-                <div class="grid grid--2">
-                  <div class="field" data-field="first_time_discount_pct">
-                    <div class="field__top">
-                      <label class="field__label" for="first_time_discount_pct">Discount</label>
-                      <span class="pill pill--info">Shown because the discount is on</span>
-                    </div>
-                    <div class="suffixed">
-                      <input
-                        id="first_time_discount_pct"
-                        name="first_time_discount_pct"
-                        type="number"
-                        min="1"
-                        max="100"
-                        step="1"
-                        placeholder="15"
-                      />
-                      <span class="suffixed__unit" aria-hidden="true">%</span>
-                    </div>
-                    <p class="field__hint">Between 1% and 100%, applied to the first session only.</p>
+                <p class="field__hint">
+                  Add a row per length you offer, 1–600 minutes, up to 40 rows. Once you price a
+                  60-minute session, every other length is capped at a third above its proportional
+                  share of that hour — the same rule the API enforces.
+                </p>
+                <div class="repeater" data-repeater="sessions">
+                  <div data-rep-list></div>
+                  <div class="rep-foot">
+                    <button type="button" class="rep-add" data-rep-add="sessions">
+                      <span aria-hidden="true">+</span> Add a session
+                    </button>
+                    <span class="rep-count" data-rep-count></span>
                   </div>
                 </div>
               </div>
 
-              <div class="field" data-field="special_day_discount">
-                <div class="field__top">
-                  <label class="field__label" for="special_day_discount">Special day discount</label>
+              <div class="field field--fieldset" data-field="rate_disclaimers">
+                <div class="field__top"><span class="field__label">Rate disclaimers</span></div>
+                <div class="checkgroup" data-group="rate_disclaimers" data-cols="1"></div>
+              </div>
+
+              <h3 class="subhead">Discounts</h3>
+              <div class="field field--fieldset" data-field="regular_discounts">
+                <div class="field__top"><span class="field__label">Regular discounts</span></div>
+                <div class="checkgroup" data-group="regular_discounts" data-cols="3"></div>
+              </div>
+
+              <div class="grid grid--2">
+                <div class="field" data-field="dow_discount_percent">
+                  <div class="field__top">
+                    <label class="field__label" for="dow_discount_percent">Day-of-week discount</label>
+                  </div>
+                  <select
+                    id="dow_discount_percent"
+                    name="dow_discount_percent"
+                    data-mount="dow_discount_percent"
+                  ></select>
                 </div>
-                <input
-                  id="special_day_discount"
-                  name="special_day_discount"
-                  type="text"
-                  maxlength="120"
-                  placeholder="10% de desconto nas terças-feiras"
-                />
-                <p class="field__hint">Free text — shown as a badge on your listing.</p>
+
+                <div class="conditional" data-conditional="dow_discount_day" hidden>
+                  <div class="field" data-field="dow_discount_day">
+                    <div class="field__top">
+                      <label class="field__label" for="dow_discount_day">On which day</label>
+                    </div>
+                    <select
+                      id="dow_discount_day"
+                      name="dow_discount_day"
+                      data-mount="dow_discount_day"
+                    ></select>
+                  </div>
+                </div>
               </div>
 
               <div class="field field--fieldset" data-field="payment_methods">
-                <div class="field__top"><span class="field__label">Accepted payment methods</span></div>
-                <div class="checkgroup" data-group="payment_methods" data-cols="2"></div>
+                <div class="field__top"><span class="field__label">Payment methods</span></div>
+                <div class="checkgroup" data-group="payment_methods" data-cols="3"></div>
               </div>
             </div>
           </div>
         </section>
 
-        <!-- ══════════ SECTION 5 · SCHEDULE ══════════ -->
+        <!-- ══════════ 5 · SCHEDULE ══════════ -->
         <section
           class="card"
           id="section-schedule"
@@ -744,7 +728,7 @@
             <span class="card__num" aria-hidden="true">5</span>
             <span class="card__heads">
               <span class="card__title" id="schedule-title">Schedule</span>
-              <span class="card__summary" data-summary>Studio hours, availability and lead time.</span>
+              <span class="card__summary" data-summary>Studio hours, availability and status.</span>
             </span>
             <span class="card__status" data-status></span>
             <span class="card__chev" aria-hidden="true">⌄</span>
@@ -752,37 +736,23 @@
 
           <div class="card__body" id="schedule-body">
             <div class="card__inner">
-              <div class="field field--fieldset" data-field="hours">
-                <div class="field__top">
-                  <span class="field__label">Studio hours</span>
-                  <span class="quickrow">
-                    <button type="button" class="linkbtn" id="btn-apply-all">
-                      Apply Monday to every day
-                    </button>
-                    <button type="button" class="linkbtn" id="btn-weekend-closed">
-                      Close the weekend
-                    </button>
-                  </span>
-                </div>
-                <div class="table-wrap">
-                  <table class="hours" id="hours-table">
-                    <caption class="sr-only">Opening hours for each day of the week</caption>
-                    <thead>
-                      <tr>
-                        <th scope="col">Day</th>
-                        <th scope="col">Hours</th>
-                        <th scope="col"><span class="sr-only">Quick actions</span></th>
-                      </tr>
-                    </thead>
-                    <tbody data-mount="hours-rows"></tbody>
-                  </table>
-                </div>
+              <div class="field field--fieldset" data-field="studio_hours">
+                <div class="field__top"><span class="field__label">Studio hours</span></div>
                 <p class="field__hint">
-                  Free text — “9:00 AM - 11:00 PM”, “By appointment” or “Closed”.
+                  One row per pattern, up to 20. Times are on the quarter hour.
                 </p>
+                <div class="repeater" data-repeater="studio_hours">
+                  <div data-rep-list></div>
+                  <div class="rep-foot">
+                    <button type="button" class="rep-add" data-rep-add="studio_hours">
+                      <span aria-hidden="true">+</span> Add a range
+                    </button>
+                    <span class="rep-count" data-rep-count></span>
+                  </div>
+                </div>
               </div>
 
-              <div class="switches">
+              <div class="switches switches--single">
                 <label class="toggle" for="mobile_hours_same">
                   <input
                     type="checkbox"
@@ -792,26 +762,47 @@
                   />
                   <span class="toggle__track" aria-hidden="true"><span class="toggle__thumb"></span></span>
                   <span class="toggle__text">
-                    <span class="toggle__title">Mobile hours = studio hours</span>
+                    <span class="toggle__title">Mobile hours are the same as studio hours</span>
                     <span
                       class="toggle__desc"
                       data-toggle-desc
-                      data-on="Horário móvel = horário do studio"
-                      data-off="Horário móvel combinado caso a caso"
+                      data-on="One schedule covers both"
+                      data-off="Mobile hours are set separately below"
                     ></span>
                   </span>
                 </label>
+              </div>
 
+              <div class="conditional" data-conditional="mobile_hours" hidden>
+                <div class="field field--fieldset" data-field="mobile_hours">
+                  <div class="field__top">
+                    <span class="field__label">Mobile / out-call hours</span>
+                    <span class="pill pill--info">Shown because mobile hours differ</span>
+                  </div>
+                  <div class="repeater" data-repeater="mobile_hours">
+                    <div data-rep-list></div>
+                    <div class="rep-foot">
+                      <button type="button" class="rep-add" data-rep-add="mobile_hours">
+                        <span aria-hidden="true">+</span> Add a range
+                      </button>
+                      <span class="rep-count" data-rep-count></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <h3 class="subhead">Availability</h3>
+              <div class="switches">
                 <label class="toggle" for="available_now">
                   <input type="checkbox" id="available_now" name="available_now" class="toggle__input" />
                   <span class="toggle__track" aria-hidden="true"><span class="toggle__thumb"></span></span>
                   <span class="toggle__text">
-                    <span class="toggle__title">Available now</span>
+                    <span class="toggle__title">I’m available now</span>
                     <span
                       class="toggle__desc"
                       data-toggle-desc
-                      data-on="Estou disponível AGORA"
-                      data-off="Sem disponibilidade imediata"
+                      data-on="Shown as available right now"
+                      data-off="No immediate availability"
                     ></span>
                   </span>
                 </label>
@@ -825,35 +816,67 @@
                   />
                   <span class="toggle__track" aria-hidden="true"><span class="toggle__thumb"></span></span>
                   <span class="toggle__text">
-                    <span class="toggle__title">LGBTQ+ affirming</span>
+                    <span class="toggle__title">My practice is LGBTQ+-affirming</span>
                     <span
                       class="toggle__desc"
                       data-toggle-desc
-                      data-on="Meu estúdio é LGBTQ+ affirming"
-                      data-off="Não exibir o selo LGBTQ+ affirming"
+                      data-on="The badge shows on your listing"
+                      data-off="No badge on your listing"
                     ></span>
                   </span>
                 </label>
               </div>
 
+              <p class="notice">
+                <span class="notice__icon" aria-hidden="true">▲</span>
+                <span
+                  ><strong>Live editor defect.</strong> The PATCH accepts
+                  <code>availableNow</code> but never sets <code>updates.available_now</code>, so
+                  toggling it in production does not reach Supabase.</span
+                >
+              </p>
+
               <div class="grid grid--2">
-                <div class="field" data-field="booking_lead_time">
+                <div class="field" data-field="current_status">
                   <div class="field__top">
-                    <label class="field__label" for="booking_lead_time">Booking lead time</label>
+                    <label class="field__label" for="current_status">Current status</label>
+                  </div>
+                  <select id="current_status" name="current_status" data-mount="current_status"></select>
+                  <p class="field__hint">
+                    These six are what the <code>profiles.current_status</code> check constraint
+                    actually accepts.
+                  </p>
+                </div>
+
+                <div class="field" data-field="visibility_status">
+                  <div class="field__top">
+                    <label class="field__label" for="visibility_status">Visibility</label>
                   </div>
                   <select
-                    id="booking_lead_time"
-                    name="booking_lead_time"
-                    data-mount="booking_lead_time"
+                    id="visibility_status"
+                    name="visibility_status"
+                    data-mount="visibility_status"
                   ></select>
-                  <p class="field__hint">How much notice you need before a session.</p>
+                  <p class="field__hint">A separate column with its own four values.</p>
                 </div>
               </div>
+
+              <p class="notice">
+                <span class="notice__icon" aria-hidden="true">▲</span>
+                <span
+                  ><strong>Live editor defect.</strong> Production shows a prettier status list
+                  (“Available now”, “Booking ahead”, “Away”…) that does not match the
+                  <code>current_status</code> constraint, and it reads
+                  <code>visibility_status</code> while writing <code>current_status</code>. The two
+                  are separated here. Neither is trustworthy in production until that is
+                  fixed.</span
+                >
+              </p>
             </div>
           </div>
         </section>
 
-        <!-- ══════════ SECTION 6 · CREDENTIALS ══════════ -->
+        <!-- ══════════ 6 · CREDENTIALS ══════════ -->
         <section
           class="card"
           id="section-credentials"
@@ -870,7 +893,7 @@
             <span class="card__num" aria-hidden="true">6</span>
             <span class="card__heads">
               <span class="card__title" id="credentials-title">Credentials</span>
-              <span class="card__summary" data-summary>Experience, training and languages.</span>
+              <span class="card__summary" data-summary>Experience, training, languages and affiliations.</span>
             </span>
             <span class="card__status" data-status></span>
             <span class="card__chev" aria-hidden="true">⌄</span>
@@ -879,83 +902,72 @@
           <div class="card__body" id="credentials-body">
             <div class="card__inner">
               <div class="grid grid--3">
+                <div class="field" data-field="career_start_month">
+                  <div class="field__top">
+                    <label class="field__label" for="career_start_month">Career start · month</label>
+                  </div>
+                  <select
+                    id="career_start_month"
+                    name="career_start_month"
+                    data-mount="career_start_month"
+                  ></select>
+                </div>
+
+                <div class="field" data-field="career_start_year">
+                  <div class="field__top">
+                    <label class="field__label" for="career_start_year">Career start · year</label>
+                  </div>
+                  <select
+                    id="career_start_year"
+                    name="career_start_year"
+                    data-mount="career_start_year"
+                  ></select>
+                </div>
+
                 <div class="field" data-field="years_experience">
                   <div class="field__top">
-                    <label class="field__label" for="years_experience"
-                      >Years of experience <span class="req" aria-hidden="true">*</span
-                      ><span class="sr-only">(required)</span></label
-                    >
+                    <label class="field__label" for="years_experience">Years of experience</label>
                   </div>
                   <input
                     id="years_experience"
                     name="years_experience"
                     type="number"
-                    min="0"
-                    max="70"
-                    step="1"
                     inputmode="numeric"
+                    min="0"
+                    max="80"
+                    step="1"
                     placeholder="14"
-                    data-required
-                  />
-                </div>
-
-                <div class="field" data-field="career_start">
-                  <div class="field__top">
-                    <label class="field__label" for="career_start">Career start date</label>
-                  </div>
-                  <input
-                    id="career_start"
-                    name="career_start"
-                    type="text"
-                    placeholder="January 2010"
-                    list="months"
-                  />
-                  <p class="field__hint">Month and year.</p>
-                </div>
-
-                <div class="field" data-field="certification">
-                  <div class="field__top">
-                    <label class="field__label" for="certification"
-                      >Certification / diploma</label
-                    >
-                  </div>
-                  <input
-                    id="certification"
-                    name="certification"
-                    type="text"
-                    placeholder="Certified Massage Therapist"
-                  />
-                </div>
-
-                <div class="field" data-field="school">
-                  <div class="field__top">
-                    <label class="field__label" for="school">School / institution</label>
-                  </div>
-                  <input id="school" name="school" type="text" placeholder="Instituto Brasileiro de Terapias" />
-                </div>
-
-                <div class="field field--span2" data-field="school_location">
-                  <div class="field__top">
-                    <label class="field__label" for="school_location">School location</label>
-                  </div>
-                  <input
-                    id="school_location"
-                    name="school_location"
-                    type="text"
-                    placeholder="Rio de Janeiro, Rio de Janeiro"
                   />
                 </div>
               </div>
 
+              <div class="field field--fieldset" data-field="education">
+                <div class="field__top"><span class="field__label">Education</span></div>
+                <p class="field__hint">Up to 40 qualifications, newest first reads best.</p>
+                <div class="repeater" data-repeater="education">
+                  <div data-rep-list></div>
+                  <div class="rep-foot">
+                    <button type="button" class="rep-add" data-rep-add="education">
+                      <span aria-hidden="true">+</span> Add a qualification
+                    </button>
+                    <span class="rep-count" data-rep-count></span>
+                  </div>
+                </div>
+              </div>
+
               <div class="field field--fieldset" data-field="languages">
-                <div class="field__top"><span class="field__label">Languages spoken</span></div>
+                <div class="field__top"><span class="field__label">Languages</span></div>
                 <div class="checkgroup" data-group="languages" data-cols="3"></div>
+              </div>
+
+              <div class="field field--fieldset" data-field="affiliations">
+                <div class="field__top"><span class="field__label">Affiliations</span></div>
+                <div class="checkgroup" data-group="affiliations" data-cols="1"></div>
               </div>
             </div>
           </div>
         </section>
 
-        <!-- ══════════ FOOTER ACTIONS ══════════ -->
         <div class="formfoot">
           <div class="formfoot__note">
             <span class="savestate" id="savestate-foot" role="status" aria-live="polite"></span>
@@ -969,7 +981,7 @@
       </form>
     </main>
 
-    <datalist id="months"></datalist>
+    <datalist id="booking-platforms"></datalist>
 
     <!-- ────────────────────────────────  PREVIEW  ───────────────────────────── -->
     <div class="modal" id="preview" hidden>
@@ -983,10 +995,8 @@
       >
         <header class="modal__head">
           <h2 id="preview-title">Profile preview</h2>
-          <p class="modal__sub">This is roughly what a client sees on your public listing.</p>
-          <button type="button" class="modal__close" data-close-modal aria-label="Close preview">
-            ✕
-          </button>
+          <p class="modal__sub">Roughly what a client sees on your public listing.</p>
+          <button type="button" class="modal__close" data-close-modal aria-label="Close preview">✕</button>
         </header>
         <div class="modal__body" id="preview-body"></div>
         <footer class="modal__foot">
@@ -1008,10 +1018,8 @@
       >
         <header class="modal__head">
           <h2 id="help-title">Keyboard shortcuts</h2>
-          <p class="modal__sub">Everything on this page is reachable without the mouse.</p>
-          <button type="button" class="modal__close" data-close-modal aria-label="Close shortcuts">
-            ✕
-          </button>
+          <p class="modal__sub">Everything here is reachable without the mouse.</p>
+          <button type="button" class="modal__close" data-close-modal aria-label="Close shortcuts">✕</button>
         </header>
         <div class="modal__body">
           <dl class="keys">
