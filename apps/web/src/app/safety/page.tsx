@@ -1,11 +1,21 @@
 import type { Metadata } from "next";
 
-import { LegalPage } from "@/components/legal-page";
+import {
+  InstitutionalBand,
+  InstitutionalCardGrid,
+  InstitutionalCta,
+  InstitutionalFaq,
+  InstitutionalHero,
+  InstitutionalPage,
+  InstitutionalSection,
+  InstitutionalSplit,
+  InstitutionalSteps,
+} from "@/components/institutional/institutional-page";
 import { absoluteUrl, SITE_NAME } from "@/lib/site";
 
-const TITLE = "Review the profile before you reach out";
+const TITLE = "Safety Guidance";
 const DESCRIPTION =
-  "Use the public listing to check specialties, rates, session format, and any visible verification signals before first contact.";
+  "Use MasseurMatch profile details and trust signals as useful context, then confirm the practical details directly before meeting an independent therapist.";
 const PATH = "/safety";
 
 export const metadata: Metadata = {
@@ -21,101 +31,178 @@ export const metadata: Metadata = {
   },
 };
 
+export const dynamic = "force-static";
+
+const FAQS = [
+  {
+    question: "What do MasseurMatch trust signals tell me?",
+    answer:
+      "They tell you that a specific platform review occurred, such as profile moderation or approved identity evidence. They do not replace your own judgment or independently verify every professional claim a provider may make.",
+  },
+  {
+    question: "Does MasseurMatch verify therapist licenses?",
+    answer:
+      "Not universally. Identity verification is not a license check. Confirm any professional license or credential that matters to you directly with the provider or the relevant authority.",
+  },
+  {
+    question: "What should I confirm before meeting?",
+    answer:
+      "Confirm timing, exact location, session format, total price, boundaries, contact method, and any credential or accessibility detail that is important to your decision.",
+  },
+  {
+    question: "How do I report a suspicious or misleading profile?",
+    answer:
+      "Use the Report & Safety route with enough detail for the platform team to review the concern and the relevant profile or conduct.",
+  },
+];
+
 export default function Page() {
   return (
-    <LegalPage title={TITLE} path={PATH}>
-      <>
-        <div>
-          <div>
-            <p>Trust and safety</p>
+    <InstitutionalPage>
+      <InstitutionalHero
+        eyebrow="Safety guidance"
+        title="Trust signals help."
+        highlight="Your judgment still matters."
+        description={DESCRIPTION}
+        actions={[
+          { label: "Report a concern", href: "/report-block-safety" },
+          { label: "Identity verification", href: "/verification", secondary: true },
+        ]}
+        stats={[
+          {
+            value: "Review first",
+            label: "Read the complete public profile before first contact.",
+          },
+          {
+            value: "Confirm directly",
+            label: "Make location, price, timing, and boundaries explicit.",
+          },
+          {
+            value: "Report concerns",
+            label: "Use the platform safety route when something appears misleading or unsafe.",
+          },
+        ]}
+      />
 
-            <p>
-              MasseurMatch is a discovery platform, not a booking intermediary. We make trust
-              signals more visible, but users should still review each profile carefully and confirm
-              details directly before scheduling.
-            </p>
-          </div>
+      <InstitutionalBand>
+        MasseurMatch is a discovery directory, not a booking intermediary or provider of massage
+        services. Platform moderation can reduce ambiguity, but it cannot eliminate the need to
+        evaluate an independent provider and the circumstances of a meeting for yourself.
+      </InstitutionalBand>
 
-          <div>
-            <h3>Review the profile before you reach out</h3>
-            <p>
-              Use the public listing to check specialties, rates, session format, and any visible
-              verification signals before first contact.
-            </p>
-            <h3>Keep communication on record</h3>
-            <p>
-              Use written communication when possible so pricing, timing, directions, and
-              expectations are easy to reference later.
-            </p>
-            <h3>Use badges as signals, not guarantees</h3>
-            <p>
-              MasseurMatch helps with discovery, but you should still verify the situation
-              independently and leave if something feels wrong.
-            </p>
-            <h3>Report suspicious behavior</h3>
-            <p>
-              If a profile appears misleading or unsafe, contact the team so it can be reviewed and
-              removed if needed.
-            </p>
-          </div>
+      <InstitutionalSection
+        eyebrow="Before first contact"
+        title="Use the profile to reduce uncertainty before the conversation starts."
+      >
+        <InstitutionalSteps
+          steps={[
+            {
+              title: "Read the full listing",
+              body: "Review services, session format, published pricing, city and neighborhood context, photos, and the therapist's description of their practice.",
+              meta: "Start with evidence",
+            },
+            {
+              title: "Interpret badges narrowly",
+              body: "Identity Verified means identity evidence was approved. Profile and photo moderation mean those platform reviews occurred. None is a universal professional certification.",
+              meta: "No overreading",
+            },
+            {
+              title: "Confirm practical details",
+              body: "Put timing, exact location, total price, travel expectations, session format, and boundaries in clear direct communication before meeting.",
+              meta: "Make it explicit",
+            },
+            {
+              title: "Act on inconsistencies",
+              body: "If the person, location, price, or conduct materially differs from what was represented, do not treat a platform badge as a reason to ignore that mismatch.",
+              meta: "Judgment still applies",
+            },
+          ]}
+        />
+      </InstitutionalSection>
 
-          <section>
-            <h2>What the badges mean</h2>
-            <p>
-              Trust badges are there to reduce ambiguity, not to replace personal judgment. Here is
-              what they are intended to communicate.
-            </p>
+      <InstitutionalSection
+        dark
+        eyebrow="Shared responsibility"
+        title="The platform can moderate the directory. It cannot be present in the session."
+      >
+        <InstitutionalSplit
+          dark
+          left={
             <div>
-              <h3>Profile reviewed</h3>
-              <p>
-                The listing content was reviewed for presentation quality and trust and safety fit.
+              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#d66b7a]">
+                Platform safeguards
               </p>
-              <h3>Identity reviewed</h3>
-              <p>The provider submitted identity information for trust and safety review.</p>
-              <h3>Photos reviewed</h3>
-              <p>The visible photos were reviewed as part of the profile-quality process.</p>
+              <h3 className="mt-4 font-display text-3xl font-semibold tracking-tight text-white">
+                Make public information and trust signals more legible.
+              </h3>
+              <ul className="mt-6 space-y-4 text-sm leading-7 text-white/60">
+                <li>• Public profiles are reviewed before publication.</li>
+                <li>• Visible photos must pass the platform photo-moderation state.</li>
+                <li>• Identity Verified is shown only when that identity review is approved.</li>
+                <li>• Reporting and moderation routes exist for platform concerns.</li>
+              </ul>
             </div>
-          </section>
-
-          <section>
-            <h2>Need to report something?</h2>
-            <p>
-              If a listing appears misleading, abusive, or unsafe, contact the team with as much
-              detail as possible so it can be reviewed quickly.
-            </p>
+          }
+          right={
             <div>
-              <a href="/contact">Contact support</a>
-              <a href="/terms">Terms</a>
-              <a href="/privacy">Privacy</a>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#d66b7a]">
+                Your direct checks
+              </p>
+              <h3 className="mt-4 font-display text-3xl font-semibold tracking-tight text-white">
+                Confirm what matters outside the scope of those platform reviews.
+              </h3>
+              <ul className="mt-6 space-y-4 text-sm leading-7 text-white/60">
+                <li>• Verify professional credentials when they matter to your choice.</li>
+                <li>• Confirm the actual meeting location and access details.</li>
+                <li>• Confirm final pricing, session length, and service boundaries.</li>
+                <li>
+                  • End or avoid a meeting when circumstances materially differ from what was
+                  agreed.
+                </li>
+              </ul>
             </div>
-          </section>
+          }
+        />
+      </InstitutionalSection>
 
-          <section>
-            <h3>What do MasseurMatch verification badges mean?</h3>
-            <p>
-              Badges reflect the reviews completed by MasseurMatch when shown, such as identity
-              review, profile review, or photo review. They are trust signals, not a guarantee of
-              service quality, licensure, or session outcome.
-            </p>
-            <h3>Does MasseurMatch verify therapist licenses?</h3>
-            <p>
-              Not universally. Unless a profile explicitly states otherwise, you should still
-              confirm licenses, certifications, boundaries, pricing, and location details directly
-              with the provider.
-            </p>
-            <h3>What should I confirm before scheduling?</h3>
-            <p>
-              Confirm boundaries, location details, pricing, timing, session format, and contact
-              methods directly with the provider before meeting.
-            </p>
-            <h3>How do I report a safety concern?</h3>
-            <p>
-              Use the contact page to report suspicious listings, unsafe behavior, or profile
-              concerns so the team can review the issue.
-            </p>
-          </section>
-        </div>
-      </>
-    </LegalPage>
+      <InstitutionalSection
+        eyebrow="Read the signals"
+        title="Three different reviews should never be collapsed into one vague badge."
+      >
+        <InstitutionalCardGrid
+          cards={[
+            {
+              title: "Profile reviewed",
+              body: "The public listing was evaluated against MasseurMatch's publication and content standards before it became visible.",
+            },
+            {
+              title: "Identity verified",
+              body: "Submitted identity evidence was approved through the platform's identity-review workflow. The signal is limited to identity.",
+            },
+            {
+              title: "Photo approved",
+              body: "A visible provider image has an approved moderation state. When there is no approved usable image, the directory uses initials instead of a stock substitute.",
+            },
+          ]}
+        />
+      </InstitutionalSection>
+
+      <InstitutionalSection
+        eyebrow="Questions"
+        title="Safety language should be precise enough to act on."
+      >
+        <InstitutionalFaq items={FAQS} />
+      </InstitutionalSection>
+
+      <InstitutionalCta
+        eyebrow="See something wrong?"
+        title="Give the moderation team something it can investigate."
+        description="Use the report route for a misleading listing, unsafe conduct, harassment, or another platform concern."
+        actions={[
+          { label: "Report a problem", href: "/report-block-safety" },
+          { label: "Trust & safety", href: "/trust", secondary: true },
+        ]}
+      />
+    </InstitutionalPage>
   );
 }

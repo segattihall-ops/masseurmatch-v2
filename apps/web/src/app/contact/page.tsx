@@ -1,11 +1,19 @@
+import { FadeIn } from "@masseurmatch/ui";
 import type { Metadata } from "next";
-import Link from "next/link";
 
+import {
+  InstitutionalBand,
+  InstitutionalCta,
+  InstitutionalHero,
+  InstitutionalPage,
+  InstitutionalSection,
+  InstitutionalSteps,
+} from "@/components/institutional/institutional-page";
 import { absoluteUrl, SITE_NAME } from "@/lib/site";
 
-const TITLE = "Contact";
+const TITLE = "Contact MasseurMatch";
 const DESCRIPTION =
-  "How to reach MasseurMatch, and where to send the things that need a specific route.";
+  "Reach the right MasseurMatch team for account support, billing, legal correspondence, data requests, or trust and safety concerns.";
 const PATH = "/contact";
 
 export const metadata: Metadata = {
@@ -23,77 +31,123 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-static";
 
+const ROUTES = [
+  {
+    eyebrow: "General",
+    title: "Support",
+    email: "support@masseurmatch.com",
+    body: "Accounts, public listings, profile questions, site behavior, and general product support.",
+  },
+  {
+    eyebrow: "Subscriptions",
+    title: "Billing",
+    email: "billing@masseurmatch.com",
+    body: "Subscription charges, plan questions, payment issues, cancellations, and billing records.",
+  },
+  {
+    eyebrow: "Official correspondence",
+    title: "Legal",
+    email: "legal@masseurmatch.com",
+    body: "Legal notices, privacy correspondence, formal requests, and matters that require the legal route.",
+  },
+];
+
 export default function Page() {
   return (
-    <main className="mx-auto w-full max-w-3xl px-6 pb-16 pt-16">
-      <header>
-        <h1 className="font-display text-ds-40 font-bold tracking-tight text-text-primary">
-          {TITLE}
-        </h1>
-        <p className="mt-4 leading-relaxed text-text-secondary">{DESCRIPTION}</p>
-      </header>
+    <InstitutionalPage>
+      <InstitutionalHero
+        eyebrow="Contact"
+        title="Reach the right team."
+        highlight="Skip the routing guesswork."
+        description={DESCRIPTION}
+        actions={[
+          { label: "Report a safety issue", href: "/report-block-safety" },
+          { label: "Legal centre", href: "/legal", secondary: true },
+        ]}
+        stats={[
+          { value: "Support", label: "Accounts, listings, and product questions." },
+          { value: "Billing", label: "Subscriptions and payment support." },
+          { value: "Legal", label: "Formal correspondence and legal notices." },
+        ]}
+      />
 
-      <div className="mt-10 space-y-10">
-        <section className="space-y-3">
-          <h2 className="font-display text-ds-24 font-bold tracking-tight text-text-primary">
-            General enquiries
-          </h2>
-          <p className="leading-relaxed text-text-secondary">
-            Email support@masseurmatch.com for anything about your account, a listing, or the site
-            itself.
-          </p>
-          <p className="leading-relaxed text-text-secondary">
-            MasseurMatch does not take bookings and cannot arrange appointments. To book a session,
-            contact the therapist directly using the details on their profile.
-          </p>
-        </section>
+      <InstitutionalBand>
+        MasseurMatch cannot arrange an appointment with a therapist. Clients contact independent
+        providers directly using the contact information published on each profile.
+      </InstitutionalBand>
 
-        <section className="space-y-3">
-          <h2 className="font-display text-ds-24 font-bold tracking-tight text-text-primary">
-            Reporting a problem
-          </h2>
-          <p className="leading-relaxed text-text-secondary">
-            To report a profile, a message, or anything that looks unsafe, use the report route
-            rather than general support — it goes to the people who can act on it fastest.
-          </p>
-          <p className="leading-relaxed text-text-secondary">
-            If someone is in immediate danger, contact local emergency services first. MasseurMatch
-            is not a crisis service and cannot respond in an emergency.
-          </p>
-        </section>
-
-        <section className="space-y-3">
-          <h2 className="font-display text-ds-24 font-bold tracking-tight text-text-primary">
-            Legal and copyright
-          </h2>
-          <p className="leading-relaxed text-text-secondary">
-            Copyright notices go to the DMCA agent, and the required contents of a notice are listed
-            on that page. Other legal correspondence should go through the legal centre.
-          </p>
-          <p className="leading-relaxed text-text-secondary">
-            Requests to delete your data have their own route, which is faster than email and
-            produces a record.
-          </p>
-        </section>
-      </div>
-
-      <section className="mt-12 border-t border-border-subtle pt-8">
-        <p className="leading-relaxed text-text-secondary">Looking for something specific?</p>
-        <div className="mt-4 flex flex-wrap gap-3">
-          <Link
-            href="/report-block-safety"
-            className="rounded-full bg-action-primary text-text-inverse hover:bg-action-primary-hover px-5 py-2.5 text-sm font-semibold transition"
-          >
-            Report a problem
-          </Link>
-          <Link
-            href="/legal"
-            className="rounded-full border border-border-subtle text-text-primary hover:border-brand-secondary px-5 py-2.5 text-sm font-semibold transition"
-          >
-            Legal centre
-          </Link>
+      <InstitutionalSection
+        eyebrow="Email routing"
+        title="One inbox for each kind of problem."
+        intro="Use the most specific route available so the request reaches the team responsible for it."
+      >
+        <div className="grid gap-4 lg:grid-cols-3">
+          {ROUTES.map((route, index) => (
+            <FadeIn
+              key={route.email}
+              whileInView
+              delay={index * 0.06}
+              className="flex min-h-72 flex-col rounded-[2rem] border border-border-subtle bg-bg-surface p-7 shadow-ds-sm transition duration-300 hover:-translate-y-1 hover:shadow-ds-md sm:p-8"
+            >
+              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-brand-secondary">
+                {route.eyebrow}
+              </p>
+              <h2 className="mt-4 font-display text-2xl font-semibold tracking-tight text-text-primary">
+                {route.title}
+              </h2>
+              <p className="mt-4 text-sm leading-7 text-text-secondary">{route.body}</p>
+              <a
+                href={`mailto:${route.email}`}
+                className="mt-auto pt-8 text-sm font-semibold text-brand-secondary transition hover:text-action-primary-hover"
+              >
+                {route.email} →
+              </a>
+            </FadeIn>
+          ))}
         </div>
-      </section>
-    </main>
+      </InstitutionalSection>
+
+      <InstitutionalSection
+        dark
+        eyebrow="Safety & formal requests"
+        title="Some issues have a dedicated path for a reason."
+        intro="Use the specialized route when the request needs evidence, a policy workflow, or a durable record."
+      >
+        <InstitutionalSteps
+          dark
+          steps={[
+            {
+              title: "Safety or profile concern",
+              body: "Use Report & Safety for a misleading profile, suspicious behavior, harassment, or another concern that needs platform review.",
+              meta: "/report-block-safety",
+            },
+            {
+              title: "Copyright notice",
+              body: "Use the DMCA page for copyright notices so the required information reaches the designated process.",
+              meta: "/dmca",
+            },
+            {
+              title: "Data deletion",
+              body: "Use the data-deletion route when the request is specifically about deleting personal data or an account record.",
+              meta: "/data-deletion",
+            },
+            {
+              title: "Policy or legal question",
+              body: "Start in the legal centre for platform terms, privacy, subscriptions, content rules, and official notices.",
+              meta: "/legal",
+            },
+          ]}
+        />
+      </InstitutionalSection>
+
+      <InstitutionalCta
+        title="Need to report something on the platform?"
+        description="Use the safety route for actionable profile or conduct concerns instead of burying them in general support."
+        actions={[
+          { label: "Report a problem", href: "/report-block-safety" },
+          { label: "Trust & safety", href: "/trust", secondary: true },
+        ]}
+      />
+    </InstitutionalPage>
   );
 }

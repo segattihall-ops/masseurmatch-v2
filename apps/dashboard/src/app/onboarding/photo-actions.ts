@@ -53,18 +53,18 @@ export async function confirmPhoto(_prev: StepState, formData: FormData): Promis
     storage_path: publicId,
     // New imagery is always unreviewed, whatever the profile's own status.
     moderation_status: "pending",
-    is_primary: photoCount === 0,
+    // A pending photo cannot be public Primary. Database guards also enforce
+    // this, so a direct REST insert cannot bypass the same rule.
+    is_primary: false,
     sort_order: photoCount,
   });
 
   if (error) return { error: `Could not save that photo: ${error.message}` };
 
-  // Mirror the first photo onto the profile so the public card has something
-  // to render without a join.
-  if (photoCount === 0) {
-    await updateMyProfile(userId, { photo_url: asset.url, avatar_url: asset.url });
-  }
-
+  // Do not mirror a pending upload onto profiles.photo_url/avatar_url. Public
+  // cards and detail pages resolve their images from approved profile_photos;
+  // mirroring here used to make a brand-new unreviewed image visible as soon as
+  // an already-approved therapist uploaded it.
   revalidatePath("/onboarding");
   revalidatePath("/therapist/photos");
   return { ok: true };
