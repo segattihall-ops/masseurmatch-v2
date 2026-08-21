@@ -1,6 +1,7 @@
 "use server";
 
 import { createServiceClient } from "@masseurmatch/db/client";
+import type { Json } from "@masseurmatch/db/types";
 import { revalidatePath } from "next/cache";
 
 import { requireAdmin } from "@/lib/guards";
@@ -11,7 +12,7 @@ async function writeAudit(
   targetType: string,
   targetId: string,
   reason: string,
-  details: Record<string, unknown> = {},
+  details: Json = {},
 ) {
   const { error } = await createServiceClient().from("audit_log").insert({
     admin_id: adminId,
@@ -45,7 +46,9 @@ export async function moderatePhoto(formData: FormData): Promise<void> {
     .maybeSingle();
   if (readError) throw new Error(`Could not load photo: ${readError.message}`);
   if (!photo) throw new Error("Photo not found.");
-  if (photo.moderation_status !== "pending") throw new Error("Photo has already been reviewed.");
+  if (photo.moderation_status !== "pending") {
+    throw new Error("Photo has already been reviewed.");
+  }
 
   const auditReason = reason || "Photo reviewed and approved by admin.";
   await writeAudit(viewer.user.id, `photo.${action}`, "profile_photo", photoId, auditReason, {
@@ -98,9 +101,14 @@ export async function updateReport(formData: FormData): Promise<void> {
       throw new Error("Invalid report status.");
     }
     const resolved = status === "actioned" || status === "dismissed";
-    await writeAudit(viewer.user.id, "profile_report.updated", "profile_report", id, notes || status, {
-      status,
-    });
+    await writeAudit(
+      viewer.user.id,
+      "profile_report.updated",
+      "profile_report",
+      id,
+      notes || status,
+      { status },
+    );
     const { error } = await service
       .from("profile_reports")
       .update({
@@ -164,7 +172,9 @@ export async function decideManualIdentity(formData: FormData): Promise<void> {
 
   if (!id) throw new Error("Verification id is required.");
   if (decision !== "approve" && decision !== "reject") throw new Error("Invalid decision.");
-  if (reason.length < 10) throw new Error("A review reason of at least 10 characters is required.");
+  if (reason.length < 10) {
+    throw new Error("A review reason of at least 10 characters is required.");
+  }
 
   const service = createServiceClient();
   const { data: verification, error: readError } = await service
@@ -173,8 +183,12 @@ export async function decideManualIdentity(formData: FormData): Promise<void> {
     .eq("id", id)
     .maybeSingle();
   if (readError) throw new Error(`Could not load verification: ${readError.message}`);
-  if (!verification || verification.provider !== "manual") throw new Error("Manual verification not found.");
-  if (verification.status !== "pending") throw new Error("Verification has already been reviewed.");
+  if (!verification || verification.provider !== "manual") {
+    throw new Error("Manual verification not found.");
+  }
+  if (verification.status !== "pending") {
+    throw new Error("Verification has already been reviewed.");
+  }
 
   await writeAudit(
     viewer.user.id,
@@ -193,7 +207,9 @@ export async function decideManualIdentity(formData: FormData): Promise<void> {
 
   if (paths.length > 0) {
     const { error: storageError } = await service.storage.from("identity-documents").remove(paths);
-    if (storageError) throw new Error(`Could not securely delete identity documents: ${storageError.message}`);
+    if (storageError) {
+      throw new Error(`Could not securely delete identity documents: ${storageError.message}`);
+    }
   }
 
   const now = new Date().toISOString();
@@ -216,12 +232,14 @@ export async function decideManualIdentity(formData: FormData): Promise<void> {
     .update({
       status: nextStatus,
       last_error: decision === "reject" ? reason : null,
-      metadata: nextMetadata,
+      metadata: nextMetadata as Json,
       updated_at: now,
     })
     .eq("id", id)
     .eq("status", "pending");
-  if (verificationError) throw new Error(`Could not finalize verification: ${verificationError.message}`);
+  if (verificationError) {
+    throw new Error(`Could not finalize verification: ${verificationError.message}`);
+  }
 
   if (verification.profile_id) {
     const { error: profileError } = await service
@@ -241,11 +259,16 @@ export async function decideManualIdentity(formData: FormData): Promise<void> {
             },
       )
       .eq("id", verification.profile_id);
-    if (profileError) throw new Error(`Verification saved, but profile status failed: ${profileError.message}`);
+    if (profileError) {
+      throw new Error(`Verification saved, but profile status failed: ${profileError.message}`);
+    }
   }
 
   if (verification.user_id) {
-    const title = decision === "approve" ? "Identity verification approved" : "Identity verification needs attention";
+    const title =
+      decision === "approve"
+        ? "Identity verification approved"
+        : "Identity verification needs attention";
     const body = decision === "approve" ? "Your identity verification was approved." : reason;
     await service.from("notifications").insert({
       user_id: verification.user_id,
