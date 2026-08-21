@@ -41,10 +41,19 @@ export function AdminSidebar() {
         <p className="text-sm text-text-secondary">Operations</p>
       </div>
 
-      <nav aria-label="Admin" className="flex gap-1 overflow-x-auto pb-1 lg:block lg:space-y-2 lg:overflow-visible lg:pb-0">
+      <nav
+        aria-label="Admin"
+        className="flex gap-1 overflow-x-auto pb-1 lg:block lg:space-y-2 lg:overflow-visible lg:pb-0"
+      >
         {ADMIN_LINKS.map((link) => {
           const Icon = link.icon;
-          const isActive = link.href === "/" ? pathname === "/" || pathname === "/admin" : pathname === link.href || pathname.startsWith(link.href + "/") || pathname === `/admin${link.href}` || pathname.startsWith(`/admin${link.href}/`);
+          const isActive =
+            link.href === "/"
+              ? pathname === "/" || pathname === "/admin"
+              : pathname === link.href ||
+                pathname.startsWith(link.href + "/") ||
+                pathname === `/admin${link.href}` ||
+                pathname.startsWith(`/admin${link.href}/`);
           return (
             <Link
               key={link.href}

@@ -32,7 +32,9 @@ export default async function SignInPage({
     <main className="mx-auto flex min-h-screen w-full max-w-md items-center px-6">
       <Card className="w-full p-8">
         <div className="mb-6">
-          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-wine">MasseurMatch</p>
+          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-wine">
+            MasseurMatch
+          </p>
           <h1 className="mt-2 text-2xl font-semibold text-ink">Admin sign in</h1>
           <p className="mt-1 text-sm text-ink/60">Authorized operations staff only.</p>
         </div>
