@@ -126,7 +126,7 @@ export default async function SearchPage({ searchParams }: SearchParams) {
   const page = positivePage(searchParams.page);
 
   const filters: DirectoryFilters = {
-    city: selectedCity?.citySlug ?? searchParams.city?.trim() || undefined,
+    city: (selectedCity?.citySlug ?? searchParams.city?.trim()) || undefined,
     state: selectedCity?.stateSlug,
     service: searchParams.service?.trim() || undefined,
     query: searchParams.q?.trim() || undefined,
