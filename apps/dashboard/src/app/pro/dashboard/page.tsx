@@ -19,7 +19,7 @@ import {
   Zap,
 } from "lucide-react";
 
-import { Button } from "@masseurmatch/ui/button";
+import { Button, buttonVariants } from "@masseurmatch/ui";
 
 interface Toast {
   title: string;
@@ -241,12 +241,10 @@ export default function ProDashboardPage() {
           <h1 className="mt-2 font-display text-3xl font-semibold tracking-tight text-slate-900">{displayName}</h1>
           <p className="mt-1 text-sm text-slate-500">Live profile, visibility, growth and trust signals from your account.</p>
         </div>
-        <Button asChild variant="outline">
-          <Link href="/pro/listing">
-            <Settings className="mr-2 h-4 w-4" />
-            Edit listing
-          </Link>
-        </Button>
+        <Link href="/pro/listing" className={buttonVariants({ variant: "outline" })}>
+          <Settings className="mr-2 h-4 w-4" />
+          Edit listing
+        </Link>
       </header>
 
       {!approved ? (
@@ -282,9 +280,7 @@ export default function ProDashboardPage() {
           <p className="text-xs font-semibold uppercase tracking-wide text-indigo-500">AI Coach next action</p>
           <h2 className="mt-2 font-semibold text-indigo-950">{ai.top_recommendation_title || "Improve your profile"}</h2>
           <p className="mt-1 text-sm leading-6 text-indigo-800">{ai.top_recommendation_action}</p>
-          <Button asChild className="mt-4" size="sm">
-            <Link href="/pro/ai-coach">Open AI Coach</Link>
-          </Button>
+          <Link href="/pro/ai-coach" className={buttonVariants({ size: "sm", variant: "primary" }) + " mt-4"}>Open AI Coach</Link>
         </section>
       ) : null}
 
@@ -297,25 +293,21 @@ export default function ProDashboardPage() {
         </StatusCard>
 
         <StatusCard icon={Plane} title="Traveling" active={traveling} description="Travel dates surface approved profiles in destination city discovery.">
-          <Button asChild variant="outline">
-            <Link href="/pro/growth">
-              <Plane className="mr-2 h-4 w-4" />
-              Manage travel dates
-            </Link>
-          </Button>
+          <Link href="/pro/growth" className={buttonVariants({ variant: "outline" })}>
+            <Plane className="mr-2 h-4 w-4" />
+            Manage travel dates
+          </Link>
         </StatusCard>
 
         <StatusCard icon={Car} title="Mobile / Outcall" description="Configure outcall service and radius separately from Available Now and travel.">
-          <Button asChild variant="outline">
-            <Link href="/pro/listing">
-              <Car className="mr-2 h-4 w-4" />
-              Configure mobile service
-            </Link>
-          </Button>
+          <Link href="/pro/listing" className={buttonVariants({ variant: "outline" })}>
+            <Car className="mr-2 h-4 w-4" />
+            Configure mobile service
+          </Link>
         </StatusCard>
 
         <StatusCard icon={visible ? Eye : EyeOff} title="Profile visibility" active={visible} description="Visibility controls discovery, while approval remains a separate trust state.">
-          <Button variant={visible ? "outline" : "default"} onClick={toggleVisibility} disabled={saving === "visibility"}>
+          <Button variant={visible ? "outline" : "primary"} onClick={toggleVisibility} disabled={saving === "visibility"}>
             {saving === "visibility" ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : visible ? (
@@ -331,24 +323,12 @@ export default function ProDashboardPage() {
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <h2 className="font-display text-base font-semibold text-slate-900">Quick actions</h2>
         <div className="mt-4 flex flex-wrap gap-2">
-          <Button asChild variant="outline">
-            <Link href="/pro/listing">Profile & pricing</Link>
-          </Button>
-          <Button asChild variant="outline">
-            <Link href="/pro/growth">Travel & specials</Link>
-          </Button>
-          <Button asChild variant="outline">
-            <Link href="/pro/photos">Photos</Link>
-          </Button>
-          <Button asChild variant="outline">
-            <Link href="/pro/analytics">Analytics</Link>
-          </Button>
-          <Button asChild variant="outline">
-            <Link href="/pro/ai-coach">AI Coach</Link>
-          </Button>
-          <Button asChild variant="outline">
-            <Link href="/pro/subscription">Subscription</Link>
-          </Button>
+          <Link href="/pro/listing" className={buttonVariants({ variant: "outline" })}>Profile & pricing</Link>
+          <Link href="/pro/growth" className={buttonVariants({ variant: "outline" })}>Travel & specials</Link>
+          <Link href="/pro/photos" className={buttonVariants({ variant: "outline" })}>Photos</Link>
+          <Link href="/pro/analytics" className={buttonVariants({ variant: "outline" })}>Analytics</Link>
+          <Link href="/pro/ai-coach" className={buttonVariants({ variant: "outline" })}>AI Coach</Link>
+          <Link href="/pro/subscription" className={buttonVariants({ variant: "outline" })}>Subscription</Link>
         </div>
       </section>
     </main>
