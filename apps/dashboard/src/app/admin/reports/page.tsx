@@ -20,7 +20,11 @@ export default async function AdminReportsPage() {
     { label: "Profiles", value: summary.profiles, href: "/admin/people" },
     { label: "Approved", value: summary.approvedProfiles, href: "/admin/people?status=approved" },
     { label: "Pending approval", value: summary.pendingProfiles, href: "/admin/moderation" },
-    { label: "Suspended", value: summary.suspendedProfiles, href: "/admin/people?status=suspended" },
+    {
+      label: "Suspended",
+      value: summary.suspendedProfiles,
+      href: "/admin/people?status=suspended",
+    },
     { label: "Identity verified", value: summary.verifiedProfiles, href: "/admin/verifications" },
     { label: "Pending photos", value: summary.pendingPhotos, href: "/admin/photos" },
     {
@@ -28,7 +32,11 @@ export default async function AdminReportsPage() {
       value: summary.pendingDocuments + summary.pendingManualIdentity,
       href: "/admin/verifications",
     },
-    { label: "Open safety reports", value: summary.openSafetyReports, href: "/admin/profile-reports" },
+    {
+      label: "Open safety reports",
+      value: summary.openSafetyReports,
+      href: "/admin/profile-reports",
+    },
     { label: "Open support tickets", value: summary.openSupportTickets, href: "/admin/tickets" },
   ];
 
@@ -56,7 +64,9 @@ export default async function AdminReportsPage() {
             <Link key={card.label} href={card.href} className="block">
               <Card className="h-full p-5 transition hover:border-wine/30">
                 <p className="text-sm text-ink/55">{card.label}</p>
-                <p className="mt-2 text-3xl font-semibold text-ink">{card.value.toLocaleString()}</p>
+                <p className="mt-2 text-3xl font-semibold text-ink">
+                  {card.value.toLocaleString()}
+                </p>
               </Card>
             </Link>
           ))}
