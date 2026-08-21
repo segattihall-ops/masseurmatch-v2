@@ -51,6 +51,22 @@ export type ManualIdentityRow = {
   updatedAt: string;
 };
 
+export type AdminReportSummary = {
+  profiles: number;
+  approvedProfiles: number;
+  pendingProfiles: number;
+  suspendedProfiles: number;
+  verifiedProfiles: number;
+  pendingPhotos: number;
+  pendingDocuments: number;
+  pendingManualIdentity: number;
+  openSafetyReports: number;
+  openSupportTickets: number;
+  rankingEvents30d: number;
+  profileViews30d: number;
+  searches30d: number;
+};
+
 async function profileNames(ids: Array<string | null | undefined>): Promise<Map<string, string>> {
   const profileIds = [...new Set(ids.filter((id): id is string => Boolean(id)))];
   const names = new Map<string, string>();
@@ -64,7 +80,10 @@ async function profileNames(ids: Array<string | null | undefined>): Promise<Map<
   for (const profile of data ?? []) {
     names.set(
       profile.id,
-      profile.display_name?.trim() || profile.full_name?.trim() || profile.email?.trim() || "Unnamed therapist",
+      profile.display_name?.trim() ||
+        profile.full_name?.trim() ||
+        profile.email?.trim() ||
+        "Unnamed therapist",
     );
   }
   return names;
@@ -111,7 +130,6 @@ export async function listAdminReports(status = "open"): Promise<AdminReport[]> 
     .limit(100);
   if (status !== "all") reportsQuery = reportsQuery.eq("status", status);
 
-  const complaintStatus = status === "open" ? "pending" : status === "actioned" ? "resolved" : status;
   let complaintsQuery = service
     .from("complaints")
     .select(
@@ -119,11 +137,24 @@ export async function listAdminReports(status = "open"): Promise<AdminReport[]> 
     )
     .order("created_at", { ascending: false })
     .limit(100);
-  if (status !== "all") complaintsQuery = complaintsQuery.eq("status", complaintStatus);
+
+  if (status === "open") {
+    complaintsQuery = complaintsQuery.in("status", ["new", "pending"]);
+  } else if (status === "actioned") {
+    complaintsQuery = complaintsQuery.eq("status", "resolved");
+  } else if (status === "dismissed") {
+    complaintsQuery = complaintsQuery.eq("status", "dismissed");
+  } else if (status === "reviewing") {
+    complaintsQuery = complaintsQuery.eq("status", "reviewing");
+  }
 
   const [reportsResult, complaintsResult] = await Promise.all([reportsQuery, complaintsQuery]);
-  if (reportsResult.error) throw new Error(`Could not load profile reports: ${reportsResult.error.message}`);
-  if (complaintsResult.error) throw new Error(`Could not load complaints: ${complaintsResult.error.message}`);
+  if (reportsResult.error) {
+    throw new Error(`Could not load profile reports: ${reportsResult.error.message}`);
+  }
+  if (complaintsResult.error) {
+    throw new Error(`Could not load complaints: ${complaintsResult.error.message}`);
+  }
 
   const complaintProfileIds = (complaintsResult.data ?? []).map(
     (row) => row.reported_profile_id ?? row.profile_id,
@@ -151,9 +182,13 @@ export async function listAdminReports(status = "open"): Promise<AdminReport[]> 
       profileId,
       profileName: (profileId && names.get(profileId)) || "Unknown therapist",
       category: row.category ?? "other",
-      reason: row.description?.trim() || row.message?.trim() || row.title?.trim() || "No details provided.",
+      reason:
+        row.description?.trim() ||
+        row.message?.trim() ||
+        row.title?.trim() ||
+        "No details provided.",
       reporterEmail: row.reporter_email,
-      status: row.status ?? "pending",
+      status: row.status ?? "new",
       adminNotes: row.admin_notes,
       createdAt: row.created_at ?? new Date(0).toISOString(),
     };
@@ -164,7 +199,10 @@ export async function listAdminReports(status = "open"): Promise<AdminReport[]> 
   );
 }
 
-export async function listAuditLog(page = 1, q = ""): Promise<{ rows: AuditRow[]; total: number }> {
+export async function listAuditLog(
+  page = 1,
+  q = "",
+): Promise<{ rows: AuditRow[]; total: number }> {
   const service = createServiceClient();
   const safePage = Math.max(1, page);
   const size = 50;
@@ -178,7 +216,11 @@ export async function listAuditLog(page = 1, q = ""): Promise<{ rows: AuditRow[]
     .range(from, from + size - 1);
 
   const term = q.replace(/[,()]/g, " ").trim();
-  if (term) query = query.or(`action.ilike.%${term}%,target_type.ilike.%${term}%,target_id.ilike.%${term}%`);
+  if (term) {
+    query = query.or(
+      `action.ilike.%${term}%,target_type.ilike.%${term}%,target_id.ilike.%${term}%`,
+    );
+  }
 
   const { data, error, count } = await query;
   if (error) throw new Error(`Could not load audit log: ${error.message}`);
@@ -223,4 +265,75 @@ export async function listManualIdentity(status = "pending"): Promise<ManualIden
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }));
+}
+
+export async function getAdminReportSummary(): Promise<AdminReportSummary> {
+  const service = createServiceClient();
+  const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+  const count = async (
+    table: "profiles" | "profile_photos" | "profile_documents" | "identity_verifications" | "profile_reports" | "complaints" | "support_tickets" | "ranking_events" | "profile_view_analytics" | "search_analytics",
+    configure?: (query: any) => any,
+  ): Promise<number> => {
+    let query = service.from(table).select("id", { count: "exact", head: true });
+    if (configure) query = configure(query);
+    const { count: total, error } = await query;
+    if (error) throw new Error(`Could not count ${table}: ${error.message}`);
+    return total ?? 0;
+  };
+
+  const [
+    profiles,
+    approvedProfiles,
+    pendingProfiles,
+    suspendedProfiles,
+    verifiedProfiles,
+    pendingPhotos,
+    pendingDocuments,
+    pendingManualIdentity,
+    openProfileReports,
+    newComplaints,
+    pendingComplaints,
+    openSupportTickets,
+    rankingEvents30d,
+    profileViews30d,
+    searches30d,
+  ] = await Promise.all([
+    count("profiles"),
+    count("profiles", (query) => query.eq("profile_status", "approved")),
+    count("profiles", (query) =>
+      query.in("profile_status", ["pending", "pending_approval", "under_review"]),
+    ),
+    count("profiles", (query) => query.eq("profile_status", "suspended")),
+    count("profiles", (query) => query.eq("is_verified_identity", true)),
+    count("profile_photos", (query) => query.eq("moderation_status", "pending")),
+    count("profile_documents", (query) => query.eq("status", "pending")),
+    count("identity_verifications", (query) =>
+      query.eq("provider", "manual").eq("status", "pending"),
+    ),
+    count("profile_reports", (query) => query.in("status", ["open", "reviewing"])),
+    count("complaints", (query) => query.eq("status", "new")),
+    count("complaints", (query) => query.eq("status", "pending")),
+    count("support_tickets", (query) =>
+      query.in("status", ["open", "in_progress", "waiting_on_user"]),
+    ),
+    count("ranking_events", (query) => query.gte("created_at", since)),
+    count("profile_view_analytics", (query) => query.gte("created_at", since)),
+    count("search_analytics", (query) => query.gte("created_at", since)),
+  ]);
+
+  return {
+    profiles,
+    approvedProfiles,
+    pendingProfiles,
+    suspendedProfiles,
+    verifiedProfiles,
+    pendingPhotos,
+    pendingDocuments,
+    pendingManualIdentity,
+    openSafetyReports: openProfileReports + newComplaints + pendingComplaints,
+    openSupportTickets,
+    rankingEvents30d,
+    profileViews30d,
+    searches30d,
+  };
 }
