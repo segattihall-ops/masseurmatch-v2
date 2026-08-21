@@ -5,6 +5,7 @@ import { cityPath, profilePath } from "@masseurmatch/db/actions/directory-config
 
 import { competitorSlugs } from "@/content/competitors";
 import { GUIDES } from "@/content/guides";
+import { SERVICES } from "@/content/services";
 import { absoluteUrl } from "@/lib/site";
 
 /**
@@ -96,6 +97,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: now,
       changeFrequency: "yearly" as const,
       priority: 0.3,
+    })),
+    ...SERVICES.map((service) => ({
+      url: absoluteUrl(`/services/${service.slug}`),
+      lastModified: now,
+      changeFrequency: "monthly" as const,
+      priority: 0.6,
     })),
     ...GUIDES.map((guide) => ({
       url: absoluteUrl(`/guides/${guide.slug}`),
