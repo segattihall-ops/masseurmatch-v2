@@ -90,7 +90,9 @@ export async function updateReport(formData: FormData): Promise<void> {
   const source = String(formData.get("source") ?? "");
   const id = String(formData.get("id") ?? "").trim();
   const status = String(formData.get("status") ?? "").trim();
-  const notes = String(formData.get("notes") ?? "").trim().slice(0, 2000);
+  const notes = String(formData.get("notes") ?? "")
+    .trim()
+    .slice(0, 2000);
 
   if (!id) throw new Error("Report id is required.");
   const service = createServiceClient();
@@ -169,7 +171,9 @@ export async function decideManualIdentity(formData: FormData): Promise<void> {
   const viewer = await requireAdmin("/admin/verifications/manual");
   const id = String(formData.get("verification_id") ?? "").trim();
   const decision = String(formData.get("decision") ?? "").trim();
-  const reason = String(formData.get("reason") ?? "").trim().slice(0, 1000);
+  const reason = String(formData.get("reason") ?? "")
+    .trim()
+    .slice(0, 1000);
 
   if (!id) throw new Error("Verification id is required.");
   if (decision !== "approve" && decision !== "reject") throw new Error("Invalid decision.");
