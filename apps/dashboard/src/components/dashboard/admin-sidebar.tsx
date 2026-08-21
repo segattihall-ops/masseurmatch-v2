@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  Activity,
   BarChart3,
   Camera,
   FileCheck,
@@ -23,7 +24,8 @@ const ADMIN_LINKS = [
   { href: "/admin/moderation", label: "Approvals", icon: Shield },
   { href: "/admin/photos", label: "Photos", icon: Camera },
   { href: "/admin/verifications", label: "Verifications", icon: FileCheck },
-  { href: "/admin/reports", label: "Reports", icon: Flag },
+  { href: "/admin/profile-reports", label: "Safety Reports", icon: Flag },
+  { href: "/admin/reports", label: "Reports", icon: Activity },
   { href: "/admin/tickets", label: "Tickets", icon: LifeBuoy },
   { href: "/admin/audit-log", label: "Audit Log", icon: ScrollText },
   { href: "/admin/demand-radar", label: "Demand Radar", icon: TrendingUp },
