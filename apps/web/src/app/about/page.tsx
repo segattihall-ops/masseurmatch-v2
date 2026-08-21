@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 
 import {
   InstitutionalBand,
@@ -14,6 +15,9 @@ import { absoluteUrl, SITE_NAME } from "@/lib/site";
 const TITLE = "About MasseurMatch";
 const DESCRIPTION =
   "MasseurMatch is a professional directory built to make independent male massage therapists easier to discover, compare, and contact directly.";
+
+const RENE_PHOTO =
+  "https://res.cloudinary.com/dyfxkq2nk/image/upload/v1787352177/17DF33F3-A1A4-450E-8001-725E746DA0F9_xdmryx.png";
 
 export const metadata: Metadata = {
   title: TITLE,
@@ -159,6 +163,81 @@ export default function AboutPage() {
             },
           ]}
         />
+      </InstitutionalSection>
+
+      <InstitutionalSection
+        dark
+        eyebrow="Meet the team"
+        title="Technology shaped by perspective."
+        intro="MasseurMatch is built by people who believe thoughtful technology can make independent professionals easier to discover while keeping trust, clarity, and human connection at the center."
+      >
+        <div className="overflow-hidden rounded-[2rem] border border-white/[0.10] bg-white/[0.04] shadow-2xl shadow-black/20">
+          <div className="grid lg:grid-cols-[0.86fr_1.14fr] lg:items-stretch">
+            <div className="relative min-h-[420px] overflow-hidden bg-white/[0.03] sm:min-h-[520px] lg:min-h-[620px]">
+              <Image
+                src={RENE_PHOTO}
+                alt="Rene, web development specialist at MasseurMatch"
+                fill
+                sizes="(min-width: 1024px) 42vw, 100vw"
+                className="object-cover object-top"
+                priority={false}
+              />
+              <div
+                aria-hidden="true"
+                className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/40 to-transparent lg:hidden"
+              />
+            </div>
+
+            <div className="flex flex-col justify-center px-6 py-10 sm:px-10 sm:py-14 lg:px-14 lg:py-16">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-[#d66b7a]">
+                Web Development · Cuba
+              </p>
+              <h3 className="mt-4 font-display text-[clamp(2rem,4vw,3.5rem)] font-semibold tracking-tight text-white">
+                Rene
+              </h3>
+              <p className="mt-2 text-sm font-medium text-white/50">
+                Web Development Specialist · University of Havana graduate
+              </p>
+
+              <div className="mt-8 h-px w-16 bg-[#d66b7a]/70" />
+
+              <p className="mt-8 max-w-2xl text-base leading-8 text-white/70">
+                Born and educated in Cuba, Rene brings a technical perspective shaped by curiosity,
+                resourcefulness, and a strong foundation in web development. A graduate of the
+                University of Havana, he approaches digital products with an eye for both the systems
+                behind them and the people who ultimately use them.
+              </p>
+              <p className="mt-5 max-w-2xl text-base leading-8 text-white/70">
+                At MasseurMatch, that perspective supports our goal of creating a faster, clearer,
+                and more dependable experience for independent professionals and the clients looking
+                to discover them. His work reflects the principle behind the platform itself:
+                technology should remove friction, build confidence, and make meaningful connections
+                easier.
+              </p>
+
+              <div className="mt-10 grid gap-3 sm:grid-cols-3">
+                <div className="rounded-2xl border border-white/[0.08] bg-black/15 p-4">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/40">
+                    Background
+                  </p>
+                  <p className="mt-2 text-sm font-semibold text-white">Cuban</p>
+                </div>
+                <div className="rounded-2xl border border-white/[0.08] bg-black/15 p-4">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/40">
+                    Education
+                  </p>
+                  <p className="mt-2 text-sm font-semibold text-white">University of Havana</p>
+                </div>
+                <div className="rounded-2xl border border-white/[0.08] bg-black/15 p-4">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/40">
+                    Focus
+                  </p>
+                  <p className="mt-2 text-sm font-semibold text-white">Web Development</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </InstitutionalSection>
 
       <InstitutionalCta
