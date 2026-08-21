@@ -90,7 +90,8 @@ export default async function AdminPhotosPage({
                     <p className="font-medium text-ink">{photo.profileName}</p>
                     <p className="mt-0.5 text-xs text-ink/50">
                       {photo.isPrimary ? "Primary · " : ""}
-                      {photo.storageBucket ?? "unknown source"} · {new Date(photo.createdAt).toLocaleString()}
+                      {photo.storageBucket ?? "unknown source"} ·{" "}
+                      {new Date(photo.createdAt).toLocaleString()}
                     </p>
                   </div>
 
@@ -102,7 +103,10 @@ export default async function AdminPhotosPage({
                   {photo.status === "pending" ? (
                     <form action={moderatePhoto} className="space-y-3 border-t border-ink/10 pt-3">
                       <input type="hidden" name="photo_id" value={photo.id} />
-                      <label className="block text-xs font-medium text-ink/70" htmlFor={`reason-${photo.id}`}>
+                      <label
+                        className="block text-xs font-medium text-ink/70"
+                        htmlFor={`reason-${photo.id}`}
+                      >
                         Review note / rejection reason
                       </label>
                       <textarea
