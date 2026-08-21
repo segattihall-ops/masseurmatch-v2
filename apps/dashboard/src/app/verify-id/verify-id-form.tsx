@@ -26,6 +26,7 @@ export function VerifyIdForm({ verificationStatus }: { verificationStatus: strin
   const [documentType, setDocumentType] = useState("drivers_license");
   const [documentCountry, setDocumentCountry] = useState("US");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [challengeCode, setChallengeCode] = useState("");
 
   const idFrontInputRef = useRef<HTMLInputElement>(null);
   const idBackInputRef = useRef<HTMLInputElement>(null);
@@ -62,6 +63,7 @@ export function VerifyIdForm({ verificationStatus }: { verificationStatus: strin
       }
 
       const data = await response.json();
+      setChallengeCode(data.challengeCode ?? "");
       setStage("uploading");
       // Store verification ID for later use
       sessionStorage.setItem("verificationId", data.verificationId);
@@ -180,6 +182,22 @@ export function VerifyIdForm({ verificationStatus }: { verificationStatus: strin
       ) : stage === "uploading" ? (
         <>
           <div className="space-y-4">
+            {challengeCode && (
+              <div className="rounded-lg border border-amber-300 bg-amber-50 p-4">
+                <div className="text-xs font-semibold uppercase tracking-wider text-amber-700">
+                  One-time selfie challenge
+                </div>
+                <div className="mt-2 font-mono text-4xl font-bold tracking-[0.18em] text-amber-950">
+                  {challengeCode}
+                </div>
+                <p className="mt-3 text-sm leading-relaxed text-amber-800">
+                  Write this six-digit code on paper and hold it next to your face in the selfie.
+                  Your face and the full code must be clearly visible. The challenge expires after
+                  30 minutes.
+                </p>
+              </div>
+            )}
+
             <div>
               <label className="block text-sm font-medium text-ink">Document type</label>
               <select
@@ -247,7 +265,9 @@ export function VerifyIdForm({ verificationStatus }: { verificationStatus: strin
             )}
 
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-ink">Current selfie *</label>
+              <label className="block text-sm font-medium text-ink">
+                Current selfie with challenge code *
+              </label>
               <Input
                 ref={selfieInputRef}
                 type="file"
