@@ -59,7 +59,10 @@ const OUTCOMES: Record<ModerationAction, Record<string, unknown>> = {
   },
 };
 
-export async function moderateProfile(_prev: StepState, formData: FormData): Promise<StepState> {
+export async function moderateProfile(
+  _prev: StepState,
+  formData: FormData,
+): Promise<StepState> {
   const adminId = await requireAdminId();
 
   const profileId = String(formData.get("profile_id") ?? "").trim();
@@ -74,7 +77,8 @@ export async function moderateProfile(_prev: StepState, formData: FormData): Pro
   // required attribute is a hint to a browser, not a rule.
   if (reason.length < 10) {
     return {
-      error: "Give a reason of at least 10 characters — it goes in the audit log.",
+      error:
+        "Give a reason of at least 10 characters — it goes in the audit log.",
     };
   }
 
@@ -151,7 +155,8 @@ export async function moderateProfile(_prev: StepState, formData: FormData): Pro
   if (error) return { error: `Logged, but the change failed: ${error.message}` };
   if ((data ?? []).length === 0) {
     return {
-      error: "Logged, but no profile was updated — it may have been changed already.",
+      error:
+        "Logged, but no profile was updated — it may have been changed already.",
     };
   }
 
