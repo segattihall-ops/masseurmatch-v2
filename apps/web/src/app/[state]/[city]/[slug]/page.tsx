@@ -3,16 +3,27 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Avatar, Card, CardContent, FadeIn, StaggerItem, StaggerList } from "@masseurmatch/ui";
-import { getProfileBySlug, getVisibleTherapists } from "@masseurmatch/db/actions/directory";
+import {
+  getCities,
+  getProfileBySlug,
+  getVisibleTherapists,
+  searchTherapists,
+} from "@masseurmatch/db/actions/directory";
 import {
   citySlug,
   DIRECTORY_REVALIDATE_SECONDS,
   therapistName,
+  type CityListing,
+  type DirectoryFilters,
+  type ProfileDetail,
 } from "@masseurmatch/db/actions/directory-config";
 
+import { LegacyDirectoryLanding } from "@/components/legacy-directory-landing";
+import { getLegacyKeyword, getLegacySegment, formatLegacyArea } from "@/content/legacy-directory";
 import { hasImage } from "@/lib/cloudinary";
 import { jsonLdScript, therapistJsonLd } from "@/lib/jsonld";
 import { absoluteUrl, SITE_NAME } from "@/lib/site";
+import { withApprovedProfilePhotos } from "@/lib/therapist-photos";
 
 import { ViewBeacon } from "../../../view-beacon";
 
@@ -21,6 +32,14 @@ export const revalidate = DIRECTORY_REVALIDATE_SECONDS;
 interface ProfileParams {
   params: { state: string; city: string; slug: string };
 }
+
+type LegacyLanding = {
+  city: CityListing;
+  title: string;
+  intro: string;
+  filters: DirectoryFilters;
+  canonicalPath: string;
+};
 
 /** Prerender every publicly visible profile that has a city to route under. */
 export async function generateStaticParams() {
@@ -34,39 +53,146 @@ export async function generateStaticParams() {
     }));
 }
 
-export async function generateMetadata({ params }: ProfileParams): Promise<Metadata> {
+/**
+ * A slug alone is not enough to prove a canonical profile URL. Without this
+ * location check, any `/anything/anything/{real-slug}` URL rendered the same
+ * profile and created unlimited duplicate-content paths.
+ */
+async function getCanonicalProfile(params: ProfileParams["params"]): Promise<ProfileDetail | null> {
   const profile = await getProfileBySlug(params.slug);
-  if (!profile) return {};
+  if (!profile?.city || !profile.state) return null;
 
-  const name = therapistName(profile);
-  const location = profile.city && profile.state ? ` — ${profile.city}, ${profile.state}` : "";
-  const title = profile.seo_title ?? `${name}${location}`;
-  const description =
-    profile.seo_description ??
-    profile.headline ??
-    profile.tagline ??
-    `Book ${name}, a verified male massage therapist on ${SITE_NAME}.`;
-  const canonical = absoluteUrl(`/${params.state}/${params.city}/${params.slug}`);
-  const image = profile.avatar_url ?? profile.photo_url;
+  const stateMatches = profile.state.toLowerCase() === params.state.toLowerCase();
+  const cityMatches = citySlug(profile.city) === params.city.toLowerCase();
+  return stateMatches && cityMatches ? profile : null;
+}
+
+async function getLegacyCity(slug: string): Promise<CityListing | null> {
+  const cities = await getCities();
+  return cities.find((city) => city.citySlug === slug.toLowerCase()) ?? null;
+}
+
+function mergeLegacyFilters(
+  first: DirectoryFilters,
+  second: DirectoryFilters,
+): DirectoryFilters {
+  return {
+    ...first,
+    ...second,
+    verified: Boolean(first.verified || second.verified) || undefined,
+    lgbtq: Boolean(first.lgbtq || second.lgbtq) || undefined,
+    availableNow: Boolean(first.availableNow || second.availableNow) || undefined,
+  };
+}
+
+async function resolveLegacyLanding(params: ProfileParams["params"]): Promise<LegacyLanding | null> {
+  const legacyCity = await getLegacyCity(params.state);
+  if (!legacyCity) return null;
+
+  const canonicalPath = `/${params.state}/${params.city}/${params.slug}`;
+
+  // OLD neighborhood route: /{city}/areas/{area}
+  if (params.city === "areas") {
+    const area = formatLegacyArea(params.slug);
+    if (!area) return null;
+    return {
+      city: legacyCity,
+      title: `Massage therapists in ${area}, ${legacyCity.name}, ${legacyCity.state}`,
+      intro: `Browse public therapist profiles associated with ${area} and ${legacyCity.name}. Compare services, pricing, trust signals and direct-contact options.`,
+      filters: { query: area },
+      canonicalPath,
+    };
+  }
+
+  // OLD long-tail route: /{city}/{segment}/{keyword}
+  const segment = getLegacySegment(params.city);
+  const keyword = getLegacyKeyword(params.slug);
+  if (!segment || !keyword) return null;
 
   return {
-    title,
-    description,
-    alternates: { canonical },
-    openGraph: {
-      type: "profile",
-      url: canonical,
-      siteName: SITE_NAME,
+    city: legacyCity,
+    title: `${keyword.label} in ${legacyCity.name}, ${legacyCity.state}`,
+    intro: `${keyword.intro} ${segment.intro}`,
+    filters: mergeLegacyFilters(segment.filters, keyword.filters),
+    canonicalPath,
+  };
+}
+
+export async function generateMetadata({ params }: ProfileParams): Promise<Metadata> {
+  const profile = await getCanonicalProfile(params);
+  if (profile) {
+    const name = therapistName(profile);
+    const location = profile.city && profile.state ? ` — ${profile.city}, ${profile.state}` : "";
+    const title = profile.seo_title ?? `${name}${location}`;
+    const description =
+      profile.seo_description ??
+      profile.headline ??
+      profile.tagline ??
+      `${name}, a verified male massage therapist on ${SITE_NAME}.`;
+    const canonical = absoluteUrl(`/${params.state}/${params.city}/${params.slug}`);
+    const image = profile.avatar_url ?? profile.photo_url;
+
+    return {
       title,
       description,
-      ...(hasImage(image) ? { images: [{ url: image, alt: name }] } : {}),
+      alternates: { canonical },
+      openGraph: {
+        type: "profile",
+        url: canonical,
+        siteName: SITE_NAME,
+        title,
+        description,
+        ...(hasImage(image) ? { images: [{ url: image, alt: name }] } : {}),
+      },
+    };
+  }
+
+  const legacy = await resolveLegacyLanding(params);
+  if (!legacy) return {};
+
+  const matches = await searchTherapists({ ...legacy.filters, city: legacy.city.citySlug });
+  const description = `${legacy.intro} Browse current public profiles on ${SITE_NAME}.`;
+  const canonical = absoluteUrl(legacy.canonicalPath);
+
+  return {
+    title: legacy.title,
+    description,
+    alternates: { canonical },
+    robots: matches.length === 0 ? { index: false, follow: true } : undefined,
+    openGraph: {
+      type: "website",
+      url: canonical,
+      siteName: SITE_NAME,
+      title: legacy.title,
+      description,
     },
   };
 }
 
 export default async function ProfilePage({ params }: ProfileParams) {
-  const profile = await getProfileBySlug(params.slug);
-  if (!profile) notFound();
+  const profile = await getCanonicalProfile(params);
+
+  if (!profile) {
+    const legacy = await resolveLegacyLanding(params);
+    if (!legacy) notFound();
+
+    const rawTherapists = await searchTherapists({
+      ...legacy.filters,
+      city: legacy.city.citySlug,
+    });
+    const therapists = await withApprovedProfilePhotos(rawTherapists);
+
+    return (
+      <LegacyDirectoryLanding
+        city={legacy.city}
+        title={legacy.title}
+        intro={legacy.intro}
+        canonicalPath={legacy.canonicalPath}
+        filters={legacy.filters}
+        therapists={therapists}
+      />
+    );
+  }
 
   const name = therapistName(profile);
   const hero = profile.avatar_url ?? profile.photo_url;
@@ -107,7 +233,6 @@ export default async function ProfilePage({ params }: ProfileParams) {
           )}
 
           <div className="space-y-2">
-            {/* LCP heading — no entrance animation. */}
             <h1 className="font-display text-ds-40 font-bold tracking-tight text-text-primary">
               {name}
             </h1>
