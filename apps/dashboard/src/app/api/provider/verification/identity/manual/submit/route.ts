@@ -3,7 +3,7 @@ import { createSessionClient } from "@masseurmatch/db/auth";
 import type { Json } from "@masseurmatch/db";
 import { NextResponse } from "next/server";
 
-import { LIMITS, rateLimit } from "@/lib/rate-limit";
+import { rateLimit } from "@/lib/rate-limit";
 
 const ALLOWED_DOCUMENT_TYPES = new Set(["drivers_license", "passport", "state_id", "military_id"]);
 const COUNTRY_CODE_REGEX = /^[A-Z]{2}$/;

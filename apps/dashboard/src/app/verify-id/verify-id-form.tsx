@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Input, Select } from "@masseurmatch/ui";
+import { Button, Input } from "@masseurmatch/ui";
 import { useCallback, useRef, useState } from "react";
 
 const DOCUMENT_TYPES = [
@@ -177,34 +177,34 @@ export function VerifyIdForm({ verificationStatus }: { verificationStatus: strin
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-ink">Document type</label>
-              <Select
+              <select
                 value={documentType}
-                onChange={(e) => setDocumentType(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setDocumentType(e.target.value)}
                 disabled={isSubmitting}
-                className="mt-1"
+                className="mt-1 w-full rounded-md border border-ink/20 bg-bg px-3 py-2 text-ink"
               >
                 {DOCUMENT_TYPES.map((dt) => (
                   <option key={dt.value} value={dt.value}>
                     {dt.label}
                   </option>
                 ))}
-              </Select>
+              </select>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-ink">Issuing country</label>
-              <Select
+              <select
                 value={documentCountry}
-                onChange={(e) => setDocumentCountry(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setDocumentCountry(e.target.value)}
                 disabled={isSubmitting}
-                className="mt-1"
+                className="mt-1 w-full rounded-md border border-ink/20 bg-bg px-3 py-2 text-ink"
               >
                 {COUNTRIES.map((c) => (
                   <option key={c.value} value={c.value}>
                     {c.label}
                   </option>
                 ))}
-              </Select>
+              </select>
             </div>
 
             <div className="space-y-2">

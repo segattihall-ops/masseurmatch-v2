@@ -5,7 +5,7 @@ import { createSessionClient } from "@masseurmatch/db/auth";
 import type { Json } from "@masseurmatch/db";
 import { NextResponse } from "next/server";
 
-import { LIMITS, rateLimit } from "@/lib/rate-limit";
+import { rateLimit } from "@/lib/rate-limit";
 
 const CHALLENGE_TTL_MS = 30 * 60 * 1000;
 

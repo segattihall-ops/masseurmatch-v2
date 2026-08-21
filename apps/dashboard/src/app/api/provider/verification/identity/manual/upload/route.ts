@@ -3,7 +3,7 @@ import { createSessionClient } from "@masseurmatch/db/auth";
 import type { Json } from "@masseurmatch/db";
 import { NextResponse } from "next/server";
 
-import { LIMITS, rateLimit } from "@/lib/rate-limit";
+import { rateLimit } from "@/lib/rate-limit";
 
 const ALLOWED_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 const MAX_FILE_SIZE_BYTES = 8 * 1024 * 1024;
