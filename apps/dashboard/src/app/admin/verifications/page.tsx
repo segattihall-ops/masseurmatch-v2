@@ -19,25 +19,24 @@ function labelFor(kind: string | null): string {
   return DOCUMENT_KINDS.find((option) => option.id === kind)?.label ?? "Document";
 }
 
-/**
- * Documents waiting on a human.
- *
- * Signed view links are minted here, one per row, and each lives for a minute.
- * That is short enough that leaving this tab open does not leave a working key
- * to somebody's passport lying around — a reviewer who comes back to it
- * refreshes the page, which is the intended cost.
- */
 export default async function VerificationsPage() {
   await requireAdmin("/admin/verifications");
 
   const service = createServiceClient();
 
-  const { data, error } = await service
-    .from("profile_documents")
-    .select("id,profile_id,document_type,status,created_at,storage_path")
-    .eq("status", "pending")
-    .order("created_at", { ascending: true })
-    .limit(50);
+  const [{ data, error }, { count: manualPending }] = await Promise.all([
+    service
+      .from("profile_documents")
+      .select("id,profile_id,document_type,status,created_at,storage_path")
+      .eq("status", "pending")
+      .order("created_at", { ascending: true })
+      .limit(50),
+    service
+      .from("identity_verifications")
+      .select("id", { count: "exact", head: true })
+      .eq("provider", "manual")
+      .eq("status", "pending"),
+  ]);
 
   if (error) {
     return (
@@ -79,18 +78,26 @@ export default async function VerificationsPage() {
 
   return (
     <main className="mx-auto w-full max-w-3xl px-6 py-12">
-      <div className="mb-8 flex flex-wrap items-center justify-between gap-3">
+      <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold text-ink">Identity verifications</h1>
           <p className="mt-1 text-sm text-ink/60">
             {rows.length === 0
-              ? "Nothing waiting."
+              ? "Nothing waiting in the current document queue."
               : `${rows.length} waiting. Each document is deleted once you decide.`}
           </p>
         </div>
-        <Link href="/admin" className="text-sm font-medium text-wine hover:underline">
-          Back to admin
-        </Link>
+        <div className="flex flex-wrap gap-3 text-sm">
+          <Link
+            href="/admin/verifications/manual"
+            className="rounded-lg border border-wine/20 px-3 py-2 font-medium text-wine hover:bg-wineSoft/30"
+          >
+            Manual legacy queue{manualPending ? ` (${manualPending})` : ""}
+          </Link>
+          <Link href="/admin" className="px-2 py-2 font-medium text-wine hover:underline">
+            Back to admin
+          </Link>
+        </div>
       </div>
 
       <VerificationQueue rows={rows} />
