@@ -54,7 +54,10 @@ export default async function ModerationPage({
               : `${rows.length} waiting — oldest first, so nothing starves at the back.`}
         </p>
         {requestedProfile ? (
-          <a href="/admin/moderation" className="mt-3 inline-block text-sm font-medium text-wine hover:underline">
+          <a
+            href="/admin/moderation"
+            className="mt-3 inline-block text-sm font-medium text-wine hover:underline"
+          >
             ← Back to full queue
           </a>
         ) : null}
