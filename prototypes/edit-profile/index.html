@@ -1,0 +1,1041 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Edit Profile · MasseurMatch</title>
+    <meta
+      name="description"
+      content="MasseurMatch therapist profile editor — six guided sections, live validation, autosave and a client-eye preview."
+    />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#profile-form">Skip to the form</a>
+
+    <!-- ────────────────────────────────  HERO  ──────────────────────────────── -->
+    <header class="hero">
+      <div class="shell hero__inner">
+        <div class="hero__head">
+          <div class="hero__identity">
+            <span class="hero__mark" aria-hidden="true">MM</span>
+            <div>
+              <h1 class="hero__title">Edit Profile</h1>
+              <p class="hero__sub">
+                MasseurMatch · <span id="hero-name">your listing</span>
+                <span class="hero__dot" aria-hidden="true">•</span>
+                <span id="hero-place">add a city</span>
+              </p>
+            </div>
+          </div>
+
+          <div class="hero__tools">
+            <button type="button" class="ghost-btn" id="btn-undo" title="Undo (Ctrl+Z)" disabled>
+              <span class="ico" aria-hidden="true">↶</span><span class="ghost-btn__label">Undo</span>
+            </button>
+            <button
+              type="button"
+              class="ghost-btn"
+              id="btn-redo"
+              title="Redo (Ctrl+Shift+Z)"
+              disabled
+            >
+              <span class="ico" aria-hidden="true">↷</span><span class="ghost-btn__label">Redo</span>
+            </button>
+            <button type="button" class="ghost-btn" id="btn-theme" aria-pressed="false" title="Switch colour theme">
+              <span class="ico" aria-hidden="true">◐</span
+              ><span class="ghost-btn__label" id="theme-label">Dark</span>
+            </button>
+            <button type="button" class="ghost-btn" id="btn-help" title="Keyboard shortcuts (?)">
+              <span class="ico" aria-hidden="true">?</span
+              ><span class="ghost-btn__label">Shortcuts</span>
+            </button>
+            <button type="button" class="ghost-btn ghost-btn--solid" id="btn-preview" title="Preview your public listing (Ctrl+P)">
+              <span class="ico" aria-hidden="true">👁</span
+              ><span class="ghost-btn__label">Preview</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Progress -->
+        <div class="progress" role="group" aria-labelledby="progress-label">
+          <div class="progress__row">
+            <p class="progress__label" id="progress-label">
+              <strong><span id="progress-count">0</span>/6</strong> sections complete
+            </p>
+            <p class="progress__meta" id="progress-meta">Getting started</p>
+          </div>
+          <div
+            class="progress__track"
+            role="progressbar"
+            aria-labelledby="progress-label"
+            aria-valuemin="0"
+            aria-valuemax="6"
+            aria-valuenow="0"
+            id="progress-bar"
+          >
+            <span class="progress__fill" id="progress-fill"></span>
+          </div>
+          <p class="progress__hint" id="progress-hint">
+            Fill the required fields (marked <span class="req">*</span>) to publish your profile.
+          </p>
+        </div>
+      </div>
+    </header>
+
+    <!-- ────────────────────────────────  STICKY NAV  ────────────────────────── -->
+    <div class="stickybar" id="stickybar">
+      <div class="shell stickybar__inner">
+        <nav class="tabs" id="tabs" aria-label="Profile sections">
+          <!-- tab buttons injected by app.js -->
+        </nav>
+        <div class="stickybar__actions">
+          <span class="savestate" id="savestate" role="status" aria-live="polite">All changes saved</span>
+          <button type="button" class="btn btn--ghost" id="btn-toggle-all">Collapse all</button>
+          <button type="submit" class="btn btn--primary" form="profile-form" id="btn-save-top">
+            Save profile
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ────────────────────────────────  FORM  ──────────────────────────────── -->
+    <main class="shell main">
+      <div class="alert alert--error" id="form-error" hidden role="alert" tabindex="-1">
+        <strong id="form-error-title">Some fields need attention</strong>
+        <ul class="alert__list" id="form-error-list"></ul>
+      </div>
+
+      <form id="profile-form" novalidate autocomplete="on">
+        <!-- ══════════ SECTION 1 · ABOUT YOU ══════════ -->
+        <section class="card" id="section-about" data-section="about" aria-labelledby="about-title">
+          <button
+            type="button"
+            class="card__head"
+            aria-expanded="true"
+            aria-controls="about-body"
+            data-toggle-section
+          >
+            <span class="card__num" aria-hidden="true">1</span>
+            <span class="card__heads">
+              <span class="card__title" id="about-title">About you</span>
+              <span class="card__summary" data-summary>Name, headline and the bio clients read first.</span>
+            </span>
+            <span class="card__status" data-status></span>
+            <span class="card__chev" aria-hidden="true">⌄</span>
+          </button>
+
+          <div class="card__body" id="about-body">
+            <div class="card__inner">
+              <p class="card__lead">
+                This is the top of your listing. A clear name, one headline and a specific bio do
+                more for bookings than anything else on this page.
+              </p>
+
+              <div class="grid grid--3">
+                <div class="field" data-field="display_name">
+                  <div class="field__top">
+                    <label class="field__label" for="display_name"
+                      >Display name <span class="req" aria-hidden="true">*</span
+                      ><span class="sr-only">(required)</span></label
+                    >
+                    <span class="counter" data-counter-for="display_name">0/50</span>
+                  </div>
+                  <input
+                    id="display_name"
+                    name="display_name"
+                    type="text"
+                    maxlength="50"
+                    placeholder="Bruno"
+                    autocomplete="nickname"
+                    data-required
+                  />
+                  <p class="field__hint">First name or working name — this is what clients see.</p>
+                </div>
+
+                <div class="field" data-field="height">
+                  <div class="field__top">
+                    <label class="field__label" for="height">Height</label>
+                  </div>
+                  <input id="height" name="height" type="text" placeholder="6'8&quot; (203cm)" />
+                  <p class="field__hint">Optional. Free text, any unit.</p>
+                </div>
+
+                <div class="field" data-field="weight">
+                  <div class="field__top">
+                    <label class="field__label" for="weight">Weight</label>
+                  </div>
+                  <input id="weight" name="weight" type="text" placeholder="175 lb (79kg)" />
+                  <p class="field__hint">Optional. Free text, any unit.</p>
+                </div>
+              </div>
+
+              <fieldset class="field field--fieldset" data-field="headline">
+                <div class="field__top">
+                  <legend class="field__label">
+                    Headline <span class="req" aria-hidden="true">*</span
+                    ><span class="sr-only">(required)</span>
+                  </legend>
+                </div>
+                <div class="segmented" data-mount="headline"></div>
+                <p class="field__hint">
+                  The one line under your name. Pick the style that describes most of your work.
+                </p>
+              </fieldset>
+
+              <div class="grid grid--2">
+                <div class="field" data-field="tagline">
+                  <div class="field__top">
+                    <label class="field__label" for="tagline">Tagline</label>
+                    <span class="counter" data-counter-for="tagline">0/200</span>
+                  </div>
+                  <input
+                    id="tagline"
+                    name="tagline"
+                    type="text"
+                    maxlength="200"
+                    placeholder="Deep tissue and sports recovery in Oak Lawn, Dallas"
+                  />
+                  <p class="field__hint">
+                    Optional but recommended — one sentence on what you do and for whom.
+                  </p>
+                </div>
+
+                <div class="field" data-field="body_type">
+                  <div class="field__top">
+                    <label class="field__label" for="body_type">Body type</label>
+                  </div>
+                  <select id="body_type" name="body_type" data-mount="body_type"></select>
+                  <p class="field__hint">Optional. Choose “Prefer not to say” to hide it.</p>
+                </div>
+              </div>
+
+              <div class="field" data-field="bio">
+                <div class="field__top">
+                  <label class="field__label" for="bio"
+                    >Bio / About me <span class="req" aria-hidden="true">*</span
+                    ><span class="sr-only">(required)</span></label
+                  >
+                  <span class="counter" data-counter-for="bio">0/4000</span>
+                </div>
+                <textarea
+                  id="bio"
+                  name="bio"
+                  rows="9"
+                  maxlength="4000"
+                  data-required
+                  data-minlength="120"
+                  placeholder="Where you trained, what a session with you feels like, who you work best with…"
+                ></textarea>
+                <p class="field__hint">
+                  Aim for 150–600 words. Say where you trained, how a session runs and who you work
+                  best with. Contact details belong in the next section, not here.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ══════════ SECTION 2 · LOCATION & CONTACT ══════════ -->
+        <section
+          class="card"
+          id="section-location"
+          data-section="location"
+          aria-labelledby="location-title"
+        >
+          <button
+            type="button"
+            class="card__head"
+            aria-expanded="true"
+            aria-controls="location-body"
+            data-toggle-section
+          >
+            <span class="card__num" aria-hidden="true">2</span>
+            <span class="card__heads">
+              <span class="card__title" id="location-title">Location &amp; contact</span>
+              <span class="card__summary" data-summary>Where you work and how clients reach you.</span>
+            </span>
+            <span class="card__status" data-status></span>
+            <span class="card__chev" aria-hidden="true">⌄</span>
+          </button>
+
+          <div class="card__body" id="location-body">
+            <div class="card__inner">
+              <h3 class="subhead">Where you work</h3>
+              <div class="grid grid--3">
+                <div class="field" data-field="zip">
+                  <div class="field__top">
+                    <label class="field__label" for="zip"
+                      >ZIP code <span class="req" aria-hidden="true">*</span
+                      ><span class="sr-only">(required)</span></label
+                    >
+                  </div>
+                  <input
+                    id="zip"
+                    name="zip"
+                    type="text"
+                    inputmode="numeric"
+                    maxlength="10"
+                    placeholder="75219"
+                    autocomplete="postal-code"
+                    data-required
+                  />
+                  <p class="field__hint">5 digits, or ZIP+4. Drives search results near you.</p>
+                </div>
+
+                <div class="field" data-field="city">
+                  <div class="field__top">
+                    <label class="field__label" for="city"
+                      >City <span class="req" aria-hidden="true">*</span
+                      ><span class="sr-only">(required)</span></label
+                    >
+                  </div>
+                  <input
+                    id="city"
+                    name="city"
+                    type="text"
+                    placeholder="Dallas"
+                    autocomplete="address-level2"
+                    data-required
+                  />
+                </div>
+
+                <div class="field" data-field="state">
+                  <div class="field__top">
+                    <label class="field__label" for="state"
+                      >State <span class="req" aria-hidden="true">*</span
+                      ><span class="sr-only">(required)</span></label
+                    >
+                  </div>
+                  <select
+                    id="state"
+                    name="state"
+                    data-mount="states"
+                    autocomplete="address-level1"
+                    data-required
+                  ></select>
+                </div>
+
+                <div class="field" data-field="neighborhood">
+                  <div class="field__top">
+                    <label class="field__label" for="neighborhood">Neighborhood</label>
+                  </div>
+                  <input id="neighborhood" name="neighborhood" type="text" placeholder="Oak Lawn" />
+                </div>
+
+                <div class="field field--span2" data-field="cross_streets">
+                  <div class="field__top">
+                    <label class="field__label" for="cross_streets">Street intersection</label>
+                  </div>
+                  <input
+                    id="cross_streets"
+                    name="cross_streets"
+                    type="text"
+                    placeholder="Cedar Springs Rd &amp; Throckmorton St"
+                  />
+                  <p class="field__hint">
+                    Optional. Shown instead of a street address — close enough to find you, private
+                    enough to stay safe.
+                  </p>
+                </div>
+              </div>
+
+              <h3 class="subhead">How you see clients</h3>
+              <div class="switches">
+                <label class="toggle" for="offer_incall">
+                  <input type="checkbox" id="offer_incall" name="offer_incall" class="toggle__input" />
+                  <span class="toggle__track" aria-hidden="true"><span class="toggle__thumb"></span></span>
+                  <span class="toggle__text">
+                    <span class="toggle__title">Offer in-call</span>
+                    <span
+                      class="toggle__desc"
+                      data-toggle-desc
+                      data-on="Clientes vêm até mim"
+                      data-off="Não recebo clientes no meu espaço"
+                    ></span>
+                  </span>
+                </label>
+
+                <label class="toggle" for="offer_outcall">
+                  <input type="checkbox" id="offer_outcall" name="offer_outcall" class="toggle__input" />
+                  <span class="toggle__track" aria-hidden="true"><span class="toggle__thumb"></span></span>
+                  <span class="toggle__text">
+                    <span class="toggle__title">Offer out-call</span>
+                    <span
+                      class="toggle__desc"
+                      data-toggle-desc
+                      data-on="Viajo até o cliente"
+                      data-off="Não viajo até o cliente"
+                    ></span>
+                  </span>
+                </label>
+
+                <label class="toggle" for="show_on_map">
+                  <input type="checkbox" id="show_on_map" name="show_on_map" class="toggle__input" />
+                  <span class="toggle__track" aria-hidden="true"><span class="toggle__thumb"></span></span>
+                  <span class="toggle__text">
+                    <span class="toggle__title">Show on map</span>
+                    <span
+                      class="toggle__desc"
+                      data-toggle-desc
+                      data-on="Mostrar localização no mapa"
+                      data-off="Ocultar localização no mapa"
+                    ></span>
+                  </span>
+                </label>
+              </div>
+
+              <div class="conditional" data-conditional="outcall_radius" hidden>
+                <div class="field" data-field="outcall_radius">
+                  <div class="field__top">
+                    <label class="field__label" for="outcall_radius">Out-call radius</label>
+                    <span class="pill pill--info">Shown because out-call is on</span>
+                  </div>
+                  <select id="outcall_radius" name="outcall_radius" data-mount="outcall_radius"></select>
+                  <p class="field__hint">How far you are willing to travel from your ZIP code.</p>
+                </div>
+              </div>
+
+              <h3 class="subhead">Contact</h3>
+              <div class="grid grid--3">
+                <div class="field" data-field="phone">
+                  <div class="field__top">
+                    <label class="field__label" for="phone"
+                      >Phone number <span class="req" aria-hidden="true">*</span
+                      ><span class="sr-only">(required)</span></label
+                    >
+                  </div>
+                  <input
+                    id="phone"
+                    name="phone"
+                    type="tel"
+                    inputmode="tel"
+                    placeholder="(555) 123-4567"
+                    autocomplete="tel-national"
+                    data-phone
+                    data-required
+                  />
+                  <p class="field__hint">Formats itself as you type: (XXX) XXX-XXXX.</p>
+                </div>
+
+                <div class="field" data-field="whatsapp">
+                  <div class="field__top">
+                    <label class="field__label" for="whatsapp">WhatsApp</label>
+                  </div>
+                  <input
+                    id="whatsapp"
+                    name="whatsapp"
+                    type="tel"
+                    inputmode="tel"
+                    placeholder="(555) 123-4567"
+                    data-phone
+                  />
+                  <p class="field__hint">Optional. Leave blank to hide the WhatsApp button.</p>
+                </div>
+
+                <div class="field" data-field="email">
+                  <div class="field__top">
+                    <label class="field__label" for="email"
+                      >Email <span class="req" aria-hidden="true">*</span
+                      ><span class="sr-only">(required)</span></label
+                    >
+                  </div>
+                  <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    placeholder="you@example.com"
+                    autocomplete="email"
+                    data-required
+                  />
+                </div>
+              </div>
+
+              <div class="switches switches--single">
+                <label class="toggle" for="email_public">
+                  <input type="checkbox" id="email_public" name="email_public" class="toggle__input" />
+                  <span class="toggle__track" aria-hidden="true"><span class="toggle__thumb"></span></span>
+                  <span class="toggle__text">
+                    <span class="toggle__title">Email visibility</span>
+                    <span
+                      class="toggle__desc"
+                      data-toggle-desc
+                      data-on="Email visível publicamente"
+                      data-off="Email privado — usado apenas pela MasseurMatch"
+                    ></span>
+                  </span>
+                </label>
+              </div>
+
+              <h3 class="subhead">Links</h3>
+              <div class="grid grid--3">
+                <div class="field" data-field="website">
+                  <div class="field__top">
+                    <label class="field__label" for="website">Website</label>
+                  </div>
+                  <input
+                    id="website"
+                    name="website"
+                    type="url"
+                    placeholder="https://yoursite.com"
+                    data-url
+                  />
+                </div>
+
+                <div class="field" data-field="booking_url">
+                  <div class="field__top">
+                    <label class="field__label" for="booking_url">Booking URL</label>
+                  </div>
+                  <input
+                    id="booking_url"
+                    name="booking_url"
+                    type="url"
+                    placeholder="https://book.yoursite.com"
+                    data-url
+                  />
+                </div>
+
+                <div class="field" data-field="booking_platform">
+                  <div class="field__top">
+                    <label class="field__label" for="booking_platform">Booking platform</label>
+                  </div>
+                  <select
+                    id="booking_platform"
+                    name="booking_platform"
+                    data-mount="booking_platform"
+                  ></select>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ══════════ SECTION 3 · SERVICES ══════════ -->
+        <section
+          class="card"
+          id="section-services"
+          data-section="services"
+          aria-labelledby="services-title"
+        >
+          <button
+            type="button"
+            class="card__head"
+            aria-expanded="true"
+            aria-controls="services-body"
+            data-toggle-section
+          >
+            <span class="card__num" aria-hidden="true">3</span>
+            <span class="card__heads">
+              <span class="card__title" id="services-title">Services</span>
+              <span class="card__summary" data-summary>Techniques, setup and what you provide.</span>
+            </span>
+            <span class="card__status" data-status></span>
+            <span class="card__chev" aria-hidden="true">⌄</span>
+          </button>
+
+          <div class="card__body" id="services-body">
+            <div class="card__inner">
+              <p class="card__lead">
+                Everything you tick here becomes a filter clients can search by. Pick what you
+                genuinely offer — accuracy beats volume.
+              </p>
+
+              <div class="field field--fieldset" data-field="techniques">
+                <div class="field__top">
+                  <span class="field__label">Massage techniques</span>
+                </div>
+                <div class="checkgroup" data-group="techniques" data-cols="3" data-searchable="true"></div>
+                <p class="field__hint">Your first six show as badges on your listing card.</p>
+              </div>
+
+              <div class="grid grid--2">
+                <div class="field field--fieldset" data-field="setup">
+                  <div class="field__top"><span class="field__label">Massage setup / position</span></div>
+                  <div class="checkgroup" data-group="setup" data-cols="2"></div>
+                </div>
+
+                <div class="field field--fieldset" data-field="products">
+                  <div class="field__top"><span class="field__label">Products used</span></div>
+                  <div class="checkgroup" data-group="products" data-cols="2"></div>
+                </div>
+              </div>
+
+              <div class="field field--fieldset" data-field="outcall_extras">
+                <div class="field__top">
+                  <span class="field__label">Mobile / out-call extras</span>
+                  <span class="pill pill--muted" data-outcall-note hidden>Out-call is currently off</span>
+                </div>
+                <div class="checkgroup" data-group="outcall_extras" data-cols="3"></div>
+                <p class="field__hint">What you bring with you when you travel to a client.</p>
+              </div>
+
+              <div class="field field--fieldset" data-field="amenities">
+                <div class="field__top"><span class="field__label">Studio amenities</span></div>
+                <div class="checkgroup" data-group="amenities" data-cols="3"></div>
+                <p class="field__hint">What clients find when they come to your space.</p>
+              </div>
+
+              <div class="field field--fieldset" data-field="additional_services">
+                <div class="field__top"><span class="field__label">Additional services</span></div>
+                <div class="checkgroup" data-group="additional_services" data-cols="3"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ══════════ SECTION 4 · RATES & PAYMENTS ══════════ -->
+        <section class="card" id="section-rates" data-section="rates" aria-labelledby="rates-title">
+          <button
+            type="button"
+            class="card__head"
+            aria-expanded="true"
+            aria-controls="rates-body"
+            data-toggle-section
+          >
+            <span class="card__num" aria-hidden="true">4</span>
+            <span class="card__heads">
+              <span class="card__title" id="rates-title">Rates &amp; payments</span>
+              <span class="card__summary" data-summary>Session pricing, discounts and payment methods.</span>
+            </span>
+            <span class="card__status" data-status></span>
+            <span class="card__chev" aria-hidden="true">⌄</span>
+          </button>
+
+          <div class="card__body" id="rates-body">
+            <div class="card__inner">
+              <p class="card__lead">
+                Leave a cell empty for a length you do not offer. Listings with visible rates get
+                noticeably more enquiries than “ask me”.
+              </p>
+
+              <div class="field field--fieldset" data-field="rates">
+                <div class="field__top">
+                  <span class="field__label">Session pricing</span>
+                  <button type="button" class="linkbtn" id="btn-copy-rates">
+                    Copy in-call → out-call
+                  </button>
+                </div>
+                <div class="table-wrap">
+                  <table class="rates" id="rates-table">
+                    <caption class="sr-only">Session pricing by length and session type</caption>
+                    <thead>
+                      <tr>
+                        <th scope="col">Session</th>
+                        <th scope="col">In-call</th>
+                        <th scope="col">Out-call</th>
+                      </tr>
+                    </thead>
+                    <tbody data-mount="rates-rows"></tbody>
+                  </table>
+                </div>
+                <p class="field__hint">Whole dollars. Negative values are rejected.</p>
+              </div>
+
+              <div class="switches">
+                <label class="toggle" for="longer_sessions">
+                  <input
+                    type="checkbox"
+                    id="longer_sessions"
+                    name="longer_sessions"
+                    class="toggle__input"
+                  />
+                  <span class="toggle__track" aria-hidden="true"><span class="toggle__thumb"></span></span>
+                  <span class="toggle__text">
+                    <span class="toggle__title">Longer sessions available</span>
+                    <span
+                      class="toggle__desc"
+                      data-toggle-desc
+                      data-on="Sessões mais longas disponíveis"
+                      data-off="Apenas as durações da tabela"
+                    ></span>
+                  </span>
+                </label>
+
+                <label class="toggle" for="rates_vary_distance">
+                  <input
+                    type="checkbox"
+                    id="rates_vary_distance"
+                    name="rates_vary_distance"
+                    class="toggle__input"
+                  />
+                  <span class="toggle__track" aria-hidden="true"><span class="toggle__thumb"></span></span>
+                  <span class="toggle__text">
+                    <span class="toggle__title">Rates vary by distance</span>
+                    <span
+                      class="toggle__desc"
+                      data-toggle-desc
+                      data-on="Tarifa varia pela distância percorrida"
+                      data-off="Mesma tarifa em qualquer distância"
+                    ></span>
+                  </span>
+                </label>
+              </div>
+
+              <h3 class="subhead">Discounts</h3>
+              <div class="field" data-field="first_time_discount">
+                <label class="check check--standalone">
+                  <input type="checkbox" id="first_time_discount" name="first_time_discount" />
+                  <span class="check__box" aria-hidden="true"></span>
+                  <span class="check__text">Discount for first-time clients</span>
+                </label>
+              </div>
+
+              <div class="conditional" data-conditional="first_time_discount_pct" hidden>
+                <div class="grid grid--2">
+                  <div class="field" data-field="first_time_discount_pct">
+                    <div class="field__top">
+                      <label class="field__label" for="first_time_discount_pct">Discount</label>
+                      <span class="pill pill--info">Shown because the discount is on</span>
+                    </div>
+                    <div class="suffixed">
+                      <input
+                        id="first_time_discount_pct"
+                        name="first_time_discount_pct"
+                        type="number"
+                        min="1"
+                        max="100"
+                        step="1"
+                        placeholder="15"
+                      />
+                      <span class="suffixed__unit" aria-hidden="true">%</span>
+                    </div>
+                    <p class="field__hint">Between 1% and 100%, applied to the first session only.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="field" data-field="special_day_discount">
+                <div class="field__top">
+                  <label class="field__label" for="special_day_discount">Special day discount</label>
+                </div>
+                <input
+                  id="special_day_discount"
+                  name="special_day_discount"
+                  type="text"
+                  maxlength="120"
+                  placeholder="10% de desconto nas terças-feiras"
+                />
+                <p class="field__hint">Free text — shown as a badge on your listing.</p>
+              </div>
+
+              <div class="field field--fieldset" data-field="payment_methods">
+                <div class="field__top"><span class="field__label">Accepted payment methods</span></div>
+                <div class="checkgroup" data-group="payment_methods" data-cols="2"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ══════════ SECTION 5 · SCHEDULE ══════════ -->
+        <section
+          class="card"
+          id="section-schedule"
+          data-section="schedule"
+          aria-labelledby="schedule-title"
+        >
+          <button
+            type="button"
+            class="card__head"
+            aria-expanded="true"
+            aria-controls="schedule-body"
+            data-toggle-section
+          >
+            <span class="card__num" aria-hidden="true">5</span>
+            <span class="card__heads">
+              <span class="card__title" id="schedule-title">Schedule</span>
+              <span class="card__summary" data-summary>Studio hours, availability and lead time.</span>
+            </span>
+            <span class="card__status" data-status></span>
+            <span class="card__chev" aria-hidden="true">⌄</span>
+          </button>
+
+          <div class="card__body" id="schedule-body">
+            <div class="card__inner">
+              <div class="field field--fieldset" data-field="hours">
+                <div class="field__top">
+                  <span class="field__label">Studio hours</span>
+                  <span class="quickrow">
+                    <button type="button" class="linkbtn" id="btn-apply-all">
+                      Apply Monday to every day
+                    </button>
+                    <button type="button" class="linkbtn" id="btn-weekend-closed">
+                      Close the weekend
+                    </button>
+                  </span>
+                </div>
+                <div class="table-wrap">
+                  <table class="hours" id="hours-table">
+                    <caption class="sr-only">Opening hours for each day of the week</caption>
+                    <thead>
+                      <tr>
+                        <th scope="col">Day</th>
+                        <th scope="col">Hours</th>
+                        <th scope="col"><span class="sr-only">Quick actions</span></th>
+                      </tr>
+                    </thead>
+                    <tbody data-mount="hours-rows"></tbody>
+                  </table>
+                </div>
+                <p class="field__hint">
+                  Free text — “9:00 AM - 11:00 PM”, “By appointment” or “Closed”.
+                </p>
+              </div>
+
+              <div class="switches">
+                <label class="toggle" for="mobile_hours_same">
+                  <input
+                    type="checkbox"
+                    id="mobile_hours_same"
+                    name="mobile_hours_same"
+                    class="toggle__input"
+                  />
+                  <span class="toggle__track" aria-hidden="true"><span class="toggle__thumb"></span></span>
+                  <span class="toggle__text">
+                    <span class="toggle__title">Mobile hours = studio hours</span>
+                    <span
+                      class="toggle__desc"
+                      data-toggle-desc
+                      data-on="Horário móvel = horário do studio"
+                      data-off="Horário móvel combinado caso a caso"
+                    ></span>
+                  </span>
+                </label>
+
+                <label class="toggle" for="available_now">
+                  <input type="checkbox" id="available_now" name="available_now" class="toggle__input" />
+                  <span class="toggle__track" aria-hidden="true"><span class="toggle__thumb"></span></span>
+                  <span class="toggle__text">
+                    <span class="toggle__title">Available now</span>
+                    <span
+                      class="toggle__desc"
+                      data-toggle-desc
+                      data-on="Estou disponível AGORA"
+                      data-off="Sem disponibilidade imediata"
+                    ></span>
+                  </span>
+                </label>
+
+                <label class="toggle" for="lgbtq_affirming">
+                  <input
+                    type="checkbox"
+                    id="lgbtq_affirming"
+                    name="lgbtq_affirming"
+                    class="toggle__input"
+                  />
+                  <span class="toggle__track" aria-hidden="true"><span class="toggle__thumb"></span></span>
+                  <span class="toggle__text">
+                    <span class="toggle__title">LGBTQ+ affirming</span>
+                    <span
+                      class="toggle__desc"
+                      data-toggle-desc
+                      data-on="Meu estúdio é LGBTQ+ affirming"
+                      data-off="Não exibir o selo LGBTQ+ affirming"
+                    ></span>
+                  </span>
+                </label>
+              </div>
+
+              <div class="grid grid--2">
+                <div class="field" data-field="booking_lead_time">
+                  <div class="field__top">
+                    <label class="field__label" for="booking_lead_time">Booking lead time</label>
+                  </div>
+                  <select
+                    id="booking_lead_time"
+                    name="booking_lead_time"
+                    data-mount="booking_lead_time"
+                  ></select>
+                  <p class="field__hint">How much notice you need before a session.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ══════════ SECTION 6 · CREDENTIALS ══════════ -->
+        <section
+          class="card"
+          id="section-credentials"
+          data-section="credentials"
+          aria-labelledby="credentials-title"
+        >
+          <button
+            type="button"
+            class="card__head"
+            aria-expanded="true"
+            aria-controls="credentials-body"
+            data-toggle-section
+          >
+            <span class="card__num" aria-hidden="true">6</span>
+            <span class="card__heads">
+              <span class="card__title" id="credentials-title">Credentials</span>
+              <span class="card__summary" data-summary>Experience, training and languages.</span>
+            </span>
+            <span class="card__status" data-status></span>
+            <span class="card__chev" aria-hidden="true">⌄</span>
+          </button>
+
+          <div class="card__body" id="credentials-body">
+            <div class="card__inner">
+              <div class="grid grid--3">
+                <div class="field" data-field="years_experience">
+                  <div class="field__top">
+                    <label class="field__label" for="years_experience"
+                      >Years of experience <span class="req" aria-hidden="true">*</span
+                      ><span class="sr-only">(required)</span></label
+                    >
+                  </div>
+                  <input
+                    id="years_experience"
+                    name="years_experience"
+                    type="number"
+                    min="0"
+                    max="70"
+                    step="1"
+                    inputmode="numeric"
+                    placeholder="14"
+                    data-required
+                  />
+                </div>
+
+                <div class="field" data-field="career_start">
+                  <div class="field__top">
+                    <label class="field__label" for="career_start">Career start date</label>
+                  </div>
+                  <input
+                    id="career_start"
+                    name="career_start"
+                    type="text"
+                    placeholder="January 2010"
+                    list="months"
+                  />
+                  <p class="field__hint">Month and year.</p>
+                </div>
+
+                <div class="field" data-field="certification">
+                  <div class="field__top">
+                    <label class="field__label" for="certification"
+                      >Certification / diploma</label
+                    >
+                  </div>
+                  <input
+                    id="certification"
+                    name="certification"
+                    type="text"
+                    placeholder="Certified Massage Therapist"
+                  />
+                </div>
+
+                <div class="field" data-field="school">
+                  <div class="field__top">
+                    <label class="field__label" for="school">School / institution</label>
+                  </div>
+                  <input id="school" name="school" type="text" placeholder="Instituto Brasileiro de Terapias" />
+                </div>
+
+                <div class="field field--span2" data-field="school_location">
+                  <div class="field__top">
+                    <label class="field__label" for="school_location">School location</label>
+                  </div>
+                  <input
+                    id="school_location"
+                    name="school_location"
+                    type="text"
+                    placeholder="Rio de Janeiro, Rio de Janeiro"
+                  />
+                </div>
+              </div>
+
+              <div class="field field--fieldset" data-field="languages">
+                <div class="field__top"><span class="field__label">Languages spoken</span></div>
+                <div class="checkgroup" data-group="languages" data-cols="3"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ══════════ FOOTER ACTIONS ══════════ -->
+        <div class="formfoot">
+          <div class="formfoot__note">
+            <span class="savestate" id="savestate-foot" role="status" aria-live="polite"></span>
+            <button type="button" class="linkbtn" id="btn-reset">Reset to sample data</button>
+          </div>
+          <div class="formfoot__actions">
+            <button type="button" class="btn btn--ghost" id="btn-preview-foot">Preview profile</button>
+            <button type="submit" class="btn btn--primary btn--lg">Save profile</button>
+          </div>
+        </div>
+      </form>
+    </main>
+
+    <datalist id="months"></datalist>
+
+    <!-- ────────────────────────────────  PREVIEW  ───────────────────────────── -->
+    <div class="modal" id="preview" hidden>
+      <div class="modal__backdrop" data-close-modal></div>
+      <div
+        class="modal__panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="preview-title"
+        tabindex="-1"
+      >
+        <header class="modal__head">
+          <h2 id="preview-title">Profile preview</h2>
+          <p class="modal__sub">This is roughly what a client sees on your public listing.</p>
+          <button type="button" class="modal__close" data-close-modal aria-label="Close preview">
+            ✕
+          </button>
+        </header>
+        <div class="modal__body" id="preview-body"></div>
+        <footer class="modal__foot">
+          <button type="button" class="btn btn--ghost" data-close-modal>Back to editing</button>
+          <button type="submit" class="btn btn--primary" form="profile-form">Save profile</button>
+        </footer>
+      </div>
+    </div>
+
+    <!-- ────────────────────────────────  SHORTCUTS  ─────────────────────────── -->
+    <div class="modal" id="help" hidden>
+      <div class="modal__backdrop" data-close-modal></div>
+      <div
+        class="modal__panel modal__panel--narrow"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="help-title"
+        tabindex="-1"
+      >
+        <header class="modal__head">
+          <h2 id="help-title">Keyboard shortcuts</h2>
+          <p class="modal__sub">Everything on this page is reachable without the mouse.</p>
+          <button type="button" class="modal__close" data-close-modal aria-label="Close shortcuts">
+            ✕
+          </button>
+        </header>
+        <div class="modal__body">
+          <dl class="keys">
+            <dt><kbd>Ctrl</kbd> + <kbd>S</kbd></dt>
+            <dd>Save the profile</dd>
+            <dt><kbd>Ctrl</kbd> + <kbd>Z</kbd></dt>
+            <dd>Undo the last change</dd>
+            <dt><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>Z</kbd></dt>
+            <dd>Redo</dd>
+            <dt><kbd>Ctrl</kbd> + <kbd>P</kbd></dt>
+            <dd>Open the profile preview</dd>
+            <dt><kbd>?</kbd></dt>
+            <dd>Open this list</dd>
+            <dt><kbd>Esc</kbd></dt>
+            <dd>Close a dialog</dd>
+            <dt><kbd>Tab</kbd></dt>
+            <dd>Move between fields — section headers expand with <kbd>Enter</kbd></dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+
+    <div class="toasts" id="toasts" aria-live="polite" aria-atomic="false"></div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
