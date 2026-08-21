@@ -22,7 +22,7 @@ export const metadata: Metadata = {
  */
 const NOTICES: Record<string, string> = {
   "link-expired":
-    "That confirmation link has expired or was already used. Sign in, or create your account again.",
+    "That confirmation link has expired or was already used. If you clicked it before, your email is likely already confirmed — just sign in below.",
   "link-invalid": "That link was not something we could read. Try opening it again from the email.",
   "setup-failed":
     "We confirmed your email but could not finish setting up your account. Try signing in, and contact support if this keeps happening.",

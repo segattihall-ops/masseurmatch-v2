@@ -19,6 +19,9 @@ import { NextResponse, type NextRequest } from "next/server";
  * Reads the directory through the same cached helper the public pages use, so
  * this adds no database load per message and cannot show anyone the directory
  * would not.
+ *
+ * Conversational layer: if DEEPSEEK_API_KEY is set, uses DeepSeek to generate
+ * natural responses instead of deterministic text.
  */
 
 export const runtime = "nodejs";
@@ -44,6 +47,63 @@ function callerKey(request: NextRequest): string {
   let hash = 0;
   for (let i = 0; i < ip.length; i += 1) hash = (hash * 31 + ip.charCodeAt(i)) | 0;
   return String(hash);
+}
+
+async function generateConversationalReply(
+  message: string,
+  deterministic: string,
+  matches: {
+    headline: string | null;
+    city: string | null;
+    state: string | null;
+    reasons: string[];
+  }[],
+): Promise<string> {
+  const apiKey = process.env.DEEPSEEK_API_KEY;
+  if (!apiKey) return deterministic;
+
+  const matchSummary =
+    matches.length > 0
+      ? `Found ${matches.length} therapists: ${matches.map((m) => m.headline || m.city).join(", ")}.`
+      : "No matching therapists found.";
+
+  try {
+    const response = await fetch("https://api.deepseek.com/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: "deepseek-chat",
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are a helpful concierge for MasseurMatch, a directory of professional massage therapists. " +
+              "Keep responses brief (1-2 sentences) and friendly. Never make up therapist names or details.",
+          },
+          {
+            role: "user",
+            content: `A visitor asked: "${message}"\n\nOur directory search found: ${matchSummary}\n\nGenerate a brief, conversational response.`,
+          },
+        ],
+        temperature: 0.7,
+        max_tokens: 150,
+      }),
+    });
+
+    if (!response.ok) {
+      console.error("DeepSeek API error:", response.status);
+      return deterministic;
+    }
+
+    const data = (await response.json()) as { choices?: Array<{ message?: { content?: string } }> };
+    return data.choices?.[0]?.message?.content?.trim() || deterministic;
+  } catch (error) {
+    console.error("DeepSeek request failed:", error);
+    return deterministic;
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -80,17 +140,20 @@ export async function POST(request: NextRequest) {
   const cities = [...new Set(therapists.map((t) => t.city).filter((c): c is string => Boolean(c)))];
   const want = understand(message, cities);
   const matches = matchListings(therapists as unknown as ConciergeListing[], want);
+  const deterministic = conciergeReply(want, matches);
+
+  const mappedMatches = matches.map((m) => ({
+    slug: m.listing.slug,
+    city: m.listing.city,
+    state: m.listing.state,
+    headline: m.listing.headline,
+    reasons: m.reasons,
+  }));
+
+  const reply = await generateConversationalReply(message, deterministic, mappedMatches);
 
   return NextResponse.json({
-    reply: conciergeReply(want, matches),
-    matches: matches.map((m) => ({
-      slug: m.listing.slug,
-      city: m.listing.city,
-      state: m.listing.state,
-      headline: m.listing.headline,
-      // The reasons travel with the match so the UI can show why, rather than
-      // presenting a ranked list the visitor has to take on faith.
-      reasons: m.reasons,
-    })),
+    reply,
+    matches: mappedMatches,
   });
 }

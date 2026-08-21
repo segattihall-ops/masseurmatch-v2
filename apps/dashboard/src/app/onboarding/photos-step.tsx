@@ -3,9 +3,14 @@
 import { AnimatePresence, Button, PresenceItem } from "@masseurmatch/ui";
 import * as React from "react";
 
-import { confirmPhoto, deletePhoto } from "./photo-actions";
+import { confirmPhoto, deletePhoto, setPrimaryPhoto } from "./photo-actions";
 
-type Photo = { id: string; url: string | null; moderation_status: string | null };
+type Photo = {
+  id: string;
+  url: string | null;
+  moderation_status: string | null;
+  is_primary?: boolean | null;
+};
 
 type Ticket = {
   uploadUrl: string;
@@ -32,7 +37,15 @@ type Phase = "idle" | "signing" | "uploading" | "saving" | "done" | "error";
  * `XMLHttpRequest` rather than `fetch` purely because it reports upload
  * progress; `fetch` still cannot.
  */
-export function PhotosStep({ photos, limit }: { photos: Photo[]; limit: number }) {
+export function PhotosStep({
+  photos,
+  limit,
+  managePrimary = false,
+}: {
+  photos: Photo[];
+  limit: number;
+  managePrimary?: boolean;
+}) {
   const [phase, setPhase] = React.useState<Phase>("idle");
   const [pct, setPct] = React.useState(0);
   const [message, setMessage] = React.useState<string | null>(null);
@@ -176,13 +189,24 @@ export function PhotosStep({ photos, limit }: { photos: Photo[]; limit: number }
                   <div className="flex items-center justify-between gap-2 p-2">
                     <span className="text-xs text-ink/60">
                       {photo.moderation_status === "approved" ? "Approved" : "In review"}
+                      {managePrimary && photo.is_primary ? " · Primary" : ""}
                     </span>
-                    <form action={(fd) => void deletePhoto({}, fd)}>
-                      <input type="hidden" name="photo_id" value={photo.id} />
-                      <Button type="submit" variant="ghost" size="sm">
-                        Remove
-                      </Button>
-                    </form>
+                    <div className="flex items-center gap-1">
+                      {managePrimary && !photo.is_primary ? (
+                        <form action={(fd) => void setPrimaryPhoto({}, fd)}>
+                          <input type="hidden" name="photo_id" value={photo.id} />
+                          <Button type="submit" variant="ghost" size="sm">
+                            Make primary
+                          </Button>
+                        </form>
+                      ) : null}
+                      <form action={(fd) => void deletePhoto({}, fd)}>
+                        <input type="hidden" name="photo_id" value={photo.id} />
+                        <Button type="submit" variant="ghost" size="sm">
+                          Remove
+                        </Button>
+                      </form>
+                    </div>
                   </div>
                 </li>
               </PresenceItem>
