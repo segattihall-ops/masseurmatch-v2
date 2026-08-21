@@ -1,10 +1,17 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { FadeIn, Input, StaggerItem, StaggerList, buttonVariants } from "@masseurmatch/ui";
-import type { DirectoryFilters, DirectorySort } from "@masseurmatch/db/actions/directory-config";
+import {
+  DIRECTORY_TIERS,
+  type CityListing,
+  type DirectoryFilters,
+  type DirectorySort,
+  type DirectoryTier,
+} from "@masseurmatch/db/actions/directory-config";
 import {
   getCities,
   getServiceCategories,
-  searchTherapists,
+  searchTherapistsPage,
 } from "@masseurmatch/db/actions/directory";
 
 import { TherapistCard } from "@/components/therapist-card";
@@ -31,8 +38,12 @@ interface SearchParams {
     available?: string;
     verified?: string;
     lgbtq?: string;
+    min?: string;
     max?: string;
+    tier?: string;
+    master?: string;
     sort?: string;
+    page?: string;
   };
 }
 
@@ -42,10 +53,81 @@ const SORTS: { value: DirectorySort; label: string }[] = [
   { value: "rating", label: "Highest rated" },
 ];
 
+const TIER_LABELS: Record<DirectoryTier, string> = {
+  free: "Free",
+  standard: "Standard",
+  pro: "Pro",
+  elite: "Elite",
+};
+
+function positiveNumber(raw: string | undefined): number | undefined {
+  const parsed = Number.parseInt(raw ?? "", 10);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : undefined;
+}
+
+function positivePage(raw: string | undefined): number {
+  const parsed = Number.parseInt(raw ?? "1", 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+}
+
+function isDirectoryTier(value: string | undefined): value is DirectoryTier {
+  return Boolean(value && (DIRECTORY_TIERS as readonly string[]).includes(value));
+}
+
+function resolveCity(raw: string | undefined, cities: CityListing[]): CityListing | null {
+  const value = raw?.trim().toLowerCase();
+  if (!value) return null;
+
+  const [stateSlug, citySlug] = value.includes("/") ? value.split("/", 2) : [null, value];
+  if (stateSlug) {
+    return (
+      cities.find(
+        (city) => city.stateSlug.toLowerCase() === stateSlug && city.citySlug === citySlug,
+      ) ?? null
+    );
+  }
+
+  // Backwards compatibility with OLD/V2 links such as `?city=dallas`.
+  return cities.find((city) => city.citySlug === citySlug) ?? null;
+}
+
+function pageHref(searchParams: SearchParams["searchParams"], page: number): string {
+  const params = new URLSearchParams();
+  const keys = [
+    "city",
+    "service",
+    "q",
+    "session",
+    "available",
+    "verified",
+    "lgbtq",
+    "min",
+    "max",
+    "tier",
+    "master",
+    "sort",
+  ] as const;
+
+  for (const key of keys) {
+    const value = searchParams[key]?.trim();
+    if (value) params.set(key, value);
+  }
+  if (page > 1) params.set("page", String(page));
+
+  const query = params.toString();
+  return query ? `/search?${query}` : "/search";
+}
+
 export default async function SearchPage({ searchParams }: SearchParams) {
-  const maxPrice = Number.parseInt(searchParams.max ?? "", 10);
+  const [cities, services] = await Promise.all([getCities(), getServiceCategories()]);
+  const selectedCity = resolveCity(searchParams.city, cities);
+  const minPrice = positiveNumber(searchParams.min);
+  const maxPrice = positiveNumber(searchParams.max);
+  const page = positivePage(searchParams.page);
+
   const filters: DirectoryFilters = {
-    city: searchParams.city?.trim() || undefined,
+    city: selectedCity?.citySlug ?? searchParams.city?.trim() || undefined,
+    state: selectedCity?.stateSlug,
     service: searchParams.service?.trim() || undefined,
     query: searchParams.q?.trim() || undefined,
     session:
@@ -55,30 +137,35 @@ export default async function SearchPage({ searchParams }: SearchParams) {
     availableNow: searchParams.available === "1",
     verified: searchParams.verified === "1",
     lgbtq: searchParams.lgbtq === "1",
-    maxPrice: Number.isFinite(maxPrice) && maxPrice > 0 ? maxPrice : undefined,
+    minPrice,
+    maxPrice,
+    tier: isDirectoryTier(searchParams.tier) ? searchParams.tier : undefined,
+    minExperienceYears: searchParams.master === "1" ? 10 : undefined,
     sort:
       searchParams.sort === "price" || searchParams.sort === "rating"
         ? searchParams.sort
         : undefined,
+    page,
+    pageSize: 24,
   };
 
-  const [rawResults, cities, services] = await Promise.all([
-    searchTherapists(filters),
-    getCities(),
-    getServiceCategories(),
-  ]);
-  const results = await withApprovedProfilePhotos(rawResults);
+  const search = await searchTherapistsPage(filters);
+  const results = await withApprovedProfilePhotos(search.items);
+  const pageCount = Math.max(1, Math.ceil(search.total / search.pageSize));
+  const selectedCityValue = selectedCity
+    ? `${selectedCity.stateSlug}/${selectedCity.citySlug}`
+    : searchParams.city?.trim() ?? "";
 
   return (
     <main className="mx-auto w-full max-w-6xl px-6 pb-16 pt-16">
       <h1 className="font-display text-ds-40 font-bold tracking-tight text-text-primary">
         Find a therapist
       </h1>
+      <p className="mt-3 max-w-2xl text-text-secondary">
+        Search by city, specialty, session format, price, experience and trust signals. City
+        results also include therapists visiting there within the next 14 days.
+      </p>
 
-      {/*
-        A plain GET form: no client JavaScript, filters land in searchParams
-        and the server renders the result set.
-      */}
       <form method="get" className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-4">
         <div className="sm:col-span-2">
           <label htmlFor="q" className="mb-1.5 block text-sm font-medium text-text-primary">
@@ -88,7 +175,7 @@ export default async function SearchPage({ searchParams }: SearchParams) {
             id="q"
             name="q"
             type="search"
-            placeholder="Name or city"
+            placeholder="Name, specialty, neighborhood or technique"
             defaultValue={filters.query ?? ""}
           />
         </div>
@@ -100,12 +187,15 @@ export default async function SearchPage({ searchParams }: SearchParams) {
           <select
             id="city"
             name="city"
-            defaultValue={filters.city ?? ""}
+            defaultValue={selectedCityValue}
             className="motion-premium h-12 w-full rounded-xl border border-border/90 bg-white/92 px-4 text-sm text-foreground focus-visible:border-brand-secondary/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/25 focus-visible:ring-offset-2"
           >
             <option value="">All cities</option>
             {cities.map((city) => (
-              <option key={city.citySlug} value={city.citySlug}>
+              <option
+                key={`${city.stateSlug}/${city.citySlug}`}
+                value={`${city.stateSlug}/${city.citySlug}`}
+              >
                 {city.name}, {city.state}
               </option>
             ))}
@@ -145,6 +235,40 @@ export default async function SearchPage({ searchParams }: SearchParams) {
             <option value="incall">Studio (incall)</option>
             <option value="outcall">Outcall (they travel to you)</option>
           </select>
+        </div>
+
+        <div>
+          <label htmlFor="tier" className="mb-1.5 block text-sm font-medium text-text-primary">
+            Profile tier
+          </label>
+          <select
+            id="tier"
+            name="tier"
+            defaultValue={filters.tier ?? ""}
+            className="motion-premium h-12 w-full rounded-xl border border-border/90 bg-white/92 px-4 text-sm text-foreground focus-visible:border-brand-secondary/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/25 focus-visible:ring-offset-2"
+          >
+            <option value="">All tiers</option>
+            {DIRECTORY_TIERS.map((tier) => (
+              <option key={tier} value={tier}>
+                {TIER_LABELS[tier]}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label htmlFor="min" className="mb-1.5 block text-sm font-medium text-text-primary">
+            Min price / hour
+          </label>
+          <Input
+            id="min"
+            name="min"
+            type="number"
+            min={0}
+            step={10}
+            placeholder="Any"
+            defaultValue={filters.minPrice ?? ""}
+          />
         </div>
 
         <div>
@@ -212,18 +336,38 @@ export default async function SearchPage({ searchParams }: SearchParams) {
             />
             LGBTQ+ affirming
           </label>
+          <label className="flex items-center gap-2 text-sm text-text-primary">
+            <input
+              type="checkbox"
+              name="master"
+              value="1"
+              defaultChecked={filters.minExperienceYears === 10}
+              className="h-4 w-4 rounded border-border accent-brand-primary"
+            />
+            10+ years experience
+          </label>
         </fieldset>
 
-        <div className="sm:col-span-4">
+        <div className="flex flex-wrap gap-3 sm:col-span-4">
           <button type="submit" className={buttonVariants({ size: "lg" })}>
             Apply filters
           </button>
+          <Link href="/search" className={buttonVariants({ variant: "secondary", size: "lg" })}>
+            Clear
+          </Link>
         </div>
       </form>
 
-      <p className="mt-10 text-sm text-text-secondary">
-        {results.length} {results.length === 1 ? "therapist" : "therapists"} found
-      </p>
+      <div className="mt-10 flex flex-wrap items-center justify-between gap-3 text-sm text-text-secondary">
+        <p>
+          {search.total} {search.total === 1 ? "therapist" : "therapists"} found
+        </p>
+        {search.total > 0 ? (
+          <p>
+            Page {Math.min(search.page, pageCount)} of {pageCount}
+          </p>
+        ) : null}
+      </div>
 
       <StaggerList
         as="ul"
@@ -242,6 +386,29 @@ export default async function SearchPage({ searchParams }: SearchParams) {
             Nothing matched those filters. Try widening your search.
           </p>
         </FadeIn>
+      ) : null}
+
+      {pageCount > 1 ? (
+        <nav aria-label="Search result pages" className="mt-10 flex items-center justify-between">
+          {search.page > 1 ? (
+            <Link
+              href={pageHref(searchParams, search.page - 1)}
+              className={buttonVariants({ variant: "secondary" })}
+            >
+              Previous
+            </Link>
+          ) : (
+            <span />
+          )}
+          {search.page < pageCount ? (
+            <Link
+              href={pageHref(searchParams, search.page + 1)}
+              className={buttonVariants({ variant: "secondary" })}
+            >
+              Next
+            </Link>
+          ) : null}
+        </nav>
       ) : null}
     </main>
   );
