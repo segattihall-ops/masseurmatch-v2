@@ -75,4 +75,27 @@ test.describe("restored public route parity", () => {
     await page.goto("/waitlist");
     expect(new URL(page.url()).pathname).toBe("/for-therapists");
   });
+
+  test("private trial feedback page renders and rejects malformed submissions", async ({ request }) => {
+    const pageResponse = await request.get("/trial-feedback");
+    expect(pageResponse.status()).toBe(200);
+    expect(await pageResponse.text()).toContain("Help us improve MasseurMatch");
+
+    const invalid = await request.post("/api/trial-feedback", { data: {} });
+    expect(invalid.status()).toBe(400);
+  });
+
+  test("legacy modality guide URLs resolve to maintained service pages", async ({ page }) => {
+    const routes = [
+      ["/guides/modality/deep-tissue-massage-guide", "/services/deep-tissue"],
+      ["/guides/modality/swedish-massage-benefits-guide", "/services/swedish"],
+      ["/guides/modality/sports-massage-for-athletes", "/services/sports"],
+      ["/guides/modality/thai-massage-traditional-guide", "/services/thai"],
+    ] as const;
+
+    for (const [from, to] of routes) {
+      await page.goto(from);
+      expect(new URL(page.url()).pathname, from).toBe(to);
+    }
+  });
 });
