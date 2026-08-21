@@ -1,8 +1,6 @@
 import { LifeBuoy, MessageCircle, Zap } from "lucide-react";
 
 export default async function SupportPage() {
-
-
   return (
     <div className="space-y-8 p-8">
       <div className="space-y-2">
@@ -89,28 +87,39 @@ export default async function SupportPage() {
         <h2 className="mb-4 text-lg font-semibold text-text-primary">Frequently Asked Questions</h2>
         <div className="space-y-3">
           <details className="rounded-lg border border-border p-4">
-            <summary className="cursor-pointer font-medium text-text-primary">How do I update my availability?</summary>
+            <summary className="cursor-pointer font-medium text-text-primary">
+              How do I update my availability?
+            </summary>
             <p className="mt-2 text-sm text-text-secondary">
-              Go to Availability & Travel section to update your working hours, travel dates, and service areas.
+              Go to Availability & Travel section to update your working hours, travel dates, and
+              service areas.
             </p>
           </details>
 
           <details className="rounded-lg border border-border p-4">
-            <summary className="cursor-pointer font-medium text-text-primary">How long does profile approval take?</summary>
+            <summary className="cursor-pointer font-medium text-text-primary">
+              How long does profile approval take?
+            </summary>
             <p className="mt-2 text-sm text-text-secondary">
-              Profile approval typically takes 24-48 hours. Check your Approval Status page for current status.
+              Profile approval typically takes 24-48 hours. Check your Approval Status page for
+              current status.
             </p>
           </details>
 
           <details className="rounded-lg border border-border p-4">
-            <summary className="cursor-pointer font-medium text-text-primary">How do I upload photos?</summary>
+            <summary className="cursor-pointer font-medium text-text-primary">
+              How do I upload photos?
+            </summary>
             <p className="mt-2 text-sm text-text-secondary">
-              Visit the Photos section to upload and manage your profile photos. Approved photos appear in your listing.
+              Visit the Photos section to upload and manage your profile photos. Approved photos
+              appear in your listing.
             </p>
           </details>
 
           <details className="rounded-lg border border-border p-4">
-            <summary className="cursor-pointer font-medium text-text-primary">How do I track bookings?</summary>
+            <summary className="cursor-pointer font-medium text-text-primary">
+              How do I track bookings?
+            </summary>
             <p className="mt-2 text-sm text-text-secondary">
               Your analytics and contact activity are shown in the Growth Analytics section.
             </p>

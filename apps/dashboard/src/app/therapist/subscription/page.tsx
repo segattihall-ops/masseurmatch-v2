@@ -79,7 +79,9 @@ export default async function SubscriptionPage() {
         <div className="space-y-4">
           <div className="flex justify-between py-2">
             <span className="text-text-secondary">Current plan</span>
-            <span className="font-medium text-text-primary">{profile?.subscription_tier || "Free"}</span>
+            <span className="font-medium text-text-primary">
+              {profile?.subscription_tier || "Free"}
+            </span>
           </div>
           <div className="flex justify-between py-2">
             <span className="text-text-secondary">Billing cycle</span>

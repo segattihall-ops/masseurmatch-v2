@@ -2,7 +2,18 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, Bell, Edit, Image, LogOut, Radar, Settings, Sparkles, TrendingUp, Zap } from "lucide-react";
+import {
+  BarChart3,
+  Bell,
+  Edit,
+  Image,
+  LogOut,
+  Radar,
+  Settings,
+  Sparkles,
+  TrendingUp,
+  Zap,
+} from "lucide-react";
 import { signOut } from "@/app/sign-in/actions";
 
 const LINKS = [

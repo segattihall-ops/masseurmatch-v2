@@ -1,8 +1,6 @@
 import { Sparkles } from "lucide-react";
 
 export default async function AiCoachPage() {
-
-
   return (
     <div className="space-y-8 p-8">
       <div className="space-y-2">
@@ -21,7 +19,9 @@ export default async function AiCoachPage() {
         <div className="space-y-4">
           <div className="rounded-lg bg-background p-4">
             <p className="text-sm text-text-secondary">
-              AI Coach analyzes your profile completeness, photos, pricing, availability and engagement metrics to provide actionable recommendations for increasing visibility and bookings.
+              AI Coach analyzes your profile completeness, photos, pricing, availability and
+              engagement metrics to provide actionable recommendations for increasing visibility and
+              bookings.
             </p>
           </div>
 
@@ -51,25 +51,29 @@ export default async function AiCoachPage() {
           <div className="rounded-lg border border-border p-4">
             <p className="font-medium text-text-primary">1. Complete your profile information</p>
             <p className="mt-1 text-sm text-text-secondary">
-              Therapists with complete profiles get 70% more views. Fill in all your services, specialties, and experience.
+              Therapists with complete profiles get 70% more views. Fill in all your services,
+              specialties, and experience.
             </p>
           </div>
           <div className="rounded-lg border border-border p-4">
             <p className="font-medium text-text-primary">2. Add high-quality photos</p>
             <p className="mt-1 text-sm text-text-secondary">
-              Professional photos increase bookings. Upload clear, well-lit photos that represent your services.
+              Professional photos increase bookings. Upload clear, well-lit photos that represent
+              your services.
             </p>
           </div>
           <div className="rounded-lg border border-border p-4">
             <p className="font-medium text-text-primary">3. Set competitive pricing</p>
             <p className="mt-1 text-sm text-text-secondary">
-              Keep your rates updated and competitive. Review local demand for your services to optimize pricing.
+              Keep your rates updated and competitive. Review local demand for your services to
+              optimize pricing.
             </p>
           </div>
           <div className="rounded-lg border border-border p-4">
             <p className="font-medium text-text-primary">4. Activate Available Now badge</p>
             <p className="mt-1 text-sm text-text-secondary">
-              Turn on the Available Now badge to highlight yourself to clients looking to book today.
+              Turn on the Available Now badge to highlight yourself to clients looking to book
+              today.
             </p>
           </div>
         </div>

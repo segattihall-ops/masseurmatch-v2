@@ -1,8 +1,6 @@
 import { Bell, CheckCircle, Info, AlertCircle } from "lucide-react";
 
 export default async function NotificationsPage() {
-
-
   return (
     <div className="space-y-8 p-8">
       <div className="space-y-2">
@@ -27,7 +25,9 @@ export default async function NotificationsPage() {
           <div className="flex items-center justify-between rounded-lg border border-border p-4">
             <div>
               <p className="font-medium text-text-primary">Profile updates</p>
-              <p className="text-sm text-text-secondary">Alerts about your profile approval status</p>
+              <p className="text-sm text-text-secondary">
+                Alerts about your profile approval status
+              </p>
             </div>
             <input type="checkbox" defaultChecked className="h-4 w-4" />
           </div>
@@ -76,7 +76,9 @@ export default async function NotificationsPage() {
             <CheckCircle className="mt-1 h-5 w-5 flex-shrink-0 text-green-500" />
             <div className="flex-1 min-w-0">
               <p className="font-medium text-text-primary">Profile approved</p>
-              <p className="text-sm text-text-secondary">Your profile is now live and visible to clients</p>
+              <p className="text-sm text-text-secondary">
+                Your profile is now live and visible to clients
+              </p>
               <p className="mt-1 text-xs text-text-secondary">2 days ago</p>
             </div>
           </div>
@@ -85,7 +87,9 @@ export default async function NotificationsPage() {
             <Info className="mt-1 h-5 w-5 flex-shrink-0 text-blue-500" />
             <div className="flex-1 min-w-0">
               <p className="font-medium text-text-primary">Profile submitted for review</p>
-              <p className="text-sm text-text-secondary">Your profile has been submitted and is under review</p>
+              <p className="text-sm text-text-secondary">
+                Your profile has been submitted and is under review
+              </p>
               <p className="mt-1 text-xs text-text-secondary">5 days ago</p>
             </div>
           </div>

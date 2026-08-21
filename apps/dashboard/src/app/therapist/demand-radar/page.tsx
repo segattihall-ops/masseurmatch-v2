@@ -1,8 +1,6 @@
 import { TrendingUp } from "lucide-react";
 
 export default async function DemandRadarPage() {
-
-
   return (
     <div className="space-y-8 p-8">
       <div className="space-y-2">
@@ -34,7 +32,9 @@ export default async function DemandRadarPage() {
 
           <div className="rounded-lg bg-background p-4">
             <p className="text-sm text-text-secondary">
-              Demand Radar shows keyword trends, competitor activity, and local search interest for your service area. Use this data to optimize your availability, pricing, and marketing.
+              Demand Radar shows keyword trends, competitor activity, and local search interest for
+              your service area. Use this data to optimize your availability, pricing, and
+              marketing.
             </p>
           </div>
         </div>
@@ -64,19 +64,22 @@ export default async function DemandRadarPage() {
           <div className="rounded-lg border border-border p-4">
             <p className="font-medium text-text-primary">Competitive positioning</p>
             <p className="mt-1 text-sm text-text-secondary">
-              You rank in the top 25% for your service area. Consider highlighting your specialties to attract more bookings.
+              You rank in the top 25% for your service area. Consider highlighting your specialties
+              to attract more bookings.
             </p>
           </div>
           <div className="rounded-lg border border-border p-4">
             <p className="font-medium text-text-primary">Pricing opportunity</p>
             <p className="mt-1 text-sm text-text-secondary">
-              Market rates for your services are trending upward. Consider reviewing your pricing strategy.
+              Market rates for your services are trending upward. Consider reviewing your pricing
+              strategy.
             </p>
           </div>
           <div className="rounded-lg border border-border p-4">
             <p className="font-medium text-text-primary">Availability trends</p>
             <p className="mt-1 text-sm text-text-secondary">
-              Clients in your area frequently book on weekends. Ensure your availability matches demand peaks.
+              Clients in your area frequently book on weekends. Ensure your availability matches
+              demand peaks.
             </p>
           </div>
         </div>
