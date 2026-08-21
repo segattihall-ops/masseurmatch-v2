@@ -97,12 +97,19 @@ export interface PaymentProvider {
 /**
  * Which provider is active.
  *
- * Defaults to Authorize.Net, the primary. An unrecognised value throws rather
- * than falling back: silently taking payments through a different processor
- * than the one configured is worse than refusing to start.
+ * BILLING_PROVIDER must be explicitly set. There is no sensible default:
+ * silently taking payments through the wrong processor is worse than
+ * refusing to start. Production deployment MUST set BILLING_PROVIDER=paypal
+ * explicitly, never relying on an absent/empty value to fall back.
  */
 export function activeProviderId(raw = process.env.BILLING_PROVIDER): ProviderId {
-  const value = (raw ?? "authorizenet").toLowerCase();
+  if (!raw) {
+    throw new Error(
+      'BILLING_PROVIDER must be set to "paypal" or "authorizenet". ' +
+      "No default is provided: silently using the wrong processor is worse than failing to start.",
+    );
+  }
+  const value = raw.toLowerCase();
   if (value === "authorizenet" || value === "paypal") return value;
   throw new Error(`Unknown BILLING_PROVIDER "${raw}". Expected "authorizenet" or "paypal".`);
 }
