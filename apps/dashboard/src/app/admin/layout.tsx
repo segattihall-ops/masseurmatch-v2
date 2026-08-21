@@ -1,17 +1,9 @@
-import { redirect } from "next/navigation";
-import { createSessionClient } from "@masseurmatch/db/auth";
 import { Navbar } from "@/components/dashboard/navbar";
 import { AdminSidebar } from "@/components/dashboard/admin-sidebar";
+import { requireAdmin } from "@/lib/guards";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const supabase = createSessionClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/sign-in");
-  }
+  await requireAdmin("/admin");
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
