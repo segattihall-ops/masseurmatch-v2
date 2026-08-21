@@ -199,10 +199,7 @@ export async function listAdminReports(status = "open"): Promise<AdminReport[]> 
   );
 }
 
-export async function listAuditLog(
-  page = 1,
-  q = "",
-): Promise<{ rows: AuditRow[]; total: number }> {
+export async function listAuditLog(page = 1, q = ""): Promise<{ rows: AuditRow[]; total: number }> {
   const service = createServiceClient();
   const safePage = Math.max(1, page);
   const size = 50;
@@ -322,14 +319,8 @@ export async function getAdminReportSummary(): Promise<AdminReportSummary> {
       .from("profile_reports")
       .select("id", { count: "exact", head: true })
       .in("status", ["open", "reviewing"]),
-    service
-      .from("complaints")
-      .select("id", { count: "exact", head: true })
-      .eq("status", "new"),
-    service
-      .from("complaints")
-      .select("id", { count: "exact", head: true })
-      .eq("status", "pending"),
+    service.from("complaints").select("id", { count: "exact", head: true }).eq("status", "new"),
+    service.from("complaints").select("id", { count: "exact", head: true }).eq("status", "pending"),
     service
       .from("support_tickets")
       .select("id", { count: "exact", head: true })
