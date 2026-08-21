@@ -270,70 +270,122 @@ export async function listManualIdentity(status = "pending"): Promise<ManualIden
 export async function getAdminReportSummary(): Promise<AdminReportSummary> {
   const service = createServiceClient();
   const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-  const count = async (
-    table: "profiles" | "profile_photos" | "profile_documents" | "identity_verifications" | "profile_reports" | "complaints" | "support_tickets" | "ranking_events" | "profile_view_analytics" | "search_analytics",
-    configure?: (query: any) => any,
-  ): Promise<number> => {
-    let query = service.from(table).select("id", { count: "exact", head: true });
-    if (configure) query = configure(query);
-    const { count: total, error } = await query;
-    if (error) throw new Error(`Could not count ${table}: ${error.message}`);
-    return total ?? 0;
-  };
 
   const [
-    profiles,
-    approvedProfiles,
-    pendingProfiles,
-    suspendedProfiles,
-    verifiedProfiles,
-    pendingPhotos,
-    pendingDocuments,
-    pendingManualIdentity,
-    openProfileReports,
-    newComplaints,
-    pendingComplaints,
-    openSupportTickets,
-    rankingEvents30d,
-    profileViews30d,
-    searches30d,
+    profilesResult,
+    approvedResult,
+    pendingResult,
+    suspendedResult,
+    verifiedResult,
+    photosResult,
+    documentsResult,
+    manualIdentityResult,
+    profileReportsResult,
+    newComplaintsResult,
+    pendingComplaintsResult,
+    ticketsResult,
+    rankingResult,
+    viewsResult,
+    searchesResult,
   ] = await Promise.all([
-    count("profiles"),
-    count("profiles", (query) => query.eq("profile_status", "approved")),
-    count("profiles", (query) =>
-      query.in("profile_status", ["pending", "pending_approval", "under_review"]),
-    ),
-    count("profiles", (query) => query.eq("profile_status", "suspended")),
-    count("profiles", (query) => query.eq("is_verified_identity", true)),
-    count("profile_photos", (query) => query.eq("moderation_status", "pending")),
-    count("profile_documents", (query) => query.eq("status", "pending")),
-    count("identity_verifications", (query) =>
-      query.eq("provider", "manual").eq("status", "pending"),
-    ),
-    count("profile_reports", (query) => query.in("status", ["open", "reviewing"])),
-    count("complaints", (query) => query.eq("status", "new")),
-    count("complaints", (query) => query.eq("status", "pending")),
-    count("support_tickets", (query) =>
-      query.in("status", ["open", "in_progress", "waiting_on_user"]),
-    ),
-    count("ranking_events", (query) => query.gte("created_at", since)),
-    count("profile_view_analytics", (query) => query.gte("created_at", since)),
-    count("search_analytics", (query) => query.gte("created_at", since)),
+    service.from("profiles").select("id", { count: "exact", head: true }),
+    service
+      .from("profiles")
+      .select("id", { count: "exact", head: true })
+      .eq("profile_status", "approved"),
+    service
+      .from("profiles")
+      .select("id", { count: "exact", head: true })
+      .in("profile_status", ["pending", "pending_approval", "under_review"]),
+    service
+      .from("profiles")
+      .select("id", { count: "exact", head: true })
+      .eq("profile_status", "suspended"),
+    service
+      .from("profiles")
+      .select("id", { count: "exact", head: true })
+      .eq("is_verified_identity", true),
+    service
+      .from("profile_photos")
+      .select("id", { count: "exact", head: true })
+      .eq("moderation_status", "pending"),
+    service
+      .from("profile_documents")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "pending"),
+    service
+      .from("identity_verifications")
+      .select("id", { count: "exact", head: true })
+      .eq("provider", "manual")
+      .eq("status", "pending"),
+    service
+      .from("profile_reports")
+      .select("id", { count: "exact", head: true })
+      .in("status", ["open", "reviewing"]),
+    service
+      .from("complaints")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "new"),
+    service
+      .from("complaints")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "pending"),
+    service
+      .from("support_tickets")
+      .select("id", { count: "exact", head: true })
+      .in("status", ["open", "in_progress", "waiting_on_user"]),
+    service
+      .from("ranking_events")
+      .select("id", { count: "exact", head: true })
+      .gte("created_at", since),
+    service
+      .from("profile_view_analytics")
+      .select("id", { count: "exact", head: true })
+      .gte("created_at", since),
+    service
+      .from("search_analytics")
+      .select("id", { count: "exact", head: true })
+      .gte("created_at", since),
   ]);
 
+  const results = [
+    ["profiles", profilesResult],
+    ["approved profiles", approvedResult],
+    ["pending profiles", pendingResult],
+    ["suspended profiles", suspendedResult],
+    ["verified profiles", verifiedResult],
+    ["pending photos", photosResult],
+    ["pending documents", documentsResult],
+    ["manual identity", manualIdentityResult],
+    ["profile reports", profileReportsResult],
+    ["new complaints", newComplaintsResult],
+    ["pending complaints", pendingComplaintsResult],
+    ["support tickets", ticketsResult],
+    ["ranking events", rankingResult],
+    ["profile views", viewsResult],
+    ["searches", searchesResult],
+  ] as const;
+
+  for (const [label, result] of results) {
+    if (result.error) throw new Error(`Could not count ${label}: ${result.error.message}`);
+  }
+
   return {
-    profiles,
-    approvedProfiles,
-    pendingProfiles,
-    suspendedProfiles,
-    verifiedProfiles,
-    pendingPhotos,
-    pendingDocuments,
-    pendingManualIdentity,
-    openSafetyReports: openProfileReports + newComplaints + pendingComplaints,
-    openSupportTickets,
-    rankingEvents30d,
-    profileViews30d,
-    searches30d,
+    profiles: profilesResult.count ?? 0,
+    approvedProfiles: approvedResult.count ?? 0,
+    pendingProfiles: pendingResult.count ?? 0,
+    suspendedProfiles: suspendedResult.count ?? 0,
+    verifiedProfiles: verifiedResult.count ?? 0,
+    pendingPhotos: photosResult.count ?? 0,
+    pendingDocuments: documentsResult.count ?? 0,
+    pendingManualIdentity: manualIdentityResult.count ?? 0,
+    openSafetyReports:
+      (profileReportsResult.count ?? 0) +
+      (newComplaintsResult.count ?? 0) +
+      (pendingComplaintsResult.count ?? 0),
+    openSupportTickets: ticketsResult.count ?? 0,
+    rankingEvents30d: rankingResult.count ?? 0,
+    profileViews30d: viewsResult.count ?? 0,
+    searches30d: searchesResult.count ?? 0,
   };
 }
