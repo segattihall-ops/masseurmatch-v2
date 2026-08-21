@@ -47,9 +47,7 @@ export default async function AdminProfileReportsPage({
           <Link
             key={value}
             href={
-              value === "open"
-                ? "/admin/profile-reports"
-                : `/admin/profile-reports?status=${value}`
+              value === "open" ? "/admin/profile-reports" : `/admin/profile-reports?status=${value}`
             }
             className={`rounded-full px-3 py-1 text-sm capitalize ${
               status === value ? "bg-wine text-white" : "bg-ink/5 text-ink/70 hover:bg-ink/10"
@@ -74,7 +72,9 @@ export default async function AdminProfileReportsPage({
             const isOpen =
               report.source === "profile_report"
                 ? report.status === "open" || report.status === "reviewing"
-                : report.status === "new" || report.status === "pending" || report.status === "reviewing";
+                : report.status === "new" ||
+                  report.status === "pending" ||
+                  report.status === "reviewing";
             const statuses =
               report.source === "profile_report"
                 ? (["reviewing", "actioned", "dismissed"] as const)
@@ -88,7 +88,9 @@ export default async function AdminProfileReportsPage({
                       <div className="flex flex-wrap items-center gap-2">
                         <h2 className="text-lg font-semibold text-ink">{report.profileName}</h2>
                         <span className="rounded-full bg-ink/5 px-2 py-0.5 text-xs uppercase tracking-wide text-ink/60">
-                          {report.source === "profile_report" ? "Profile report" : "Legacy complaint"}
+                          {report.source === "profile_report"
+                            ? "Profile report"
+                            : "Legacy complaint"}
                         </span>
                         <span className="rounded-full bg-wineSoft/50 px-2 py-0.5 text-xs capitalize text-wineDark">
                           {report.category}
@@ -118,7 +120,10 @@ export default async function AdminProfileReportsPage({
                   ) : null}
 
                   {isOpen ? (
-                    <form action={updateReport} className="mt-4 space-y-3 border-t border-ink/10 pt-4">
+                    <form
+                      action={updateReport}
+                      className="mt-4 space-y-3 border-t border-ink/10 pt-4"
+                    >
                       <input type="hidden" name="source" value={report.source} />
                       <input type="hidden" name="id" value={report.id} />
                       <label
