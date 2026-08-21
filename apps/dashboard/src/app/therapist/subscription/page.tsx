@@ -14,11 +14,11 @@ export default async function SubscriptionPage() {
   const { profile } = await getOrCreateMyProfile(user.id);
 
   return (
-    <div className="space-y-8 p-8">
+    <div className="space-y-6 px-4 py-6 sm:space-y-8 sm:p-8">
       <div className="space-y-2">
         <div className="flex items-center gap-2">
-          <Zap className="h-6 w-6 text-brand-primary" />
-          <h1 className="text-3xl font-bold text-text-primary">Subscription</h1>
+          <Zap className="h-5 w-5 sm:h-6 sm:w-6 text-brand-primary" />
+          <h1 className="text-2xl font-bold sm:text-3xl text-text-primary">Subscription</h1>
         </div>
         <p className="text-text-secondary">Manage your MasseurMatch Pro membership</p>
       </div>
