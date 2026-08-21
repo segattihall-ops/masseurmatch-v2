@@ -86,7 +86,7 @@ export async function moderatePhoto(formData: FormData): Promise<void> {
 }
 
 export async function updateReport(formData: FormData): Promise<void> {
-  const viewer = await requireAdmin("/admin/reports");
+  const viewer = await requireAdmin("/admin/profile-reports");
   const source = String(formData.get("source") ?? "");
   const id = String(formData.get("id") ?? "").trim();
   const status = String(formData.get("status") ?? "").trim();
@@ -144,6 +144,7 @@ export async function updateReport(formData: FormData): Promise<void> {
     throw new Error("Unknown report source.");
   }
 
+  revalidatePath("/admin/profile-reports");
   revalidatePath("/admin/reports");
   revalidatePath("/admin");
 }
@@ -204,35 +205,27 @@ export async function decideManualIdentity(formData: FormData): Promise<void> {
   const paths = Object.values(manual.files)
     .map((entry) => entry?.path)
     .filter((path): path is string => Boolean(path));
-
-  if (paths.length > 0) {
-    const { error: storageError } = await service.storage.from("identity-documents").remove(paths);
-    if (storageError) {
-      throw new Error(`Could not securely delete identity documents: ${storageError.message}`);
-    }
-  }
-
   const now = new Date().toISOString();
   const nextStatus = decision === "approve" ? "verified" : "requires_input";
-  const nextMetadata = {
+  const reviewedMetadata = {
     ...current,
     manual: {
       ...manual,
-      files: {},
       reviewedAt: now,
       reviewedBy: viewer.user.id,
       decision,
       reviewReason: reason,
-      documentsDeletedAt: now,
     },
   };
 
+  // Persist the decision before deleting any sensitive file. Cleanup is last and
+  // never allowed to erase the only copy before the review outcome is durable.
   const { error: verificationError } = await service
     .from("identity_verifications")
     .update({
       status: nextStatus,
       last_error: decision === "reject" ? reason : null,
-      metadata: nextMetadata as Json,
+      metadata: reviewedMetadata as Json,
       updated_at: now,
     })
     .eq("id", id)
@@ -264,13 +257,46 @@ export async function decideManualIdentity(formData: FormData): Promise<void> {
     }
   }
 
+  if (paths.length > 0) {
+    const { error: storageError } = await service.storage.from("identity-documents").remove(paths);
+    if (storageError) {
+      console.error("[admin] manual identity cleanup failed", {
+        verificationId: id,
+        message: storageError.message,
+      });
+    } else {
+      const cleanedMetadata = {
+        ...reviewedMetadata,
+        manual: {
+          ...manualMetadata(reviewedMetadata),
+          files: {},
+          reviewedAt: now,
+          reviewedBy: viewer.user.id,
+          decision,
+          reviewReason: reason,
+          documentsDeletedAt: new Date().toISOString(),
+        },
+      };
+      const { error: cleanupMetadataError } = await service
+        .from("identity_verifications")
+        .update({ metadata: cleanedMetadata as Json, updated_at: new Date().toISOString() })
+        .eq("id", id);
+      if (cleanupMetadataError) {
+        console.error("[admin] identity metadata cleanup failed", {
+          verificationId: id,
+          message: cleanupMetadataError.message,
+        });
+      }
+    }
+  }
+
   if (verification.user_id) {
     const title =
       decision === "approve"
         ? "Identity verification approved"
         : "Identity verification needs attention";
     const body = decision === "approve" ? "Your identity verification was approved." : reason;
-    await service.from("notifications").insert({
+    const { error: notificationError } = await service.from("notifications").insert({
       user_id: verification.user_id,
       title,
       body,
@@ -279,9 +305,16 @@ export async function decideManualIdentity(formData: FormData): Promise<void> {
       data: { verification_id: id, status: nextStatus },
       is_read: false,
     });
+    if (notificationError) {
+      console.error("[admin] identity notification failed", {
+        verificationId: id,
+        message: notificationError.message,
+      });
+    }
   }
 
   revalidatePath("/admin/verifications/manual");
   revalidatePath("/admin/verifications");
+  revalidatePath("/admin/reports");
   revalidatePath("/admin");
 }
