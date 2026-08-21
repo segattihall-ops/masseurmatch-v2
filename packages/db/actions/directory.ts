@@ -4,6 +4,8 @@ import { unstable_cache } from "next/cache";
 
 import { isAvailableNow } from "../available-now";
 import { createAnonClient, hasSupabaseCredentials } from "../client";
+import { resolveTier } from "../tier-grants";
+import { travelVisit } from "../travel";
 import {
   DIRECTORY_CACHE_TAG,
   DIRECTORY_REVALIDATE_SECONDS,
@@ -12,6 +14,7 @@ import {
   startingPrice,
   type CityListing,
   type DirectoryFilters,
+  type DirectorySearchResult,
   type ProfileDetail,
   type TherapistListing,
 } from "./directory-config";
@@ -24,61 +27,25 @@ import {
  * rows. The explicit `profile_status`/`visibility_status` filters mirror the
  * live policy rather than replacing it — belt and braces, and they let the
  * same queries run under a service-role client without widening what ships.
- *
- * Why `profiles` and not the `public_therapists` view or the ranking RPC:
- * the anon role has no GRANT on that view (PostgREST returns 42501), and
- * `search_public_therapists` currently errors server-side. `profiles` and
- * `profile_photos` are the only relations anon can read today.
  */
 
 /**
  * Columns that only exist once their migration has run
  * (`migrations/courtesy_tier_grants.sql`, `migrations/visibility_spikes.sql`).
- *
- * Optional so the site does not require a particular deploy order. Shipping the
- * code first would otherwise fail every query with `column profiles.… does not
- * exist` and take the whole build with it — and CI would not catch it, because
- * CI has no database credentials and skips these queries entirely. Green CI plus
- * a broken production build is worth a few lines to avoid.
  */
 const OPTIONAL_COLUMNS = ["subscription_status", "tier_granted_until", "spike_until"];
 
-/**
- * Which optional columns the database has told us are absent.
- *
- * Tracked one by one rather than as a group. The two migrations land
- * independently, and dropping `spike_until` because `tier_granted_until` is
- * missing would silently stop Spikes from ranking until an unrelated migration
- * ran — a bug with no error message anywhere.
- *
- * Process-lifetime: one failed query is enough to know, and re-probing every
- * request would double the load on a site that is already degraded. A deploy
- * after the migration starts a fresh process with this cleared.
- */
 const missingColumns = new Set<string>();
 
 function columnsFor(base: string[]): string {
-  return base.filter((c) => !missingColumns.has(c)).join(",");
+  return base.filter((column) => !missingColumns.has(column)).join(",");
 }
 
-/**
- * The optional columns named in a PostgREST "does not exist" error.
- *
- * Empty when the error is about something else — a real failure must not be
- * quietly retried into an empty directory.
- *
- * Deliberately does NOT skip columns already known missing. Static generation
- * runs these concurrently, so by the time the second query fails the first has
- * already recorded the column; filtering here made that second query find
- * nothing to drop and throw. The set is for building the next SELECT, not for
- * deciding whether to retry.
- */
 function missingOptionalColumns(message: string): string[] {
   if (!message.includes("does not exist")) return [];
-  return OPTIONAL_COLUMNS.filter((c) => message.includes(c));
+  return OPTIONAL_COLUMNS.filter((column) => message.includes(column));
 }
 
-/** What stops working while `column` is absent. */
 function consequenceOf(column: string): string {
   return column === "spike_until"
     ? "Spikes will not lift a listing"
@@ -117,10 +84,8 @@ const LISTING_COLUMNS = [
   "available_now",
   "available_now_expires",
   "lgbtq_affirming",
-  // Free-form jsonb. Parsed defensively in `travel.ts` rather than trusted:
-  // the dashboard, an admin CMS and (in the old system) a voice agent all
-  // write to it, and this value reaches public pages.
   "travel_schedule",
+  "years_experience",
   "updated_at",
 ];
 
@@ -128,7 +93,6 @@ const DETAIL_COLUMNS = [
   ...LISTING_COLUMNS,
   "bio",
   "tagline",
-  "years_experience",
   "languages",
   "website",
   "latitude",
@@ -138,30 +102,16 @@ const DETAIL_COLUMNS = [
   "seo_description",
 ];
 
-/**
- * The visibility gate, mirroring the live RLS policy on `profiles`:
- * approved + public, and neither suspended nor banned. RLS already enforces
- * this for the anon key; restating it keeps the intent legible and keeps the
- * queries correct if they are ever run with a service-role client.
- */
 const APPROVED = "approved";
 const PUBLIC = "public";
 
-/** Rows without a slug can never have a URL, so they are not part of the site. */
 function isRoutable(row: { slug: string | null }): boolean {
   return Boolean(row.slug);
 }
 
 let warnedAboutCredentials = false;
+let warnedAboutSearchRpc = false;
 
-/**
- * Without credentials the directory is empty rather than fatal.
- *
- * A build with no database (CI, a fresh clone) then produces the site shell —
- * home, static pages, and a sitemap of static routes — instead of failing on
- * `generateStaticParams`. It is deliberately loud once, so an unconfigured
- * production deploy is obvious in the logs rather than silently blank.
- */
 function directoryUnavailable(): boolean {
   if (hasSupabaseCredentials()) return false;
   if (!warnedAboutCredentials) {
@@ -174,18 +124,8 @@ function directoryUnavailable(): boolean {
   return true;
 }
 
-/**
- * Run a profiles query, dropping the grant columns if the database lacks them.
- *
- * Retries exactly once, and only for that specific error. Anything else is a
- * real failure and is rethrown — a query that silently returns nothing would
- * empty the directory, which is far worse than a failed build.
- *
- * Without the grant columns, `resolveTier` sees no deadline on any row and
- * falls back to trusting `subscription_tier` — the behaviour that shipped
- * before this feature. Degrading to "as it was yesterday" is the right
- * direction while a migration is pending.
- */
+type QueryResult = { data: unknown; error: { message: string } | null };
+
 async function selectProfiles<T>(
   columns: string[],
   build: (client: ReturnType<typeof createAnonClient>, select: string) => PromiseLike<QueryResult>,
@@ -196,14 +136,8 @@ async function selectProfiles<T>(
     const { data, error } = await build(client, columnsFor(columns));
     if (!error) return (data ?? []) as unknown as T[];
 
-    // Deliberately not gated on "have we already noticed?". Static generation
-    // runs these queries concurrently: the first failure records the column,
-    // and every other in-flight query has already failed by then. Gating on
-    // that made exactly one call retry and the rest throw.
     const absent = attempt === 0 ? missingOptionalColumns(error.message) : [];
     if (absent.length > 0) {
-      // Warn once per column, not once per concurrent query, or a 96-page
-      // build prints the same line ninety-six times.
       for (const column of absent) {
         if (missingColumns.has(column)) continue;
         missingColumns.add(column);
@@ -220,8 +154,6 @@ async function selectProfiles<T>(
 
   return [];
 }
-
-type QueryResult = { data: unknown; error: { message: string } | null };
 
 async function fetchVisibleListings(): Promise<TherapistListing[]> {
   if (directoryUnavailable()) return [];
@@ -243,24 +175,33 @@ export const getVisibleTherapists = unstable_cache(fetchVisibleListings, ["direc
   tags: [DIRECTORY_CACHE_TAG],
 });
 
+type CityRow = { slug: string | null; city: string | null; state: string | null };
+
+async function fetchVisibleCityRows(): Promise<CityRow[]> {
+  if (directoryUnavailable()) return [];
+  return selectProfiles<CityRow>(["slug", "city", "state"], (client, select) =>
+    client
+      .from("profiles")
+      .select(select)
+      .eq("profile_status", APPROVED)
+      .eq("visibility_status", PUBLIC),
+  );
+}
+
 /**
- * Cities derived from the visible therapists.
- *
- * The `cities` table is not readable by anon (no GRANT), and every profile's
- * `canonical_city_slug` is currently null — so the city list is derived from
- * the profiles themselves. That also means a city page never exists with zero
- * therapists on it, which is what we want for SEO.
+ * Cities derived from visible, routable therapists using only the three
+ * columns required for this hub instead of loading the full directory payload.
  */
 export const getCities = unstable_cache(
   async (): Promise<CityListing[]> => {
-    const therapists = await fetchVisibleListings();
+    const rows = await fetchVisibleCityRows();
     const byKey = new Map<string, CityListing>();
 
-    for (const therapist of therapists) {
-      if (!therapist.city || !therapist.state) continue;
+    for (const row of rows) {
+      if (!isRoutable(row) || !row.city || !row.state) continue;
 
-      const state = therapist.state.toLowerCase();
-      const city = citySlug(therapist.city);
+      const state = row.state.toLowerCase();
+      const city = citySlug(row.city);
       const key = `${state}/${city}`;
       const existing = byKey.get(key);
 
@@ -270,8 +211,8 @@ export const getCities = unstable_cache(
         byKey.set(key, {
           citySlug: city,
           stateSlug: state,
-          name: therapist.city,
-          state: therapist.state,
+          name: row.city,
+          state: row.state,
           therapistCount: 1,
         });
       }
@@ -316,8 +257,8 @@ export async function getProfileBySlug(slug: string): Promise<ProfileDetail | nu
 
   const client = createAnonClient();
 
-  const rows = await selectProfiles<ProfileDetail>(DETAIL_COLUMNS, (c, select) =>
-    c
+  const rows = await selectProfiles<ProfileDetail>(DETAIL_COLUMNS, (candidate, select) =>
+    candidate
       .from("profiles")
       .select(select)
       .eq("profile_status", APPROVED)
@@ -329,7 +270,6 @@ export async function getProfileBySlug(slug: string): Promise<ProfileDetail | nu
   const profile = rows[0];
   if (!profile) return null;
 
-  // Approved photos only — enforced by RLS, restated here for intent.
   const { data: photos } = await client
     .from("profile_photos")
     .select("id,url,storage_path,is_primary,sort_order")
@@ -349,16 +289,27 @@ export async function getProfileBySlug(slug: string): Promise<ProfileDetail | nu
   return profile;
 }
 
-/** Search with optional city and service-category filters. */
-export async function searchTherapists(filters: DirectoryFilters): Promise<TherapistListing[]> {
-  let therapists = await getVisibleTherapists();
+function cityMatches(therapist: TherapistListing, filters: DirectoryFilters): boolean {
+  if (!filters.city) return true;
+  const wantedCity = filters.city.toLowerCase();
+  const wantedState = filters.state?.toLowerCase();
 
-  if (filters.city) {
-    const wanted = filters.city.toLowerCase();
-    therapists = therapists.filter(
-      (therapist) => therapist.city !== null && citySlug(therapist.city) === wanted,
-    );
-  }
+  const homeMatches =
+    therapist.city !== null &&
+    citySlug(therapist.city) === wantedCity &&
+    (!wantedState || therapist.state?.toLowerCase() === wantedState);
+  if (homeMatches) return true;
+
+  const visit = travelVisit(therapist.travel_schedule, wantedCity);
+  if (!visit) return false;
+  return !wantedState || !visit.entry.state || visit.entry.state.toLowerCase() === wantedState;
+}
+
+function filterTherapistsInMemory(
+  source: TherapistListing[],
+  filters: DirectoryFilters,
+): TherapistListing[] {
+  let therapists = source.filter((therapist) => cityMatches(therapist, filters));
 
   if (filters.service) {
     const wanted = filters.service.toLowerCase();
@@ -374,6 +325,7 @@ export async function searchTherapists(filters: DirectoryFilters): Promise<Thera
     therapists = therapists.filter((therapist) =>
       [
         therapist.display_name,
+        therapist.full_name,
         therapist.headline,
         therapist.city,
         therapist.neighborhood,
@@ -387,14 +339,12 @@ export async function searchTherapists(filters: DirectoryFilters): Promise<Thera
   }
 
   if (filters.session === "incall") {
-    therapists = therapists.filter((therapist) => therapist.offers_incall !== false);
+    therapists = therapists.filter((therapist) => therapist.offers_incall === true);
   } else if (filters.session === "outcall") {
-    therapists = therapists.filter((therapist) => therapist.offers_outcall !== false);
+    therapists = therapists.filter((therapist) => therapist.offers_outcall === true);
   }
 
   if (filters.availableNow) {
-    // One clock for the whole result set, so two listings with the same expiry
-    // cannot land on different sides of the cut.
     const now = new Date();
     therapists = therapists.filter((therapist) => isAvailableNow(therapist, now));
   }
@@ -410,6 +360,14 @@ export async function searchTherapists(filters: DirectoryFilters): Promise<Thera
     therapists = therapists.filter((therapist) => therapist.lgbtq_affirming === true);
   }
 
+  if (typeof filters.minPrice === "number" && Number.isFinite(filters.minPrice)) {
+    const floor = filters.minPrice;
+    therapists = therapists.filter((therapist) => {
+      const price = startingPrice(therapist);
+      return price !== null && price >= floor;
+    });
+  }
+
   if (typeof filters.maxPrice === "number" && Number.isFinite(filters.maxPrice)) {
     const cap = filters.maxPrice;
     therapists = therapists.filter((therapist) => {
@@ -418,18 +376,27 @@ export async function searchTherapists(filters: DirectoryFilters): Promise<Thera
     });
   }
 
-  // `getVisibleTherapists` already comes back in `compareByRank` order, which
-  // is what "recommended" means. The alternatives re-sort a copy; listings
-  // without the sorted field go last rather than pretending to be cheap or
-  // highly rated.
+  if (filters.tier) {
+    therapists = therapists.filter((therapist) => resolveTier(therapist) === filters.tier);
+  }
+
+  if (
+    typeof filters.minExperienceYears === "number" &&
+    Number.isFinite(filters.minExperienceYears)
+  ) {
+    therapists = therapists.filter(
+      (therapist) => (therapist.years_experience ?? 0) >= filters.minExperienceYears!,
+    );
+  }
+
   if (filters.sort === "price") {
     therapists = [...therapists].sort((a, b) => {
-      const pa = startingPrice(a);
-      const pb = startingPrice(b);
-      if (pa === null && pb === null) return compareByRank(a, b);
-      if (pa === null) return 1;
-      if (pb === null) return -1;
-      return pa - pb || compareByRank(a, b);
+      const priceA = startingPrice(a);
+      const priceB = startingPrice(b);
+      if (priceA === null && priceB === null) return compareByRank(a, b);
+      if (priceA === null) return 1;
+      if (priceB === null) return -1;
+      return priceA - priceB || compareByRank(a, b);
     });
   } else if (filters.sort === "rating") {
     therapists = [...therapists].sort(
@@ -443,14 +410,116 @@ export async function searchTherapists(filters: DirectoryFilters): Promise<Thera
   return therapists;
 }
 
+/**
+ * Backwards-compatible unpaginated search used by SEO/service pages. The main
+ * `/search` UI uses `searchTherapistsPage`, which filters and paginates in SQL.
+ */
+export async function searchTherapists(filters: DirectoryFilters): Promise<TherapistListing[]> {
+  return filterTherapistsInMemory(await getVisibleTherapists(), filters);
+}
+
+type SearchRpcRow = Omit<TherapistListing, "years_experience"> & {
+  total_count: number | null;
+};
+
+type RpcClient = {
+  rpc: (name: string, args: Record<string, unknown>) => PromiseLike<QueryResult>;
+};
+
+function isMissingSearchRpc(message: string): boolean {
+  const normalized = message.toLowerCase();
+  return (
+    normalized.includes("search_directory_profiles") ||
+    (normalized.includes("schema cache") && normalized.includes("function"))
+  );
+}
+
+/**
+ * Production search path: filters, ranking, count and pagination happen in
+ * Postgres. A narrowly-scoped fallback preserves deploy-order safety if the app
+ * reaches production before the additive RPC migration does.
+ */
+export async function searchTherapistsPage(
+  filters: DirectoryFilters,
+): Promise<DirectorySearchResult> {
+  const page = Math.max(1, Math.trunc(filters.page ?? 1) || 1);
+  const pageSize = Math.min(48, Math.max(1, Math.trunc(filters.pageSize ?? 24) || 24));
+
+  if (directoryUnavailable()) return { items: [], total: 0, page, pageSize };
+
+  const client = createAnonClient();
+  const rpcClient = client as unknown as RpcClient;
+  const { data, error } = await rpcClient.rpc("search_directory_profiles", {
+    p_city_slug: filters.city ?? null,
+    p_state_slug: filters.state ?? null,
+    p_service: filters.service ?? null,
+    p_query: filters.query ?? null,
+    p_session: filters.session ?? null,
+    p_available_now: filters.availableNow ?? false,
+    p_verified: filters.verified ?? false,
+    p_lgbtq: filters.lgbtq ?? false,
+    p_min_price: filters.minPrice ?? null,
+    p_max_price: filters.maxPrice ?? null,
+    p_tier: filters.tier ?? null,
+    p_min_experience: filters.minExperienceYears ?? null,
+    p_sort: filters.sort ?? "recommended",
+    p_limit: pageSize,
+    p_offset: (page - 1) * pageSize,
+  });
+
+  if (!error) {
+    const rows = (data ?? []) as SearchRpcRow[];
+    const total = Number(rows[0]?.total_count ?? 0);
+    const items = rows.map(({ total_count: _totalCount, ...row }) => ({
+      ...row,
+      years_experience: null,
+    }));
+    return { items, total, page, pageSize };
+  }
+
+  if (!isMissingSearchRpc(error.message)) {
+    throw new Error(`Failed to search directory: ${error.message}`);
+  }
+
+  if (!warnedAboutSearchRpc) {
+    warnedAboutSearchRpc = true;
+    console.warn(
+      "[@masseurmatch/db] search_directory_profiles RPC is not available yet — " +
+        "falling back to in-memory search until the additive migration is applied.",
+    );
+  }
+
+  const all = filterTherapistsInMemory(await getVisibleTherapists(), filters);
+  const offset = (page - 1) * pageSize;
+  return {
+    items: all.slice(offset, offset + pageSize),
+    total: all.length,
+    page,
+    pageSize,
+  };
+}
+
+type ServiceRow = { slug: string | null; service_categories: string[] | null };
+
 /** Distinct service categories across visible therapists, for the filter UI. */
 export const getServiceCategories = unstable_cache(
   async (): Promise<string[]> => {
-    const therapists = await fetchVisibleListings();
+    if (directoryUnavailable()) return [];
+
+    const rows = await selectProfiles<ServiceRow>(
+      ["slug", "service_categories"],
+      (client, select) =>
+        client
+          .from("profiles")
+          .select(select)
+          .eq("profile_status", APPROVED)
+          .eq("visibility_status", PUBLIC),
+    );
     const seen = new Set<string>();
 
-    for (const therapist of therapists) {
-      for (const entry of therapist.service_categories ?? []) {
+    for (const row of rows) {
+      if (!isRoutable(row)) continue;
+      for (const entry of row.service_categories ?? []) {
         if (entry.trim()) seen.add(entry.trim());
       }
     }
