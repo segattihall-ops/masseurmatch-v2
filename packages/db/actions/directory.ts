@@ -506,12 +506,14 @@ export const getServiceCategories = unstable_cache(
   async (): Promise<string[]> => {
     if (directoryUnavailable()) return [];
 
-    const rows = await selectProfiles<ServiceRow>(["slug", "service_categories"], (client, select) =>
-      client
-        .from("profiles")
-        .select(select)
-        .eq("profile_status", APPROVED)
-        .eq("visibility_status", PUBLIC),
+    const rows = await selectProfiles<ServiceRow>(
+      ["slug", "service_categories"],
+      (client, select) =>
+        client
+          .from("profiles")
+          .select(select)
+          .eq("profile_status", APPROVED)
+          .eq("visibility_status", PUBLIC),
     );
     const seen = new Set<string>();
 

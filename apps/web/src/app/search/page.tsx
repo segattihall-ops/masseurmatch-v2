@@ -154,7 +154,7 @@ export default async function SearchPage({ searchParams }: SearchParams) {
   const pageCount = Math.max(1, Math.ceil(search.total / search.pageSize));
   const selectedCityValue = selectedCity
     ? `${selectedCity.stateSlug}/${selectedCity.citySlug}`
-    : searchParams.city?.trim() ?? "";
+    : (searchParams.city?.trim() ?? "");
 
   return (
     <main className="mx-auto w-full max-w-6xl px-6 pb-16 pt-16">
@@ -162,8 +162,8 @@ export default async function SearchPage({ searchParams }: SearchParams) {
         Find a therapist
       </h1>
       <p className="mt-3 max-w-2xl text-text-secondary">
-        Search by city, specialty, session format, price, experience and trust signals. City
-        results also include therapists visiting there within the next 14 days.
+        Search by city, specialty, session format, price, experience and trust signals. City results
+        also include therapists visiting there within the next 14 days.
       </p>
 
       <form method="get" className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-4">
