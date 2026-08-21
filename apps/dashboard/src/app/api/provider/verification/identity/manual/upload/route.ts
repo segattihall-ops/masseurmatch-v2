@@ -21,7 +21,9 @@ function matchesMagicBytes(bytes: Uint8Array, mimeType: string): boolean {
 
   if (mimeType === "image/png") {
     const signature = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
-    return bytes.length >= signature.length && signature.every((value, index) => bytes[index] === value);
+    return (
+      bytes.length >= signature.length && signature.every((value, index) => bytes[index] === value)
+    );
   }
 
   if (mimeType === "image/webp") {
@@ -56,11 +58,7 @@ export async function POST(request: Request) {
     }
 
     // Rate limit: 12 uploads per 10 minutes
-    const limited = rateLimit(
-      `identity-upload:${user.id}`,
-      12,
-      10 * 60 * 1000,
-    );
+    const limited = rateLimit(`identity-upload:${user.id}`, 12, 10 * 60 * 1000);
     if (!limited.ok) {
       return NextResponse.json(
         { error: "Too many upload attempts. Please wait and try again." },
@@ -74,10 +72,7 @@ export async function POST(request: Request) {
     const kind = String(formData.get("kind") ?? "").trim();
 
     if (!verificationId) {
-      return NextResponse.json(
-        { error: "verificationId is required" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "verificationId is required" }, { status: 400 });
     }
 
     if (!ALLOWED_KINDS.has(kind)) {
@@ -99,10 +94,7 @@ export async function POST(request: Request) {
     }
 
     if (file.size <= 0 || file.size > MAX_FILE_SIZE_BYTES) {
-      return NextResponse.json(
-        { error: "File must be between 1 byte and 8 MB" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "File must be between 1 byte and 8 MB" }, { status: 400 });
     }
 
     const supabase = createServiceClient();
@@ -116,10 +108,7 @@ export async function POST(request: Request) {
       .maybeSingle();
 
     if (verificationError || !verification || verification.provider !== "manual") {
-      return NextResponse.json(
-        { error: "Verification not found" },
-        { status: 404 },
-      );
+      return NextResponse.json({ error: "Verification not found" }, { status: 404 });
     }
 
     if (!["not_started", "pending"].includes(verification.status as string)) {
@@ -131,10 +120,7 @@ export async function POST(request: Request) {
 
     const currentMetadata = verification.metadata as Record<string, unknown> | null;
     if (!currentMetadata?.manual) {
-      return NextResponse.json(
-        { error: "Verification is invalid" },
-        { status: 409 },
-      );
+      return NextResponse.json({ error: "Verification is invalid" }, { status: 409 });
     }
 
     const manual = currentMetadata.manual as Record<string, unknown>;
@@ -166,10 +152,7 @@ export async function POST(request: Request) {
       .upload(storagePath, bytes, { contentType: file.type, upsert: true });
 
     if (uploadError) {
-      return NextResponse.json(
-        { error: "Upload failed. Please try again." },
-        { status: 500 },
-      );
+      return NextResponse.json({ error: "Upload failed. Please try again." }, { status: 500 });
     }
 
     // Update metadata to track the uploaded file
@@ -201,21 +184,13 @@ export async function POST(request: Request) {
 
     if (updateError) {
       // Rollback: remove the file we just uploaded
-      await supabase.storage
-        .from("identity-documents")
-        .remove([storagePath]);
-      return NextResponse.json(
-        { error: "Could not save file information" },
-        { status: 500 },
-      );
+      await supabase.storage.from("identity-documents").remove([storagePath]);
+      return NextResponse.json({ error: "Could not save file information" }, { status: 500 });
     }
 
     return NextResponse.json({ ok: true, kind });
   } catch (error) {
     console.error("Identity verification upload error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

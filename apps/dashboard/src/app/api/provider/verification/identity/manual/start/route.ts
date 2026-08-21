@@ -30,11 +30,7 @@ export async function POST() {
     }
 
     // Rate limit per user: 5 starts per hour
-    const limited = rateLimit(
-      `identity-start:${user.id}`,
-      5,
-      60 * 60 * 1000,
-    );
+    const limited = rateLimit(`identity-start:${user.id}`, 5, 60 * 60 * 1000);
     if (!limited.ok) {
       return NextResponse.json(
         { error: "Too many verification attempts. Please wait an hour before trying again." },
@@ -87,9 +83,7 @@ export async function POST() {
       }
 
       if (pathsToRemove.length > 0) {
-        await supabase.storage
-          .from("identity-documents")
-          .remove(pathsToRemove);
+        await supabase.storage.from("identity-documents").remove(pathsToRemove);
       }
 
       // Mark old verifications as canceled
@@ -113,24 +107,19 @@ export async function POST() {
       },
     };
 
-    const { error: insertError } = await supabase
-      .from("identity_verifications")
-      .insert({
-        id: verificationId,
-        user_id: user.id,
-        profile_id: profile.id,
-        provider: "manual",
-        status: "not_started",
-        last_error: null,
-        metadata: metadata as Json,
-        updated_at: nowIso,
-      });
+    const { error: insertError } = await supabase.from("identity_verifications").insert({
+      id: verificationId,
+      user_id: user.id,
+      profile_id: profile.id,
+      provider: "manual",
+      status: "not_started",
+      last_error: null,
+      metadata: metadata as Json,
+      updated_at: nowIso,
+    });
 
     if (insertError) {
-      return NextResponse.json(
-        { error: "Could not start verification." },
-        { status: 500 },
-      );
+      return NextResponse.json({ error: "Could not start verification." }, { status: 500 });
     }
 
     return NextResponse.json({
@@ -141,10 +130,7 @@ export async function POST() {
     });
   } catch (error) {
     console.error("Identity verification start error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
@@ -166,10 +152,7 @@ export async function GET(request: Request) {
     const url = new URL(request.url);
     const verificationId = url.searchParams.get("verificationId")?.trim() ?? "";
     if (!verificationId) {
-      return NextResponse.json(
-        { error: "verificationId is required" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "verificationId is required" }, { status: 400 });
     }
 
     const supabase = createServiceClient();
@@ -181,25 +164,16 @@ export async function GET(request: Request) {
       .maybeSingle();
 
     if (error || !verification || verification.provider !== "manual") {
-      return NextResponse.json(
-        { error: "Verification not found" },
-        { status: 404 },
-      );
+      return NextResponse.json({ error: "Verification not found" }, { status: 404 });
     }
 
     if (!["not_started", "pending"].includes(verification.status as string)) {
-      return NextResponse.json(
-        { error: "Verification is no longer active" },
-        { status: 409 },
-      );
+      return NextResponse.json({ error: "Verification is no longer active" }, { status: 409 });
     }
 
     const metadata = verification.metadata as Record<string, unknown> | null;
     if (!metadata?.manual) {
-      return NextResponse.json(
-        { error: "Verification challenge unavailable" },
-        { status: 409 },
-      );
+      return NextResponse.json({ error: "Verification challenge unavailable" }, { status: 409 });
     }
 
     const manual = metadata.manual as Record<string, unknown>;
@@ -207,17 +181,11 @@ export async function GET(request: Request) {
     const expiresAt = typeof manual.expiresAt === "string" ? manual.expiresAt : "";
 
     if (!challengeCode || !expiresAt) {
-      return NextResponse.json(
-        { error: "Verification challenge unavailable" },
-        { status: 409 },
-      );
+      return NextResponse.json({ error: "Verification challenge unavailable" }, { status: 409 });
     }
 
     if (new Date(expiresAt) <= new Date()) {
-      return NextResponse.json(
-        { error: "Verification challenge expired" },
-        { status: 410 },
-      );
+      return NextResponse.json({ error: "Verification challenge expired" }, { status: 410 });
     }
 
     return NextResponse.json({
@@ -228,9 +196,6 @@ export async function GET(request: Request) {
     });
   } catch (error) {
     console.error("Identity verification GET error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

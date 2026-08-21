@@ -37,12 +37,15 @@ export function VerifyIdForm({ verificationStatus }: { verificationStatus: strin
     selfie?: File;
   }>({});
 
-  const handleFileSelect = useCallback((kind: "id_front" | "id_back" | "selfie", file: File | null) => {
-    if (file) {
-      setUploadedFiles((prev) => ({ ...prev, [kind]: file }));
-      setError(null);
-    }
-  }, []);
+  const handleFileSelect = useCallback(
+    (kind: "id_front" | "id_back" | "selfie", file: File | null) => {
+      if (file) {
+        setUploadedFiles((prev) => ({ ...prev, [kind]: file }));
+        setError(null);
+      }
+    },
+    [],
+  );
 
   const handleStartVerification = async () => {
     try {
@@ -155,7 +158,9 @@ export function VerifyIdForm({ verificationStatus }: { verificationStatus: strin
       <div className="space-y-4">
         <div className="rounded-lg bg-blue-50 p-4 text-sm text-blue-900">
           <p className="font-medium">✓ Verification submitted</p>
-          <p className="mt-1">We've received your documents. Our team will review them within 1–3 business days.</p>
+          <p className="mt-1">
+            We&apos;ve received your documents. Our team will review them within 1–3 business days.
+          </p>
         </div>
         <Button onClick={handleStartVerification} variant="outline" className="w-full">
           Submit another verification
@@ -179,7 +184,9 @@ export function VerifyIdForm({ verificationStatus }: { verificationStatus: strin
               <label className="block text-sm font-medium text-ink">Document type</label>
               <select
                 value={documentType}
-                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setDocumentType(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                  setDocumentType(e.target.value)
+                }
                 disabled={isSubmitting}
                 className="mt-1 w-full rounded-md border border-ink/20 bg-bg px-3 py-2 text-ink"
               >
@@ -195,7 +202,9 @@ export function VerifyIdForm({ verificationStatus }: { verificationStatus: strin
               <label className="block text-sm font-medium text-ink">Issuing country</label>
               <select
                 value={documentCountry}
-                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setDocumentCountry(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                  setDocumentCountry(e.target.value)
+                }
                 disabled={isSubmitting}
                 className="mt-1 w-full rounded-md border border-ink/20 bg-bg px-3 py-2 text-ink"
               >

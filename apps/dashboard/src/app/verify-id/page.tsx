@@ -35,8 +35,8 @@ export default async function VerifyIdPage() {
       <Card className="w-full p-8">
         <h1 className="text-2xl font-semibold text-ink">Verify your identity</h1>
         <p className="mt-1 mb-6 text-sm text-ink/60">
-          Upload a government ID and current selfie. Our team will review your documents within
-          1–3 business days. Once verified, a trust badge appears on your public listing.
+          Upload a government ID and current selfie. Our team will review your documents within 1–3
+          business days. Once verified, a trust badge appears on your public listing.
         </p>
 
         {verified ? (

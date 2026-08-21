@@ -113,8 +113,10 @@ describe("listing entitlement", () => {
 });
 
 describe("provider selection", () => {
-  it("defaults to Authorize.Net", () => {
-    expect(activeProviderId(undefined)).toBe("authorizenet");
+  it("requires explicit BILLING_PROVIDER", () => {
+    expect(() => activeProviderId(undefined)).toThrow(
+      'BILLING_PROVIDER must be set to "paypal" or "authorizenet"',
+    );
   });
 
   it("switches on the environment variable alone", () => {

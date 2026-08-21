@@ -35,10 +35,7 @@ export async function GET() {
 
     if (error) {
       console.error("Error fetching verification status:", error);
-      return NextResponse.json(
-        { error: "Could not fetch verification status" },
-        { status: 500 },
-      );
+      return NextResponse.json({ error: "Could not fetch verification status" }, { status: 500 });
     }
 
     // Map database status to public status
@@ -63,9 +60,6 @@ export async function GET() {
     });
   } catch (error) {
     console.error("Identity verification status error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

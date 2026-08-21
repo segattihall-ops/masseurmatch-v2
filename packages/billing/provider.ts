@@ -106,7 +106,7 @@ export function activeProviderId(raw = process.env.BILLING_PROVIDER): ProviderId
   if (!raw) {
     throw new Error(
       'BILLING_PROVIDER must be set to "paypal" or "authorizenet". ' +
-      "No default is provided: silently using the wrong processor is worse than failing to start.",
+        "No default is provided: silently using the wrong processor is worse than failing to start.",
     );
   }
   const value = raw.toLowerCase();

@@ -32,11 +32,7 @@ export async function POST(request: Request) {
     }
 
     // Rate limit: 6 submissions per hour
-    const limited = rateLimit(
-      `identity-submit:${user.id}`,
-      6,
-      60 * 60 * 1000,
-    );
+    const limited = rateLimit(`identity-submit:${user.id}`, 6, 60 * 60 * 1000);
     if (!limited.ok) {
       return NextResponse.json(
         { error: "Too many submission attempts. Please wait and try again." },
@@ -44,24 +40,19 @@ export async function POST(request: Request) {
       );
     }
 
-    const body = await request.json().catch(() => ({} as Record<string, unknown>));
-    const verificationId = typeof body.verificationId === "string" ? body.verificationId.trim() : "";
+    const body = await request.json().catch(() => ({}) as Record<string, unknown>);
+    const verificationId =
+      typeof body.verificationId === "string" ? body.verificationId.trim() : "";
     const documentType = typeof body.documentType === "string" ? body.documentType.trim() : "";
     const documentCountry =
       typeof body.documentCountry === "string" ? body.documentCountry.trim().toUpperCase() : "US";
 
     if (!verificationId) {
-      return NextResponse.json(
-        { error: "verificationId is required" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "verificationId is required" }, { status: 400 });
     }
 
     if (!ALLOWED_DOCUMENT_TYPES.has(documentType)) {
-      return NextResponse.json(
-        { error: "Select a valid document type" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "Select a valid document type" }, { status: 400 });
     }
 
     if (!COUNTRY_CODE_REGEX.test(documentCountry)) {
@@ -82,10 +73,7 @@ export async function POST(request: Request) {
       .maybeSingle();
 
     if (verificationError || !verification || verification.provider !== "manual") {
-      return NextResponse.json(
-        { error: "Verification not found" },
-        { status: 404 },
-      );
+      return NextResponse.json({ error: "Verification not found" }, { status: 404 });
     }
 
     if (!["not_started", "pending"].includes(verification.status as string)) {
@@ -97,10 +85,7 @@ export async function POST(request: Request) {
 
     const currentMetadata = verification.metadata as Record<string, unknown> | null;
     if (!currentMetadata?.manual) {
-      return NextResponse.json(
-        { error: "Verification is invalid" },
-        { status: 409 },
-      );
+      return NextResponse.json({ error: "Verification is invalid" }, { status: 409 });
     }
 
     const manual = currentMetadata.manual as Record<string, unknown>;
@@ -158,10 +143,7 @@ export async function POST(request: Request) {
       .eq("user_id", user.id);
 
     if (updateError) {
-      return NextResponse.json(
-        { error: "Could not submit verification" },
-        { status: 500 },
-      );
+      return NextResponse.json({ error: "Could not submit verification" }, { status: 500 });
     }
 
     // Notify admins about the pending verification
@@ -171,9 +153,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, status: "pending" });
   } catch (error) {
     console.error("Identity verification submit error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
