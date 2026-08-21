@@ -55,6 +55,8 @@ to drift out of sync.
   a `try`/`catch`: private windows and blocked site data throw on access, and
   the page has to keep working when they do.
 - **Undo/redo** — debounced snapshots, `Ctrl+Z` / `Ctrl+Shift+Z`, 60 deep.
+- **Reset** asks for a second click on the button itself rather than calling
+  `window.confirm`, which a sandboxed frame blocks outright.
 - **Preview** — assembles the client-facing listing from the current form so
   you can see the effect of a change without leaving the editor.
 
@@ -93,7 +95,18 @@ Three breakpoints, verified with no horizontal overflow at 320, 375, 768,
 | 768–1199 px | 2 columns                                                     |
 | < 768 px    | Single column, tabs scroll horizontally, full-width actions   |
 
-Dark mode follows `prefers-color-scheme` on first visit and is togglable.
+## Theming
+
+Both themes are defined once, as tokens. `:root` carries the light palette,
+`[data-theme="dark"]` redefines the same names, and a
+`prefers-color-scheme: dark` block redefines them again for the case where
+nothing is stamped on the root at all — a viewer whose OS is dark but who has
+made no explicit choice. Components only ever read tokens, never a
+theme-scoped colour, so all three states resolve from the stylesheet before
+any JavaScript runs. Three tokens exist purely because their value cannot be
+the same hue in both themes: `--brand-text` (brand colour readable on a
+surface), `--on-brand` (text on a brand-filled control) and `--switch-off`.
+
 `prefers-reduced-motion` neutralises every transition and animation.
 
 ## Two deliberate deviations from the brief

@@ -1638,9 +1638,23 @@
       });
     });
 
-    $("#btn-reset").addEventListener("click", () => {
-      const ok = window.confirm("Discard your changes and reload the sample profile?");
-      if (!ok) return;
+    /* Click-again-to-confirm rather than window.confirm: a native dialog is
+       blocked outright in a sandboxed frame, and this stays in the page. */
+    const reset = $("#btn-reset");
+    const resetLabel = reset.textContent;
+    let resetArmed = null;
+    reset.addEventListener("click", () => {
+      if (!resetArmed) {
+        reset.textContent = "Click again to discard your changes";
+        resetArmed = window.setTimeout(() => {
+          reset.textContent = resetLabel;
+          resetArmed = null;
+        }, 5000);
+        return;
+      }
+      window.clearTimeout(resetArmed);
+      resetArmed = null;
+      reset.textContent = resetLabel;
       store.remove(DRAFT_KEY);
       touched = {};
       submitted = false;

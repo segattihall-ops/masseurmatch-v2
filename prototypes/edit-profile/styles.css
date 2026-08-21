@@ -36,6 +36,13 @@
   --shadow-md: 0 4px 16px rgba(17, 24, 39, 0.08);
   --shadow-lg: 0 18px 48px rgba(17, 24, 39, 0.18);
 
+  /* Brand colour readable on a surface, text on a brand-filled control, and
+     the off state of a switch — the three values that cannot simply be the
+     brand hue in both themes. */
+  --brand-text: #5568d8;
+  --on-brand: #ffffff;
+  --switch-off: #cccccc;
+
   --ring: 0 0 0 3px rgba(102, 126, 234, 0.28);
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
 
@@ -69,7 +76,51 @@
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
   --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.45);
   --shadow-lg: 0 18px 48px rgba(0, 0, 0, 0.6);
+
+  --brand-text: #8b9dff;
+  --on-brand: #10131f;
+  --switch-off: #4a5169;
+
   --ring: 0 0 0 3px rgba(139, 157, 255, 0.32);
+}
+
+/* The viewer's default "system" setting stamps nothing on the root, so the
+   same tokens answer prefers-color-scheme as well. Guarded, so an explicit
+   light choice still beats a dark OS. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --brand: #8b9dff;
+    --brand-strong: #7688f5;
+    --accent: #a878d8;
+    --gradient: linear-gradient(135deg, #4c5bc4 0%, #5b3a80 100%);
+
+    --bg: #12141f;
+    --surface: #1b1e2c;
+    --surface-sunken: #171a26;
+    --surface-raised: #222639;
+    --border: #333a52;
+    --border-strong: #434b68;
+
+    --text: #e9ecf5;
+    --text-muted: #a8b0c8;
+    --text-hint: #7b8299;
+
+    --error: #ff7b88;
+    --error-soft: #3a1f25;
+    --success: #5ad07f;
+    --success-soft: #16301f;
+    --info-soft: #232a4a;
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.45);
+    --shadow-lg: 0 18px 48px rgba(0, 0, 0, 0.6);
+
+    --brand-text: #8b9dff;
+    --on-brand: #10131f;
+    --switch-off: #4a5169;
+
+    --ring: 0 0 0 3px rgba(139, 157, 255, 0.32);
+  }
 }
 
 /* ── Base ─────────────────────────────────────────────────────────────────── */
@@ -397,11 +448,7 @@ textarea {
 .tab.is-active {
   background: var(--info-soft);
   border-color: color-mix(in srgb, var(--brand) 40%, transparent);
-  color: var(--brand-strong);
-}
-
-[data-theme="dark"] .tab.is-active {
-  color: var(--brand);
+  color: var(--brand-text);
 }
 
 .tab__dot {
@@ -486,15 +533,11 @@ textarea {
 
 .btn--primary {
   background: var(--brand);
-  color: #fff;
+  color: var(--on-brand);
 }
 
 .btn--primary:hover {
   background: var(--brand-strong);
-}
-
-[data-theme="dark"] .btn--primary {
-  color: #10131f;
 }
 
 .btn--ghost {
@@ -506,11 +549,7 @@ textarea {
 .btn--ghost:hover {
   background: var(--surface-sunken);
   border-color: var(--brand);
-  color: var(--brand-strong);
-}
-
-[data-theme="dark"] .btn--ghost:hover {
-  color: var(--brand);
+  color: var(--brand-text);
 }
 
 .btn--lg {
@@ -522,16 +561,12 @@ textarea {
   padding: 0;
   border: 0;
   background: none;
-  color: var(--brand-strong);
+  color: var(--brand-text);
   font-size: 12.5px;
   font-weight: 600;
   cursor: pointer;
   text-decoration: underline;
   text-underline-offset: 3px;
-}
-
-[data-theme="dark"] .linkbtn {
-  color: var(--brand);
 }
 
 .linkbtn:hover {
@@ -620,13 +655,9 @@ textarea {
   height: 30px;
   border-radius: 50%;
   background: var(--info-soft);
-  color: var(--brand-strong);
+  color: var(--brand-text);
   font-size: 13px;
   font-weight: 700;
-}
-
-[data-theme="dark"] .card__num {
-  color: var(--brand);
 }
 
 .card__heads {
@@ -918,11 +949,7 @@ textarea:focus {
 
 .pill--info {
   background: var(--info-soft);
-  color: var(--brand-strong);
-}
-
-[data-theme="dark"] .pill--info {
-  color: var(--brand);
+  color: var(--brand-text);
 }
 
 .pill--muted {
@@ -974,11 +1001,7 @@ textarea:focus {
 .seg input:checked + .seg__face {
   border-color: var(--brand);
   background: var(--info-soft);
-  color: var(--brand-strong);
-}
-
-[data-theme="dark"] .seg input:checked + .seg__face {
-  color: var(--brand);
+  color: var(--brand-text);
 }
 
 .seg input:focus-visible + .seg__face {
@@ -1039,12 +1062,8 @@ textarea:focus {
   height: 26px;
   margin-top: 1px;
   border-radius: 999px;
-  background: #ccc;
+  background: var(--switch-off);
   transition: background-color 0.25s var(--ease);
-}
-
-[data-theme="dark"] .toggle__track {
-  background: #4a5169;
 }
 
 .toggle__thumb {
@@ -1136,11 +1155,7 @@ textarea:focus {
 .checkgroup__count.is-active {
   background: var(--info-soft);
   border-color: color-mix(in srgb, var(--brand) 40%, transparent);
-  color: var(--brand-strong);
-}
-
-[data-theme="dark"] .checkgroup__count.is-active {
-  color: var(--brand);
+  color: var(--brand-text);
 }
 
 .checkgroup__search {
@@ -1377,11 +1392,7 @@ tbody th {
 
 .daybtn:hover {
   border-color: var(--brand);
-  color: var(--brand-strong);
-}
-
-[data-theme="dark"] .daybtn:hover {
-  color: var(--brand);
+  color: var(--brand-text);
 }
 
 /* ── Form footer ──────────────────────────────────────────────────────────── */
@@ -1582,11 +1593,7 @@ kbd {
 .pv__headline {
   font-size: 14px;
   font-weight: 600;
-  color: var(--brand-strong);
-}
-
-[data-theme="dark"] .pv__headline {
-  color: var(--brand);
+  color: var(--brand-text);
 }
 
 .pv__meta {
@@ -1612,11 +1619,7 @@ kbd {
 
 .pv__badge--brand {
   background: var(--info-soft);
-  color: var(--brand-strong);
-}
-
-[data-theme="dark"] .pv__badge--brand {
-  color: var(--brand);
+  color: var(--brand-text);
 }
 
 .pv__section {
