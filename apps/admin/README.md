@@ -8,6 +8,7 @@ Standalone administrative application for MasseurMatch.
 - Local development: `pnpm --filter @masseurmatch/admin dev`
 - Local port: `3002`
 - The application is intentionally `noindex`.
+- Production cutover requires a dedicated Vercel project before the legacy dashboard Admin route is retired.
 
 ## Required runtime configuration
 
