@@ -53,10 +53,7 @@ export async function GET(): Promise<Response> {
   try {
     const viewer = await getViewer();
     if (!viewer) {
-      return Response.json(
-        { ok: false, error: "Not authenticated" },
-        { status: 401 }
-      );
+      return Response.json({ ok: false, error: "Not authenticated" }, { status: 401 });
     }
 
     const userId = viewer.user.id;
@@ -91,8 +88,7 @@ export async function GET(): Promise<Response> {
         .eq("profile_id", profile.id)
         .gte(
           "created_at",
-          new Date(Date.now() - ANALYTICS_WINDOW_DAYS * 24 * 60 * 60 * 1000)
-            .toISOString()
+          new Date(Date.now() - ANALYTICS_WINDOW_DAYS * 24 * 60 * 60 * 1000).toISOString(),
         );
       contactClicks = data?.length ?? 0;
     } catch (e) {
@@ -216,7 +212,7 @@ export async function GET(): Promise<Response> {
         ok: false,
         error: error instanceof Error ? error.message : "Failed to load dashboard",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

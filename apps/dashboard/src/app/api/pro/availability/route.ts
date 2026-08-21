@@ -9,10 +9,7 @@ export async function POST(request: Request): Promise<Response> {
   try {
     const viewer = await getViewer();
     if (!viewer) {
-      return Response.json(
-        { ok: false, error: "Not authenticated" },
-        { status: 401 }
-      );
+      return Response.json({ ok: false, error: "Not authenticated" }, { status: 401 });
     }
 
     const body = await request.json();
@@ -26,10 +23,7 @@ export async function POST(request: Request): Promise<Response> {
     });
 
     if (written === 0) {
-      return Response.json(
-        { ok: false, error: "Profile not found" },
-        { status: 404 }
-      );
+      return Response.json({ ok: false, error: "Profile not found" }, { status: 404 });
     }
 
     // Revalidate cache
@@ -48,7 +42,7 @@ export async function POST(request: Request): Promise<Response> {
         ok: false,
         error: error instanceof Error ? error.message : "Failed to update",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
