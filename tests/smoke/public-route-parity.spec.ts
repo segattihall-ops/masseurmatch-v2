@@ -76,7 +76,9 @@ test.describe("restored public route parity", () => {
     expect(new URL(page.url()).pathname).toBe("/for-therapists");
   });
 
-  test("private trial feedback page renders and rejects malformed submissions", async ({ request }) => {
+  test("private trial feedback page renders and rejects malformed submissions", async ({
+    request,
+  }) => {
     const pageResponse = await request.get("/trial-feedback");
     expect(pageResponse.status()).toBe(200);
     expect(await pageResponse.text()).toContain("Help us improve MasseurMatch");

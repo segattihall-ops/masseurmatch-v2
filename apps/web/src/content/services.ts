@@ -1,12 +1,5 @@
 export type ServiceSlug =
-  | "deep-tissue"
-  | "swedish"
-  | "sports"
-  | "thai"
-  | "mobile"
-  | "hotel"
-  | "lymphatic"
-  | "hot-stone";
+  "deep-tissue" | "swedish" | "sports" | "thai" | "mobile" | "hotel" | "lymphatic" | "hot-stone";
 
 export type ServiceDefinition = {
   slug: ServiceSlug;

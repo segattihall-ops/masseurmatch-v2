@@ -118,8 +118,8 @@ export function LegacyDirectoryLanding({
           ) : (
             <div className="mt-6 rounded-2xl border border-border bg-bg-subtle p-6">
               <p className="text-text-secondary">
-                No matching public profiles are listed right now. Browse the full city directory
-                for current options.
+                No matching public profiles are listed right now. Browse the full city directory for
+                current options.
               </p>
               <Link
                 href={cityPath(city)}

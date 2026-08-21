@@ -72,10 +72,7 @@ async function getLegacyCity(slug: string): Promise<CityListing | null> {
   return cities.find((city) => city.citySlug === slug.toLowerCase()) ?? null;
 }
 
-function mergeLegacyFilters(
-  first: DirectoryFilters,
-  second: DirectoryFilters,
-): DirectoryFilters {
+function mergeLegacyFilters(first: DirectoryFilters, second: DirectoryFilters): DirectoryFilters {
   return {
     ...first,
     ...second,
@@ -85,7 +82,9 @@ function mergeLegacyFilters(
   };
 }
 
-async function resolveLegacyLanding(params: ProfileParams["params"]): Promise<LegacyLanding | null> {
+async function resolveLegacyLanding(
+  params: ProfileParams["params"],
+): Promise<LegacyLanding | null> {
   const legacyCity = await getLegacyCity(params.state);
   if (!legacyCity) return null;
 

@@ -5,9 +5,21 @@ import { createServiceClient } from "@masseurmatch/db/client";
 export const runtime = "nodejs";
 
 const OVERALL_RATINGS = ["Excellent", "Good", "Average", "Poor", "Very poor"] as const;
-const PROFILE_EXPERIENCES = ["Very easy", "Easy", "Neutral", "Difficult", "Very difficult"] as const;
+const PROFILE_EXPERIENCES = [
+  "Very easy",
+  "Easy",
+  "Neutral",
+  "Difficult",
+  "Very difficult",
+] as const;
 const SEO_ANSWERS = ["Yes, clearly", "Somewhat", "No"] as const;
-const CONTINUE_LIKELIHOODS = ["Very likely", "Likely", "Not sure", "Unlikely", "Very unlikely"] as const;
+const CONTINUE_LIKELIHOODS = [
+  "Very likely",
+  "Likely",
+  "Not sure",
+  "Unlikely",
+  "Very unlikely",
+] as const;
 const CONTACT_METHODS = ["Text message", "Chat", "Phone call"] as const;
 
 function isOneOf<T extends readonly string[]>(value: unknown, allowed: T): value is T[number] {
@@ -37,7 +49,9 @@ function requestIp(request: Request): string {
 
 function ipHash(request: Request): string {
   const salt = process.env.TRIAL_FEEDBACK_HASH_SALT || process.env.SESSION_SECRET || "masseurmatch";
-  return createHash("sha256").update(`${requestIp(request)}:${salt}`).digest("hex");
+  return createHash("sha256")
+    .update(`${requestIp(request)}:${salt}`)
+    .digest("hex");
 }
 
 async function sendAdminEmail(input: {

@@ -91,11 +91,13 @@ export default function ServicesPage() {
               review the techniques and experience each therapist lists on his profile.
             </li>
             <li className="text-text-secondary">
-              <strong className="font-semibold text-text-primary">Review trust signals:</strong>{" "}
-              use visible verification and profile information as part of your decision.
+              <strong className="font-semibold text-text-primary">Review trust signals:</strong> use
+              visible verification and profile information as part of your decision.
             </li>
             <li className="text-text-secondary">
-              <strong className="font-semibold text-text-primary">Choose the session format:</strong>{" "}
+              <strong className="font-semibold text-text-primary">
+                Choose the session format:
+              </strong>{" "}
               confirm whether you need incall or outcall service.
             </li>
             <li className="text-text-secondary">

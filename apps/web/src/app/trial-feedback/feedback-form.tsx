@@ -7,7 +7,13 @@ const inputClass =
 
 const labelClass = "block text-sm font-medium text-text-primary";
 
-function FieldLabel({ children, required = false }: { children: React.ReactNode; required?: boolean }) {
+function FieldLabel({
+  children,
+  required = false,
+}: {
+  children: React.ReactNode;
+  required?: boolean;
+}) {
   return (
     <span className={labelClass}>
       {children}
@@ -73,7 +79,9 @@ export function TrialFeedbackForm() {
       setContactRequested(false);
     } catch {
       setStatus("error");
-      setMessage("Your feedback could not be submitted. Please check your connection and try again.");
+      setMessage(
+        "Your feedback could not be submitted. Please check your connection and try again.",
+      );
     }
   }
 
@@ -111,18 +119,26 @@ export function TrialFeedbackForm() {
         <label>
           <FieldLabel required>Overall trial experience</FieldLabel>
           <select className={inputClass} name="overall_rating" defaultValue="" required>
-            <option value="" disabled>Select one</option>
-            {['Excellent', 'Good', 'Average', 'Poor', 'Very poor'].map((option) => (
-              <option key={option} value={option}>{option}</option>
+            <option value="" disabled>
+              Select one
+            </option>
+            {["Excellent", "Good", "Average", "Poor", "Very poor"].map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
             ))}
           </select>
         </label>
         <label>
           <FieldLabel required>How easy was your profile experience?</FieldLabel>
           <select className={inputClass} name="profile_experience" defaultValue="" required>
-            <option value="" disabled>Select one</option>
-            {['Very easy', 'Easy', 'Neutral', 'Difficult', 'Very difficult'].map((option) => (
-              <option key={option} value={option}>{option}</option>
+            <option value="" disabled>
+              Select one
+            </option>
+            {["Very easy", "Easy", "Neutral", "Difficult", "Very difficult"].map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
             ))}
           </select>
         </label>
@@ -142,18 +158,26 @@ export function TrialFeedbackForm() {
         <label>
           <FieldLabel required>Did the SEO/city visibility features make sense?</FieldLabel>
           <select className={inputClass} name="seo_understanding" defaultValue="" required>
-            <option value="" disabled>Select one</option>
-            {['Yes, clearly', 'Somewhat', 'No'].map((option) => (
-              <option key={option} value={option}>{option}</option>
+            <option value="" disabled>
+              Select one
+            </option>
+            {["Yes, clearly", "Somewhat", "No"].map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
             ))}
           </select>
         </label>
         <label>
           <FieldLabel required>How likely are you to continue using MasseurMatch?</FieldLabel>
           <select className={inputClass} name="continue_likelihood" defaultValue="" required>
-            <option value="" disabled>Select one</option>
-            {['Very likely', 'Likely', 'Not sure', 'Unlikely', 'Very unlikely'].map((option) => (
-              <option key={option} value={option}>{option}</option>
+            <option value="" disabled>
+              Select one
+            </option>
+            {["Very likely", "Likely", "Not sure", "Unlikely", "Very unlikely"].map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
             ))}
           </select>
         </label>
@@ -179,10 +203,19 @@ export function TrialFeedbackForm() {
           <div className="mt-5 grid gap-5 sm:grid-cols-3">
             <label>
               <FieldLabel required>Contact method</FieldLabel>
-              <select className={inputClass} name="preferred_contact_method" defaultValue="" required>
-                <option value="" disabled>Select one</option>
-                {['Text message', 'Chat', 'Phone call'].map((option) => (
-                  <option key={option} value={option}>{option}</option>
+              <select
+                className={inputClass}
+                name="preferred_contact_method"
+                defaultValue=""
+                required
+              >
+                <option value="" disabled>
+                  Select one
+                </option>
+                {["Text message", "Chat", "Phone call"].map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
                 ))}
               </select>
             </label>
@@ -192,7 +225,13 @@ export function TrialFeedbackForm() {
             </label>
             <label>
               <FieldLabel required>Best time</FieldLabel>
-              <input className={inputClass} name="best_contact_time" type="text" maxLength={160} required />
+              <input
+                className={inputClass}
+                name="best_contact_time"
+                type="text"
+                maxLength={160}
+                required
+              />
             </label>
           </div>
         ) : null}
