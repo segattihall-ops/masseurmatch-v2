@@ -22,7 +22,7 @@ export default async function ProSettingsPage() {
   const destinations = [
     { href: "/pro/listing", label: "Listing", note: "Name, headline, bio, services and rates" },
     { href: "/pro/photos", label: "Photos", note: "Gallery and primary photo" },
-    { href: "/pro/travel", label: "Availability", note: "Travel dates and mobile service" },
+    { href: "/pro/growth", label: "Availability", note: "Travel dates and specials" },
     { href: "/pro/notifications", label: "Notifications", note: "What we send you and when" },
     { href: "/pro/subscription", label: "Subscription", note: "Plan, billing and cancellation" },
     { href: "/reset-password", label: "Password", note: "Change your sign-in password" },

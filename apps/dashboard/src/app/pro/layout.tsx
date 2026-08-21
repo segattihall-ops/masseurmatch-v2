@@ -10,7 +10,7 @@ import { requireTherapist } from "@/lib/guards";
  * exists.
  */
 export default async function ProLayout({ children }: { children: React.ReactNode }) {
-  await requireTherapist("/pro");
+  await requireTherapist("/pro/dashboard");
 
   return (
     <div className="flex min-h-screen bg-muted/40">

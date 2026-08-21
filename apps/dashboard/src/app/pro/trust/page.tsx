@@ -43,7 +43,7 @@ export default async function ProTrustPage() {
     {
       label: "Visibility",
       value: data.toggles.visible ? "On" : "Off",
-      href: "/pro",
+      href: "/pro/dashboard",
     },
     {
       label: "Approved photos",

@@ -30,7 +30,7 @@ export async function toggleAvailableNow(next: boolean): Promise<ToggleResult> {
  * come back to a queue.
  */
 export async function toggleVisibility(next: boolean): Promise<ToggleResult> {
-  const viewer = await requireTherapist("/pro");
+  const viewer = await requireTherapist("/pro/dashboard");
 
   const written = await updateMyProfile(viewer.user.id, {
     visibility_status: next ? PUBLIC : HIDDEN,
