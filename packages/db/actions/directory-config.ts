@@ -51,6 +51,7 @@ export interface TherapistListing {
   lgbtq_affirming: boolean | null;
   /** Raw `jsonb`. Read it through `parseTravelSchedule` — never index it directly. */
   travel_schedule: unknown;
+  years_experience: number | null;
   updated_at: string | null;
 }
 
@@ -65,7 +66,6 @@ export interface ProfilePhoto {
 export interface ProfileDetail extends TherapistListing {
   bio: string | null;
   tagline: string | null;
-  years_experience: number | null;
   languages: string[] | null;
   website: string | null;
   latitude: number | null;
@@ -90,9 +90,15 @@ export type DirectorySort = "recommended" | "price" | "rating";
 
 export const DIRECTORY_SORTS: DirectorySort[] = ["recommended", "price", "rating"];
 
+export type DirectoryTier = "free" | "standard" | "pro" | "elite";
+export const DIRECTORY_TIERS: DirectoryTier[] = ["free", "standard", "pro", "elite"];
+
 /** Filters accepted by the search page, parsed from searchParams. */
 export interface DirectoryFilters {
+  /** URL-safe city slug. */
   city?: string;
+  /** Two-letter state slug when known; keeps duplicate city names unambiguous. */
+  state?: string;
   service?: string;
   query?: string;
   /** Where the session happens. Omitted means either. */
@@ -103,9 +109,23 @@ export interface DirectoryFilters {
   verified?: boolean;
   /** Only therapists who marked their practice LGBTQ+ affirming. */
   lgbtq?: boolean;
+  minPrice?: number;
   /** Keep listings whose cheapest offered session is at or under this. */
   maxPrice?: number;
+  /** Effective tier, after paid-status/courtesy-grant expiry is resolved. */
+  tier?: DirectoryTier;
+  /** Experience threshold; the OLD "Master" filter maps to 10. */
+  minExperienceYears?: number;
   sort?: DirectorySort;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface DirectorySearchResult {
+  items: TherapistListing[];
+  total: number;
+  page: number;
+  pageSize: number;
 }
 
 /**
