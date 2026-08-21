@@ -105,7 +105,9 @@ export async function setPrimaryPhoto(_prev: StepState, formData: FormData): Pro
 
   // Keep the public card's denormalised copy in step with the new choice.
   const url = chosen?.[0]?.url;
-  if (url) await updateMyProfile(userId, { photo_url: url, avatar_url: url });
+  if (url) {
+    await updateMyProfile(userId, { photo_url: url, avatar_url: url });
+  }
 
   revalidatePath("/therapist/photos");
   return { ok: true };
