@@ -84,7 +84,9 @@ type GrowthResponse = {
 };
 
 function normalizeTravel(value: unknown): TravelEntry[] {
-  return Array.isArray(value) ? (value.filter((item) => item && typeof item === "object") as TravelEntry[]) : [];
+  return Array.isArray(value)
+    ? (value.filter((item) => item && typeof item === "object") as TravelEntry[])
+    : [];
 }
 
 function isTravelCurrentOrUpcoming(trips: TravelEntry[]) {
@@ -118,7 +120,9 @@ function StatusCard({
           </div>
         </div>
         {typeof active === "boolean" ? (
-          <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${active ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
+          <span
+            className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${active ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"}`}
+          >
             {active ? "ON" : "OFF"}
           </span>
         ) : null}
@@ -128,7 +132,19 @@ function StatusCard({
   );
 }
 
-function MetricCard({ label, value, detail, icon: Icon, href }: { label: string; value: string; detail: string; icon: typeof Zap; href?: string }) {
+function MetricCard({
+  label,
+  value,
+  detail,
+  icon: Icon,
+  href,
+}: {
+  label: string;
+  value: string;
+  detail: string;
+  icon: typeof Zap;
+  href?: string;
+}) {
   const body = (
     <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
       <div className="flex items-start justify-between gap-3">
@@ -166,15 +182,20 @@ export default function ProDashboardPage() {
           title: "Could not load dashboard",
           description: error instanceof Error ? error.message : "Try again.",
           variant: "destructive",
-        })
+        }),
       )
       .finally(() => setLoading(false));
   }, [toast]);
 
-  const trips = useMemo(() => normalizeTravel(profile?.travel_schedule), [profile?.travel_schedule]);
+  const trips = useMemo(
+    () => normalizeTravel(profile?.travel_schedule),
+    [profile?.travel_schedule],
+  );
   const traveling = isTravelCurrentOrUpcoming(trips);
   const availableNow = Boolean(
-    profile?.available_now && (!profile.available_now_expires || new Date(profile.available_now_expires).getTime() > Date.now())
+    profile?.available_now &&
+    (!profile.available_now_expires ||
+      new Date(profile.available_now_expires).getTime() > Date.now()),
   );
   const visible = profile?.is_active !== false && profile?.visibility_status !== "hidden";
   const displayName = profile?.display_name || profile?.full_name || "Your profile";
@@ -237,9 +258,15 @@ export default function ProDashboardPage() {
     <main className="mx-auto max-w-6xl space-y-6 p-4 pb-28 md:p-8">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Provider dashboard</p>
-          <h1 className="mt-2 font-display text-3xl font-semibold tracking-tight text-slate-900">{displayName}</h1>
-          <p className="mt-1 text-sm text-slate-500">Live profile, visibility, growth and trust signals from your account.</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+            Provider dashboard
+          </p>
+          <h1 className="mt-2 font-display text-3xl font-semibold tracking-tight text-slate-900">
+            {displayName}
+          </h1>
+          <p className="mt-1 text-sm text-slate-500">
+            Live profile, visibility, growth and trust signals from your account.
+          </p>
         </div>
         <Link href="/pro/listing" className={buttonVariants({ variant: "outline" })}>
           <Settings className="mr-2 h-4 w-4" />
@@ -249,65 +276,166 @@ export default function ProDashboardPage() {
 
       {!approved ? (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-          <strong>Profile status: {profileStatus}.</strong> Your data remains saved, but public directory discovery requires an approved profile.
+          <strong>Profile status: {profileStatus}.</strong> Your data remains saved, but public
+          directory discovery requires an approved profile.
         </div>
       ) : null}
 
       {!visible ? (
         <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">
-          Your profile is OFF and hidden from public discovery. Available Now, travel and mobile settings remain saved.
+          Your profile is OFF and hidden from public discovery. Available Now, travel and mobile
+          settings remain saved.
         </div>
       ) : null}
 
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
-        <MetricCard label="Profile status" value={profileStatus.replace(/_/g, " ")} detail={visible ? "Visibility enabled" : "Visibility hidden"} icon={ShieldCheck} href="/pro/approval-status" />
-        <MetricCard label="AI profile score" value={ai?.profile_score != null ? `${ai.profile_score}/100` : "—"} detail={ai?.top_recommendation_title || "Open AI Coach to generate a score"} icon={Sparkles} href="/pro/ai-coach" />
-        <MetricCard label="Views · 7 days" value={String(ai?.profile_views_7d ?? 0)} detail={`${ai?.profile_views_30d ?? profile?.profile_views ?? 0} in 30 days`} icon={BarChart3} href="/pro/analytics" />
-        <MetricCard label="Contact clicks · 7d" value={String(ai?.contact_clicks_7d ?? 0)} detail={ai?.contact_rate_pct != null ? `${Number(ai.contact_rate_pct).toFixed(1)}% contact rate` : "Contact activity"} icon={TrendingUp} href="/pro/analytics" />
-        <MetricCard label="Local demand" value={ai?.local_demand_score != null ? String(ai.local_demand_score) : "—"} detail={ai?.local_demand_trend || ai?.strongest_keyword || "Demand Radar data"} icon={TrendingUp} href="/pro/demand-radar" />
-        <MetricCard label="Profile completion" value={profile?.profile_completion_score != null ? `${profile.profile_completion_score}%` : "—"} detail="Production profile completeness" icon={Settings} href="/pro/listing" />
+        <MetricCard
+          label="Profile status"
+          value={profileStatus.replace(/_/g, " ")}
+          detail={visible ? "Visibility enabled" : "Visibility hidden"}
+          icon={ShieldCheck}
+          href="/pro/approval-status"
+        />
+        <MetricCard
+          label="AI profile score"
+          value={ai?.profile_score != null ? `${ai.profile_score}/100` : "—"}
+          detail={ai?.top_recommendation_title || "Open AI Coach to generate a score"}
+          icon={Sparkles}
+          href="/pro/ai-coach"
+        />
+        <MetricCard
+          label="Views · 7 days"
+          value={String(ai?.profile_views_7d ?? 0)}
+          detail={`${ai?.profile_views_30d ?? profile?.profile_views ?? 0} in 30 days`}
+          icon={BarChart3}
+          href="/pro/analytics"
+        />
+        <MetricCard
+          label="Contact clicks · 7d"
+          value={String(ai?.contact_clicks_7d ?? 0)}
+          detail={
+            ai?.contact_rate_pct != null
+              ? `${Number(ai.contact_rate_pct).toFixed(1)}% contact rate`
+              : "Contact activity"
+          }
+          icon={TrendingUp}
+          href="/pro/analytics"
+        />
+        <MetricCard
+          label="Local demand"
+          value={ai?.local_demand_score != null ? String(ai.local_demand_score) : "—"}
+          detail={ai?.local_demand_trend || ai?.strongest_keyword || "Demand Radar data"}
+          icon={TrendingUp}
+          href="/pro/demand-radar"
+        />
+        <MetricCard
+          label="Profile completion"
+          value={
+            profile?.profile_completion_score != null ? `${profile.profile_completion_score}%` : "—"
+          }
+          detail="Production profile completeness"
+          icon={Settings}
+          href="/pro/listing"
+        />
       </section>
 
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <MetricCard label="Photos" value={`${insights.photos?.approved ?? 0} approved`} detail={`${insights.photos?.pending ?? 0} pending · ${insights.photos?.rejected ?? 0} rejected`} icon={Camera} href="/pro/photos" />
-        <MetricCard label="Identity" value={(insights.identityStatus || "not_started").replace(/_/g, " ")} detail="Latest verification state" icon={ShieldCheck} />
-        <MetricCard label="Support" value={String(insights.supportOpen ?? 0)} detail="Open or in progress tickets" icon={LifeBuoy} />
-        <MetricCard label="Notifications" value={String(insights.unreadNotifications ?? 0)} detail="Unread account notifications" icon={Bell} />
+        <MetricCard
+          label="Photos"
+          value={`${insights.photos?.approved ?? 0} approved`}
+          detail={`${insights.photos?.pending ?? 0} pending · ${insights.photos?.rejected ?? 0} rejected`}
+          icon={Camera}
+          href="/pro/photos"
+        />
+        <MetricCard
+          label="Identity"
+          value={(insights.identityStatus || "not_started").replace(/_/g, " ")}
+          detail="Latest verification state"
+          icon={ShieldCheck}
+        />
+        <MetricCard
+          label="Support"
+          value={String(insights.supportOpen ?? 0)}
+          detail="Open or in progress tickets"
+          icon={LifeBuoy}
+        />
+        <MetricCard
+          label="Notifications"
+          value={String(insights.unreadNotifications ?? 0)}
+          detail="Unread account notifications"
+          icon={Bell}
+        />
       </section>
 
       {ai?.top_recommendation_action ? (
         <section className="rounded-2xl border border-indigo-200 bg-indigo-50 p-5">
-          <p className="text-xs font-semibold uppercase tracking-wide text-indigo-500">AI Coach next action</p>
-          <h2 className="mt-2 font-semibold text-indigo-950">{ai.top_recommendation_title || "Improve your profile"}</h2>
+          <p className="text-xs font-semibold uppercase tracking-wide text-indigo-500">
+            AI Coach next action
+          </p>
+          <h2 className="mt-2 font-semibold text-indigo-950">
+            {ai.top_recommendation_title || "Improve your profile"}
+          </h2>
           <p className="mt-1 text-sm leading-6 text-indigo-800">{ai.top_recommendation_action}</p>
-          <Link href="/pro/ai-coach" className={buttonVariants({ size: "sm", variant: "primary" }) + " mt-4"}>Open AI Coach</Link>
+          <Link
+            href="/pro/ai-coach"
+            className={buttonVariants({ size: "sm", variant: "primary" }) + " mt-4"}
+          >
+            Open AI Coach
+          </Link>
         </section>
       ) : null}
 
       <div className="grid gap-4 md:grid-cols-2">
-        <StatusCard icon={Zap} title="Available Now" active={availableNow} description="Temporary live badge. This can be active at the same time as travel and mobile service.">
+        <StatusCard
+          icon={Zap}
+          title="Available Now"
+          active={availableNow}
+          description="Temporary live badge. This can be active at the same time as travel and mobile service."
+        >
           <Button onClick={toggleAvailableNow} disabled={saving === "available"}>
-            {saving === "available" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}
+            {saving === "available" ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Zap className="mr-2 h-4 w-4" />
+            )}
             {availableNow ? "Turn off live badge" : "Activate Available Now"}
           </Button>
         </StatusCard>
 
-        <StatusCard icon={Plane} title="Traveling" active={traveling} description="Travel dates surface approved profiles in destination city discovery.">
+        <StatusCard
+          icon={Plane}
+          title="Traveling"
+          active={traveling}
+          description="Travel dates surface approved profiles in destination city discovery."
+        >
           <Link href="/pro/growth" className={buttonVariants({ variant: "outline" })}>
             <Plane className="mr-2 h-4 w-4" />
             Manage travel dates
           </Link>
         </StatusCard>
 
-        <StatusCard icon={Car} title="Mobile / Outcall" description="Configure outcall service and radius separately from Available Now and travel.">
+        <StatusCard
+          icon={Car}
+          title="Mobile / Outcall"
+          description="Configure outcall service and radius separately from Available Now and travel."
+        >
           <Link href="/pro/listing" className={buttonVariants({ variant: "outline" })}>
             <Car className="mr-2 h-4 w-4" />
             Configure mobile service
           </Link>
         </StatusCard>
 
-        <StatusCard icon={visible ? Eye : EyeOff} title="Profile visibility" active={visible} description="Visibility controls discovery, while approval remains a separate trust state.">
-          <Button variant={visible ? "outline" : "primary"} onClick={toggleVisibility} disabled={saving === "visibility"}>
+        <StatusCard
+          icon={visible ? Eye : EyeOff}
+          title="Profile visibility"
+          active={visible}
+          description="Visibility controls discovery, while approval remains a separate trust state."
+        >
+          <Button
+            variant={visible ? "outline" : "primary"}
+            onClick={toggleVisibility}
+            disabled={saving === "visibility"}
+          >
             {saving === "visibility" ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : visible ? (
@@ -323,12 +451,24 @@ export default function ProDashboardPage() {
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <h2 className="font-display text-base font-semibold text-slate-900">Quick actions</h2>
         <div className="mt-4 flex flex-wrap gap-2">
-          <Link href="/pro/listing" className={buttonVariants({ variant: "outline" })}>Profile & pricing</Link>
-          <Link href="/pro/growth" className={buttonVariants({ variant: "outline" })}>Travel & specials</Link>
-          <Link href="/pro/photos" className={buttonVariants({ variant: "outline" })}>Photos</Link>
-          <Link href="/pro/analytics" className={buttonVariants({ variant: "outline" })}>Analytics</Link>
-          <Link href="/pro/ai-coach" className={buttonVariants({ variant: "outline" })}>AI Coach</Link>
-          <Link href="/pro/subscription" className={buttonVariants({ variant: "outline" })}>Subscription</Link>
+          <Link href="/pro/listing" className={buttonVariants({ variant: "outline" })}>
+            Profile & pricing
+          </Link>
+          <Link href="/pro/growth" className={buttonVariants({ variant: "outline" })}>
+            Travel & specials
+          </Link>
+          <Link href="/pro/photos" className={buttonVariants({ variant: "outline" })}>
+            Photos
+          </Link>
+          <Link href="/pro/analytics" className={buttonVariants({ variant: "outline" })}>
+            Analytics
+          </Link>
+          <Link href="/pro/ai-coach" className={buttonVariants({ variant: "outline" })}>
+            AI Coach
+          </Link>
+          <Link href="/pro/subscription" className={buttonVariants({ variant: "outline" })}>
+            Subscription
+          </Link>
         </div>
       </section>
     </main>
