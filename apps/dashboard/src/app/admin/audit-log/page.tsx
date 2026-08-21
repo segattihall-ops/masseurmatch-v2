@@ -49,11 +49,17 @@ export default async function AuditLogPage({
           placeholder="Search action, target type, or target id"
           className="w-full max-w-md rounded-lg border border-ink/15 bg-transparent px-3 py-2 text-sm text-ink"
         />
-        <button type="submit" className="rounded-lg bg-wine px-4 py-2 text-sm font-medium text-white">
+        <button
+          type="submit"
+          className="rounded-lg bg-wine px-4 py-2 text-sm font-medium text-white"
+        >
           Search
         </button>
         {q ? (
-          <Link href="/admin/audit-log" className="rounded-lg border border-ink/15 px-4 py-2 text-sm text-ink/70">
+          <Link
+            href="/admin/audit-log"
+            className="rounded-lg border border-ink/15 px-4 py-2 text-sm text-ink/70"
+          >
             Clear
           </Link>
         ) : null}
@@ -83,12 +89,18 @@ export default async function AuditLogPage({
                 <td className="px-4 py-3 font-medium text-ink">{row.action}</td>
                 <td className="px-4 py-3 text-ink/70">
                   <p>{row.targetType ?? "—"}</p>
-                  <p className="max-w-[260px] truncate text-xs text-ink/45" title={row.targetId ?? undefined}>
+                  <p
+                    className="max-w-[260px] truncate text-xs text-ink/45"
+                    title={row.targetId ?? undefined}
+                  >
                     {row.targetId ?? "—"}
                   </p>
                 </td>
                 <td className="max-w-md px-4 py-3 text-ink/70">{row.reason ?? "—"}</td>
-                <td className="max-w-[180px] truncate px-4 py-3 text-xs text-ink/45" title={row.adminUserId ?? undefined}>
+                <td
+                  className="max-w-[180px] truncate px-4 py-3 text-xs text-ink/45"
+                  title={row.adminUserId ?? undefined}
+                >
                   {row.adminUserId ?? "system"}
                 </td>
               </tr>
