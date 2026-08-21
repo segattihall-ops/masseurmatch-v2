@@ -2,15 +2,30 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, FileCheck, LifeBuoy, LogOut, Shield, TrendingUp, Users } from "lucide-react";
+import {
+  BarChart3,
+  Camera,
+  FileCheck,
+  Flag,
+  LifeBuoy,
+  LogOut,
+  ScrollText,
+  Shield,
+  TrendingUp,
+  Users,
+} from "lucide-react";
+
 import { signOut } from "@/app/sign-in/actions";
 
 const ADMIN_LINKS = [
   { href: "/admin", label: "Overview", icon: BarChart3 },
   { href: "/admin/people", label: "People", icon: Users },
-  { href: "/admin/moderation", label: "Moderation", icon: Shield },
+  { href: "/admin/moderation", label: "Approvals", icon: Shield },
+  { href: "/admin/photos", label: "Photos", icon: Camera },
   { href: "/admin/verifications", label: "Verifications", icon: FileCheck },
+  { href: "/admin/reports", label: "Reports", icon: Flag },
   { href: "/admin/tickets", label: "Tickets", icon: LifeBuoy },
+  { href: "/admin/audit-log", label: "Audit Log", icon: ScrollText },
   { href: "/admin/demand-radar", label: "Demand Radar", icon: TrendingUp },
 ];
 
@@ -21,10 +36,10 @@ export function AdminSidebar() {
     <aside className="w-64 border-r border-border bg-surface p-6">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-text-primary">MM Admin</h1>
-        <p className="text-sm text-text-secondary">Dashboard</p>
+        <p className="text-sm text-text-secondary">Operations</p>
       </div>
 
-      <nav className="mb-8 space-y-2">
+      <nav aria-label="Admin" className="mb-8 space-y-2">
         {ADMIN_LINKS.map((link) => {
           const Icon = link.icon;
           const isActive = pathname === link.href || pathname.startsWith(link.href + "/");
@@ -38,7 +53,7 @@ export function AdminSidebar() {
                   : "text-text-secondary hover:bg-surface-hover"
               }`}
             >
-              <Icon className="h-5 w-5" />
+              <Icon className="h-5 w-5" aria-hidden="true" />
               {link.label}
             </Link>
           );
@@ -46,10 +61,11 @@ export function AdminSidebar() {
       </nav>
 
       <button
+        type="button"
         onClick={() => signOut()}
         className="flex w-full items-center gap-3 rounded-lg px-4 py-2 text-sm font-medium text-text-secondary transition hover:bg-surface-hover"
       >
-        <LogOut className="h-5 w-5" />
+        <LogOut className="h-5 w-5" aria-hidden="true" />
         Sign Out
       </button>
     </aside>
