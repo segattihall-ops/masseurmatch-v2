@@ -130,7 +130,10 @@ export default async function ManualVerificationPage({
                         Open {document.label} ↗
                       </a>
                     ) : (
-                      <span key={document.path} className="rounded-lg bg-ink/5 px-3 py-2 text-sm text-ink/50">
+                      <span
+                        key={document.path}
+                        className="rounded-lg bg-ink/5 px-3 py-2 text-sm text-ink/50"
+                      >
                         {document.label} unavailable
                       </span>
                     ),
@@ -141,9 +144,15 @@ export default async function ManualVerificationPage({
                 </div>
 
                 {row.status === "pending" ? (
-                  <form action={decideManualIdentity} className="mt-5 space-y-3 border-t border-ink/10 pt-4">
+                  <form
+                    action={decideManualIdentity}
+                    className="mt-5 space-y-3 border-t border-ink/10 pt-4"
+                  >
                     <input type="hidden" name="verification_id" value={row.id} />
-                    <label htmlFor={`identity-reason-${row.id}`} className="text-sm font-medium text-ink">
+                    <label
+                      htmlFor={`identity-reason-${row.id}`}
+                      className="text-sm font-medium text-ink"
+                    >
                       Review reason
                     </label>
                     <textarea
