@@ -18,7 +18,7 @@ function pageHref(q: string, status: string, page: number): string {
   if (status) params.set("status", status);
   if (page > 1) params.set("page", String(page));
   const qs = params.toString();
-  return qs ? `/admin/people?${qs}` : "/admin/people";
+  return qs ? `/people?${qs}` : "/people";
 }
 
 export default async function AdminPeoplePage({
@@ -26,7 +26,7 @@ export default async function AdminPeoplePage({
 }: {
   searchParams: { q?: string; status?: string; page?: string };
 }) {
-  await requireAdmin("/admin/people");
+  await requireAdmin("/people");
 
   const q = (searchParams.q ?? "").trim();
   const status = (searchParams.status ?? "").trim();
@@ -36,33 +36,33 @@ export default async function AdminPeoplePage({
   const pages = Math.max(1, Math.ceil(total / PEOPLE_PAGE_SIZE));
 
   return (
-    <main className="mx-auto w-full max-w-6xl px-6 py-12">
-      <h1 className="text-3xl font-semibold text-ink">People</h1>
+    <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
+      <h1 className="text-2xl font-semibold text-ink sm:text-3xl">People</h1>
       <p className="mt-1 text-sm text-ink/60">
         Every profile in the database — {total} match{total === 1 ? "" : "es"}.
       </p>
 
-      <form method="get" action="/admin/people" className="mt-6 flex flex-wrap items-center gap-3">
+      <form method="get" action="/people" className="mt-6 grid gap-3 sm:flex sm:flex-wrap sm:items-center">
         <input
           type="search"
           name="q"
           defaultValue={q}
           placeholder="Search name, email, or city"
-          className="w-72 rounded-lg border border-ink/15 bg-transparent px-3 py-2 text-sm text-ink placeholder:text-ink/40"
+          className="min-h-11 w-full rounded-lg border border-ink/15 bg-transparent px-3 py-2 text-base text-ink placeholder:text-ink/40 sm:w-72 sm:text-sm"
         />
         {status ? <input type="hidden" name="status" value={status} /> : null}
         <button
           type="submit"
-          className="rounded-lg bg-wine px-4 py-2 text-sm font-medium text-white"
+          className="min-h-11 w-full rounded-lg bg-wine px-4 py-2 text-sm font-medium text-white sm:w-auto"
         >
           Search
         </button>
       </form>
 
-      <div className="mt-4 flex flex-wrap gap-2 text-sm">
+      <div className="mt-4 flex gap-2 overflow-x-auto pb-1 text-sm sm:flex-wrap sm:overflow-visible">
         <Link
           href={pageHref(q, "", 1)}
-          className={`rounded-full px-3 py-1 ${status === "" ? "bg-wine text-white" : "bg-ink/5 text-ink/70 hover:bg-ink/10"}`}
+          className={`shrink-0 rounded-full px-3 py-1.5 ${status === "" ? "bg-wine text-white" : "bg-ink/5 text-ink/70 hover:bg-ink/10"}`}
         >
           All
         </Link>
@@ -70,7 +70,7 @@ export default async function AdminPeoplePage({
           <Link
             key={s}
             href={pageHref(q, s, 1)}
-            className={`rounded-full px-3 py-1 capitalize ${status === s ? "bg-wine text-white" : "bg-ink/5 text-ink/70 hover:bg-ink/10"}`}
+            className={`shrink-0 rounded-full px-3 py-1.5 capitalize ${status === s ? "bg-wine text-white" : "bg-ink/5 text-ink/70 hover:bg-ink/10"}`}
           >
             {s}
           </Link>
@@ -117,7 +117,7 @@ export default async function AdminPeoplePage({
                     .filter(Boolean)
                     .join(" · ") || "—"}
                 </td>
-                <td className="px-4 py-3 whitespace-nowrap text-ink/50">
+                <td className="whitespace-nowrap px-4 py-3 text-ink/50">
                   {new Date(person.updated_at).toLocaleDateString()}
                 </td>
               </tr>
@@ -134,12 +134,14 @@ export default async function AdminPeoplePage({
       </Card>
 
       {pages > 1 ? (
-        <div className="mt-4 flex items-center gap-3 text-sm">
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm sm:justify-start">
           {page > 1 ? (
             <Link href={pageHref(q, status, page - 1)} className="text-wine hover:underline">
               ← Previous
             </Link>
-          ) : null}
+          ) : (
+            <span />
+          )}
           <span className="text-ink/50">
             Page {page} of {pages}
           </span>
