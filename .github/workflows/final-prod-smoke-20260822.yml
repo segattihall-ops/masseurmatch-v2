@@ -12,35 +12,34 @@ jobs:
   smoke:
     runs-on: ubuntu-24.04
     env:
-      HAS_VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN != '' }}
-      HAS_VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID != '' }}
-      HAS_VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID != '' }}
-      HAS_VERCEL_TEAM_ID: ${{ secrets.VERCEL_TEAM_ID != '' }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      TEAM_ID: team_srSjjkFDYeFA6HpxgpvxPgox
+      MAIN_SHA: 82fde23aa6b529e6126c4a85b2232084dbd507ae
     steps:
-      - name: Check deploy credential availability without exposing values
+      - name: Inspect Vercel project, domains and deployments
         shell: bash
         run: |
           set -euo pipefail
-          echo "VERCEL_TOKEN present=$HAS_VERCEL_TOKEN"
-          echo "VERCEL_ORG_ID present=$HAS_VERCEL_ORG_ID"
-          echo "VERCEL_PROJECT_ID present=$HAS_VERCEL_PROJECT_ID"
-          echo "VERCEL_TEAM_ID present=$HAS_VERCEL_TEAM_ID"
 
-      - name: Diagnose production domain deployment
-        shell: bash
-        run: |
-          set -euo pipefail
-          inspect() {
-            local name="$1" url="$2"
-            local headers body status
-            headers="$(mktemp)"
-            body="$(mktemp)"
-            status="$(curl -sS -L --max-redirs 8 --connect-timeout 10 --max-time 45 -D "$headers" -o "$body" -w '%{http_code}' "$url")"
-            echo "=== $name status=$status ==="
-            grep -Ei '^(x-vercel-|server:|age:|cache-control:|location:)' "$headers" || true
-            echo -n 'deployment tokens: '
-            grep -Eo 'dpl_[A-Za-z0-9]+' "$body" | sort -u | head -10 | tr '\n' ' ' || true
-            echo
-          }
-          inspect homepage https://www.masseurmatch.com/
-          inspect canonical-city https://www.masseurmatch.com/ca/san-francisco
+          project="$(curl -fsS -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v9/projects/masseurmatch-v2?teamId=$TEAM_ID")"
+          project_id="$(printf '%s' "$project" | jq -r '.id')"
+          echo "project_id=$project_id"
+          printf '%s' "$project" | jq '{name,id,rootDirectory,link:{type:.link.type,org:.link.org,repo:.link.repo,productionBranch:.link.productionBranch}}'
+
+          echo '=== project domains ==='
+          curl -fsS -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v9/projects/masseurmatch-v2/domains?teamId=$TEAM_ID&limit=100" \
+            | jq '.domains[] | {name,gitBranch,redirect,verified,projectId}'
+
+          echo '=== recent deployments ==='
+          deployments="$(curl -fsS -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v6/deployments?projectId=$project_id&teamId=$TEAM_ID&limit=30")"
+          printf '%s' "$deployments" | jq '.deployments[] | {uid,url,state,target,created,ready,meta:{githubCommitSha:.meta.githubCommitSha,githubCommitRef:.meta.githubCommitRef,githubCommitMessage:.meta.githubCommitMessage}}'
+
+          echo '=== current main deployment ==='
+          printf '%s' "$deployments" | jq --arg sha "$MAIN_SHA" '.deployments[] | select(.meta.githubCommitSha == $sha) | {uid,url,state,target,created,ready,meta:{githubCommitSha:.meta.githubCommitSha,githubCommitRef:.meta.githubCommitRef}}'
+
+          echo '=== live domain token ==='
+          body="$(mktemp)"
+          headers="$(mktemp)"
+          curl -sS -L --connect-timeout 10 --max-time 45 -D "$headers" -o "$body" 'https://www.masseurmatch.com/'
+          grep -Ei '^(x-vercel-|server:|age:|cache-control:)' "$headers" || true
+          grep -Eo 'dpl_[A-Za-z0-9]+' "$body" | sort -u | head -10 || true
