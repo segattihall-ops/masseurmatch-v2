@@ -8,6 +8,9 @@ import { contentSecurityPolicy, securityHeaders } from "@masseurmatch/config/sec
 // policy — verified, not theorised.
 const csp = contentSecurityPolicy({
   supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
+  // Public profiles show only an approximate service-area map. Keep the
+  // frame allowlist narrow so arbitrary third-party embeds remain blocked.
+  extraFrame: ["https://www.openstreetmap.org"],
 });
 
 /**
