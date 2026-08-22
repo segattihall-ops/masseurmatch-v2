@@ -23,7 +23,7 @@ export const metadata: Metadata = {
 
 export default function Page() {
   return (
-    <LegalPage title={TITLE} path={PATH} lastUpdated="June 29, 2026">
+    <LegalPage title={TITLE} path={PATH} lastUpdated="August 22, 2026">
       <p>
         These Provider Terms apply to independent massage therapists, bodywork practitioners, and
         wellness providers (&quot;Providers&quot;) who create, maintain, or pay for a listing on
@@ -131,9 +131,17 @@ export default function Page() {
 
       <h2>10. Billing</h2>
       <p>
-        Paid listings renew automatically unless canceled before the renewal date. Failed payments
-        may result in listing suspension. Refunds are governed by the
+        Paid listings renew automatically unless canceled before the renewal date. MasseurMatch uses
+        PayPal as its third-party payment processor for paid platform products. By purchasing or
+        renewing a paid listing, you authorize PayPal to process the applicable charges under the
+        <a href="/subscriptions">Paid Subscription and Add-On Terms</a>. Failed, declined, reversed,
+        or incomplete payments may result in listing suspension. Refunds are governed by the
         <a href="/refund-policy">Refund and Cancellation Policy</a>.
+      </p>
+      <p>
+        MasseurMatch does not process or collect payments between Providers and clients for massage
+        or bodywork sessions. Those transactions remain solely between the independent Provider and
+        the client.
       </p>
 
       <h2>11. Changes to These Terms</h2>
