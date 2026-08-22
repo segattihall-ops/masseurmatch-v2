@@ -18,27 +18,21 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 /**
- * Identity verification page.
+ * Manual identity verification page.
  *
- * Allows therapists to submit government ID and a selfie for identity verification.
- * The verification is reviewed by our team and results in a trust badge on their
- * public listing when approved.
- *
- * This is separate from profile approval — verification confirms the person is who
- * they claim to be, while profile approval is about content moderation.
+ * Therapists submit a government ID and selfie. An authorized MasseurMatch
+ * admin reviews the submission and decides whether the identity badge is
+ * granted. No third-party identity provider participates in this flow.
  */
 export default async function VerifyIdPage() {
   const viewer = await requireUser("/verify-id");
   const { profile } = await getOrCreateMyProfile(viewer.user.id);
 
-  // The verification row, not just the profile flag. The flag alone cannot say
-  // whether a submission is waiting on review or came back needing another one:
-  // both read as "not verified", which left a rejected therapist staring at a
-  // blank form with no reason and nothing to act on.
   const { data: latest } = await createServiceClient()
     .from("identity_verifications")
     .select("status, last_error")
     .eq("user_id", viewer.user.id)
+    .eq("provider", "manual")
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -54,8 +48,9 @@ export default async function VerifyIdPage() {
       <Card className="w-full p-8">
         <h1 className="text-2xl font-semibold text-ink">Verify your identity</h1>
         <p className="mt-1 mb-6 text-sm text-ink/60">
-          Upload a government ID and current selfie. Our team will review your documents within 1–3
-          business days. Once verified, a trust badge appears on your public listing.
+          Upload a government ID and current selfie. A MasseurMatch admin will manually review your
+          documents within 1–3 business days. Once approved, a trust badge appears on your public
+          listing.
         </p>
 
         {verified ? (
