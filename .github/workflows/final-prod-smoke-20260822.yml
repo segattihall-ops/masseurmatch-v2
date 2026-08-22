@@ -14,23 +14,50 @@ jobs:
     env:
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
       TEAM_ID: team_srSjjkFDYeFA6HpxgpvxPgox
+      OLD_PROJECT: masseurmatch-3l
+      NEW_PROJECT_ID: prj_nFOivhSy4Ta4j221zzOImPWPwSdv
+      EXPECTED_DEPLOYMENT: dpl_HmAriMzQLqLzo4DUDjvEZx1ydaKY
     steps:
-      - name: Locate current custom-domain ownership
+      - name: Move apex to V2 while preserving redirect
         shell: bash
         run: |
           set -euo pipefail
+          response="$(curl -fsS -X POST \
+            -H "Authorization: Bearer $VERCEL_TOKEN" \
+            -H 'Content-Type: application/json' \
+            "https://api.vercel.com/v1/projects/$OLD_PROJECT/domains/masseurmatch.com/move?teamId=$TEAM_ID" \
+            --data "{\"projectId\":\"$NEW_PROJECT_ID\",\"gitBranch\":null,\"redirect\":\"www.masseurmatch.com\",\"redirectStatusCode\":308}")"
+          printf '%s' "$response" | jq '{name,projectId,redirect,redirectStatusCode,verified}'
+          test "$(printf '%s' "$response" | jq -r '.projectId')" = "$NEW_PROJECT_ID"
+          test "$(printf '%s' "$response" | jq -r '.redirect')" = "www.masseurmatch.com"
 
-          echo '=== all project domains for masseurmatch.com ==='
+      - name: Move www to V2
+        shell: bash
+        run: |
+          set -euo pipefail
+          response="$(curl -fsS -X POST \
+            -H "Authorization: Bearer $VERCEL_TOKEN" \
+            -H 'Content-Type: application/json' \
+            "https://api.vercel.com/v1/projects/$OLD_PROJECT/domains/www.masseurmatch.com/move?teamId=$TEAM_ID" \
+            --data "{\"projectId\":\"$NEW_PROJECT_ID\",\"gitBranch\":null}")"
+          printf '%s' "$response" | jq '{name,projectId,redirect,redirectStatusCode,verified}'
+          test "$(printf '%s' "$response" | jq -r '.projectId')" = "$NEW_PROJECT_ID"
+          test "$(printf '%s' "$response" | jq -r '.name')" = "www.masseurmatch.com"
+
+      - name: Verify domain ownership and production deployment
+        shell: bash
+        run: |
+          set -euo pipefail
           domain_data="$(curl -fsS -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v1/domains/masseurmatch.com/project-domains?teamId=$TEAM_ID&limit=100")"
-          printf '%s' "$domain_data" | jq '.projectDomains[] | {name,apexName,projectId,gitBranch,redirect,redirectStatusCode,verified}'
+          printf '%s' "$domain_data" | jq '.projectDomains[] | select(.name == "masseurmatch.com" or .name == "www.masseurmatch.com") | {name,projectId,redirect,redirectStatusCode,verified}'
+          test "$(printf '%s' "$domain_data" | jq -r --arg pid "$NEW_PROJECT_ID" '[.projectDomains[] | select((.name == "masseurmatch.com" or .name == "www.masseurmatch.com") and .projectId == $pid)] | length')" = "2"
 
-          echo '=== owning projects ==='
-          printf '%s' "$domain_data" | jq -r '.projectDomains[].projectId' | sort -u | while read -r project_id; do
-            [ -n "$project_id" ] || continue
-            curl -fsS -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v9/projects/$project_id?teamId=$TEAM_ID" \
-              | jq '{name,id,rootDirectory,link:{org:.link.org,repo:.link.repo,productionBranch:.link.productionBranch}}'
-          done
-
-          echo '=== target v2 project ==='
-          curl -fsS -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v9/projects/masseurmatch-v2?teamId=$TEAM_ID" \
-            | jq '{name,id,rootDirectory,link:{org:.link.org,repo:.link.repo,productionBranch:.link.productionBranch}}'
+          body="$(mktemp)"
+          headers="$(mktemp)"
+          status="$(curl -sS -L --max-redirs 8 --connect-timeout 10 --max-time 45 -D "$headers" -o "$body" -w '%{http_code}' 'https://www.masseurmatch.com/')"
+          echo "homepage status=$status"
+          grep -Ei '^(x-vercel-|server:|age:|cache-control:)' "$headers" || true
+          token="$(grep -Eo 'dpl_[A-Za-z0-9]+' "$body" | sort -u | head -1 || true)"
+          echo "live deployment=$token"
+          test "$status" = "200"
+          test "$token" = "$EXPECTED_DEPLOYMENT"
