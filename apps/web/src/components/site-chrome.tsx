@@ -1,14 +1,8 @@
 import Link from "next/link";
 
-import { SITE_NAME } from "@/lib/site";
+import { SITE_NAME, signUpUrl } from "@/lib/site";
 
-/** Primary navigation. Plain links — no client JS needed. */
-const NAV = [
-  { href: "/search", label: "Find a therapist" },
-  { href: "/cities", label: "Cities" },
-  { href: "/guides", label: "Guides" },
-  { href: "/for-therapists", label: "For therapists" },
-];
+import { SiteNav } from "./site-nav";
 
 /**
  * Footer navigation.
@@ -77,9 +71,28 @@ const FOOTER_GROUPS: { heading: string; links: { href: string; label: string }[]
   },
 ];
 
+/**
+ * The bar at the top of every page.
+ *
+ * Sticky, because the site's pages are long — the home page is over eleven
+ * thousand pixels on a phone — and navigation you have to scroll back up to
+ * reach is navigation people stop using.
+ *
+ * `z-50` against the bottom bar's `z-40`, and not the other way round. A
+ * `sticky` element with a z-index opens its own stacking context, so the
+ * drawer rendered inside this header cannot outrank a sibling of the header
+ * however high its own z-index goes — it was being painted over by the bottom
+ * bar, which is later in the document at the same level.
+ *
+ * A server component that hands the client nav one value: `signUpUrl()` reads a
+ * non-public environment variable and `@/lib/site` is `server-only`, so it
+ * cannot be called from inside the menu itself. Null when this deployment has
+ * not been told where the dashboard lives, in which case the button points at
+ * `/for-therapists` rather than nowhere.
+ */
 export function SiteHeader() {
   return (
-    <header className="border-b border-border bg-bg-surface">
+    <header className="sticky top-0 z-50 border-b border-border bg-bg-surface">
       <nav
         aria-label="Primary"
         className="mx-auto flex min-h-16 w-full max-w-6xl items-center justify-between gap-4 px-5 py-3 sm:gap-6 sm:px-6"
@@ -91,37 +104,7 @@ export function SiteHeader() {
           {SITE_NAME}
         </Link>
 
-        <ul className="hidden list-none items-center gap-6 p-0 text-sm sm:flex">
-          {NAV.map((item) => (
-            <li key={item.href}>
-              <Link
-                href={item.href}
-                className="text-text-secondary transition-colors hover:text-brand-secondary"
-              >
-                {item.label}
-              </Link>
-            </li>
-          ))}
-        </ul>
-
-        <ul className="flex list-none items-center gap-3 p-0 text-xs sm:hidden">
-          <li>
-            <Link
-              href="/search"
-              className="whitespace-nowrap font-medium text-text-secondary transition-colors hover:text-brand-secondary"
-            >
-              Find
-            </Link>
-          </li>
-          <li>
-            <Link
-              href="/for-therapists"
-              className="whitespace-nowrap font-medium text-brand-secondary transition-colors hover:text-action-primary-hover"
-            >
-              List
-            </Link>
-          </li>
-        </ul>
+        <SiteNav signUpHref={signUpUrl()} />
       </nav>
     </header>
   );
