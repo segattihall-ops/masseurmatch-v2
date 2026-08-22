@@ -11,18 +11,25 @@ permissions:
 jobs:
   smoke:
     runs-on: ubuntu-24.04
+    env:
+      HAS_VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN != '' }}
+      HAS_VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID != '' }}
+      HAS_VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID != '' }}
+      HAS_VERCEL_TEAM_ID: ${{ secrets.VERCEL_TEAM_ID != '' }}
     steps:
+      - name: Check deploy credential availability without exposing values
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "VERCEL_TOKEN present=$HAS_VERCEL_TOKEN"
+          echo "VERCEL_ORG_ID present=$HAS_VERCEL_ORG_ID"
+          echo "VERCEL_PROJECT_ID present=$HAS_VERCEL_PROJECT_ID"
+          echo "VERCEL_TEAM_ID present=$HAS_VERCEL_TEAM_ID"
+
       - name: Diagnose production domain deployment
         shell: bash
         run: |
           set -euo pipefail
-
-          echo '=== DNS ==='
-          dig +short CNAME www.masseurmatch.com || true
-          dig +short A www.masseurmatch.com || true
-          dig +short CNAME masseurmatch.com || true
-          dig +short A masseurmatch.com || true
-
           inspect() {
             local name="$1" url="$2"
             local headers body status
@@ -34,13 +41,6 @@ jobs:
             echo -n 'deployment tokens: '
             grep -Eo 'dpl_[A-Za-z0-9]+' "$body" | sort -u | head -10 | tr '\n' ' ' || true
             echo
-            echo -n 'body marker: '
-            grep -Eo 'Page not found|Massage therapists in San Francisco|Giovanni|Open menu' "$body" | head -5 | tr '\n' ' ' || true
-            echo
           }
-
           inspect homepage https://www.masseurmatch.com/
           inspect canonical-city https://www.masseurmatch.com/ca/san-francisco
-          inspect search https://www.masseurmatch.com/search
-          inspect dashboard https://dashboard.masseurmatch.com/sign-in
-          inspect admin https://admin.masseurmatch.com/sign-in
