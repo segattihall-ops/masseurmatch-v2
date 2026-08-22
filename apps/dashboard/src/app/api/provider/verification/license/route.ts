@@ -4,6 +4,8 @@ import { createSessionClient } from "@masseurmatch/db/auth";
 import { createServiceClient } from "@masseurmatch/db/client";
 import { NextResponse } from "next/server";
 
+import { rateLimit } from "@/lib/rate-limit";
+
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 const MAX_BYTES = 8 * 1024 * 1024;
 
@@ -17,6 +19,28 @@ function extension(mime: string) {
   return "jpg";
 }
 
+function matchesImageFormat(bytes: Uint8Array, mime: string) {
+  if (mime === "image/jpeg") {
+    return bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
+  }
+  if (mime === "image/png") {
+    const sig = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+    return bytes.length >= sig.length && sig.every((value, index) => bytes[index] === value);
+  }
+  if (mime === "image/webp") {
+    return (
+      bytes.length >= 12 &&
+      String.fromCharCode(...Array.from(bytes.slice(0, 4))) === "RIFF" &&
+      String.fromCharCode(...Array.from(bytes.slice(8, 12))) === "WEBP"
+    );
+  }
+  return false;
+}
+
+function validDate(value: string | null) {
+  return value === null || /^\d{4}-\d{2}-\d{2}$/.test(value);
+}
+
 export async function POST(request: Request) {
   const session = createSessionClient();
   const {
@@ -24,6 +48,14 @@ export async function POST(request: Request) {
   } = await session.auth.getUser();
 
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const limited = rateLimit(`professional-license:${user.id}`, 5, 60 * 60 * 1000);
+  if (!limited.ok) {
+    return NextResponse.json(
+      { error: "Too many license submissions. Please wait before trying again." },
+      { status: 429 },
+    );
+  }
 
   const data = await request.formData();
   const file = data.get("file") as File | null;
@@ -38,8 +70,25 @@ export async function POST(request: Request) {
   if (!holderName || !licenseType || !licenseNumber || !issuingAuthority || !jurisdiction) {
     return NextResponse.json({ error: "Complete all required license fields." }, { status: 400 });
   }
+  if (!validDate(issuedOn) || !validDate(expiresOn)) {
+    return NextResponse.json({ error: "One of the license dates is invalid." }, { status: 400 });
+  }
+  if (issuedOn && expiresOn && expiresOn < issuedOn) {
+    return NextResponse.json({ error: "Expiration date cannot be before the issued date." }, { status: 400 });
+  }
   if (!file || !ALLOWED_TYPES.has(file.type) || file.size <= 0 || file.size > MAX_BYTES) {
-    return NextResponse.json({ error: "Upload a JPEG, PNG, or WebP license image up to 8 MB." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Upload a JPEG, PNG, or WebP license image up to 8 MB." },
+      { status: 400 },
+    );
+  }
+
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  if (!matchesImageFormat(bytes, file.type)) {
+    return NextResponse.json(
+      { error: "The uploaded file does not match its declared image format." },
+      { status: 400 },
+    );
   }
 
   const service = createServiceClient() as any;
@@ -66,11 +115,12 @@ export async function POST(request: Request) {
   }
 
   const storagePath = `${user.id}/licenses/${randomUUID()}.${extension(file.type)}`;
-  const bytes = new Uint8Array(await file.arrayBuffer());
   const { error: uploadError } = await service.storage
     .from("identity-documents")
     .upload(storagePath, bytes, { contentType: file.type, upsert: false });
-  if (uploadError) return NextResponse.json({ error: "Could not upload the license image." }, { status: 500 });
+  if (uploadError) {
+    return NextResponse.json({ error: "Could not upload the license image." }, { status: 500 });
+  }
 
   const { error: insertError } = await service.from("profile_documents").insert({
     profile_id: profile.id,
