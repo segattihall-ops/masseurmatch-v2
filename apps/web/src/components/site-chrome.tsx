@@ -4,20 +4,11 @@ import { SITE_NAME, signUpUrl } from "@/lib/site";
 
 import { SiteNav } from "./site-nav";
 
-/**
- * Footer navigation.
- *
- * Grouped and fairly long on purpose. Roughly fifty pages were added for the
- * cutover — legal, policy, marketing, guides — and a footer that links four of
- * them leaves the rest reachable only by typing the URL. That is bad for a
- * reader looking for the refund policy, and bad for the pages themselves:
- * internal links are how a crawler finds and weights them, so an orphaned page
- * is close to an unpublished one.
- *
- * Not every page is here. The full policy index lives at /legal, which is
- * linked below; duplicating all 23 into the footer would bury the four or five
- * anyone actually looks for.
- */
+const FAVICON_URL =
+  "https://res.cloudinary.com/dyfxkq2nk/image/upload/v1786915969/76C34E06-039E-431B-9F83-A4231D78372C_qczweo.png";
+const WORDMARK_URL =
+  "https://res.cloudinary.com/dyfxkq2nk/image/upload/v1787427953/ChatGPT_Image_Aug_22_2026_02_45_23_PM_kc5env.png";
+
 const FOOTER_GROUPS: { heading: string; links: { href: string; label: string }[] }[] = [
   {
     heading: "Browse",
@@ -71,37 +62,33 @@ const FOOTER_GROUPS: { heading: string; links: { href: string; label: string }[]
   },
 ];
 
-/**
- * The bar at the top of every page.
- *
- * Sticky, because the site's pages are long — the home page is over eleven
- * thousand pixels on a phone — and navigation you have to scroll back up to
- * reach is navigation people stop using.
- *
- * `z-50` against the bottom bar's `z-40`, and not the other way round. A
- * `sticky` element with a z-index opens its own stacking context, so the
- * drawer rendered inside this header cannot outrank a sibling of the header
- * however high its own z-index goes — it was being painted over by the bottom
- * bar, which is later in the document at the same level.
- *
- * A server component that hands the client nav one value: `signUpUrl()` reads a
- * non-public environment variable and `@/lib/site` is `server-only`, so it
- * cannot be called from inside the menu itself. Null when this deployment has
- * not been told where the dashboard lives, in which case the button points at
- * `/for-therapists` rather than nowhere.
- */
 export function SiteHeader() {
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-bg-surface">
       <nav
         aria-label="Primary"
-        className="mx-auto flex min-h-16 w-full max-w-6xl items-center justify-between gap-4 px-5 py-3 sm:gap-6 sm:px-6"
+        className="mx-auto flex min-h-16 w-full max-w-6xl items-center justify-between gap-3 px-5 py-2 sm:gap-5 sm:px-6"
       >
         <Link
           href="/"
-          className="shrink-0 font-display text-ds-18 font-bold tracking-tight text-text-primary"
+          aria-label={`${SITE_NAME} home`}
+          className="flex min-w-0 shrink-0 items-center gap-2.5"
         >
-          {SITE_NAME}
+          <img
+            src={FAVICON_URL}
+            alt=""
+            aria-hidden="true"
+            width={40}
+            height={40}
+            className="h-9 w-9 shrink-0 object-contain sm:h-10 sm:w-10"
+          />
+          <img
+            src={WORDMARK_URL}
+            alt={SITE_NAME}
+            width={240}
+            height={68}
+            className="h-auto w-[150px] object-contain sm:w-[190px] lg:w-[210px]"
+          />
         </Link>
 
         <SiteNav signUpHref={signUpUrl()} />
