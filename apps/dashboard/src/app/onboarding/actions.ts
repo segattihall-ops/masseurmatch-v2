@@ -1,7 +1,6 @@
 "use server";
 
-import { getViewer } from "@masseurmatch/db/auth";
-import { createServiceClient } from "@masseurmatch/db/client";
+import { createSessionClient, getViewer } from "@masseurmatch/db/auth";
 import { isEnforcementBlocked } from "@masseurmatch/db/review-lifecycle";
 import { HIDDEN } from "@masseurmatch/db/visibility";
 import { revalidatePath } from "next/cache";
@@ -103,8 +102,8 @@ export async function submitForReview(_prev: StepState): Promise<StepState> {
   if (status === "pending") return { error: "Your profile is already waiting for review." };
   if (!canSubmit(snapshot)) return { error: "Finish the earlier steps before submitting." };
 
-  const service = createServiceClient();
-  const { data: current, error: currentError } = await service
+  const session = createSessionClient();
+  const { data: current, error: currentError } = await session
     .from("profiles")
     .select("profile_status,moderation_status,is_suspended,is_banned")
     .eq("id", userId)
