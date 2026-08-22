@@ -23,7 +23,7 @@ export const metadata: Metadata = {
 
 export default function Page() {
   return (
-    <LegalPage title={TITLE} path={PATH} lastUpdated="June 29, 2026">
+    <LegalPage title={TITLE} path={PATH} lastUpdated="August 22, 2026">
       <p>
         These Paid Subscription and Add-On Terms govern all paid products available through
         MasseurMatch, including provider subscription plans, profile add-ons, boost credits, and
@@ -57,13 +57,15 @@ export default function Page() {
       <h2>2. Billing and Recurring Charges</h2>
       <p>
         Subscription plans renew automatically at the end of each billing period (monthly or annual)
-        unless canceled before the renewal date. By subscribing, you authorize MasseurMatch and its
-        payment processor (Stripe) to charge your payment method on a recurring basis.
+        unless canceled before the renewal date. By subscribing, you authorize MasseurMatch and
+        PayPal, our third-party payment processor, to process recurring charges for the applicable
+        subscription price, taxes, and other amounts disclosed at checkout.
       </p>
       <p>
-        You are responsible for ensuring your payment information is current and accurate. Failed
-        payments may result in suspension of your listing until the account is resolved. You will be
-        notified of upcoming renewals where required by law.
+        You are responsible for keeping your PayPal account and any payment method used through
+        PayPal current and accurate. Failed, declined, reversed, or otherwise incomplete payments
+        may result in suspension or limitation of paid features until the billing issue is resolved.
+        We will provide renewal notices where required by applicable law.
       </p>
 
       <h2>3. Add-Ons and Boost Credits</h2>
@@ -97,35 +99,48 @@ export default function Page() {
 
       <h2>6. Payment Processing</h2>
       <p>
-        All payments are processed by Stripe. By purchasing a paid product, you agree to
-        Stripe&apos;s terms of service and payment processing policies. MasseurMatch does not store
-        full credit card numbers. Payment disputes must be submitted through the process described
-        in our
+        MasseurMatch uses PayPal as its third-party payment processor for paid platform products.
+        Payment credentials and payment-method details are handled by PayPal rather than stored in
+        full by MasseurMatch. Your use of PayPal is also subject to PayPal&apos;s applicable user
+        agreements, privacy terms, and payment-processing rules.
+      </p>
+      <p>
+        MasseurMatch is a directory platform only and does not process payments between clients and
+        independent providers for massage or bodywork sessions. Payment disputes relating to a
+        MasseurMatch subscription or add-on are governed by our
         <a href="/refund-policy">Refund and Cancellation Policy</a>.
       </p>
 
       <h2>7. Cancellation</h2>
       <p>
-        You may cancel your subscription at any time through your account settings or by contacting
-        <a href="mailto:billing@masseurmatch.com">billing@masseurmatch.com</a>. Cancellation
-        typically takes effect at the end of the current billing period. Access to plan features
-        continues until the end of the period for which you have paid.
+        You may cancel your subscription at any time through your account settings, through any
+        available PayPal subscription-management controls, or by contacting
+        <a href="mailto:billing@masseurmatch.com">billing@masseurmatch.com</a>. Unless otherwise
+        stated or required by law, cancellation takes effect at the end of the current billing
+        period and access to paid plan features continues through the period already paid for.
       </p>
 
       <h2>8. Refunds</h2>
       <p>
         Refund eligibility is governed by our
         <a href="/refund-policy">Refund and Cancellation Policy</a>. In general, subscription fees
-        are non-refundable except as required by law or in cases of billing error. We do not issue
-        refunds based solely on dissatisfaction with visibility, leads, bookings, or profile
-        performance.
+        are non-refundable except as required by law or in approved cases such as qualifying billing
+        errors or duplicate charges. We do not issue refunds based solely on dissatisfaction with
+        visibility, leads, bookings, or profile performance.
+      </p>
+      <p>
+        Approved refunds are submitted through PayPal to the original payment source when supported.
+        The time required for a refund to appear depends on PayPal, the funding source, and the bank
+        or card issuer involved, and is outside MasseurMatch&apos;s control after the refund is
+        submitted.
       </p>
 
       <h2>9. Price Changes</h2>
       <p>
         We reserve the right to change subscription pricing or the features included in each plan.
         For existing subscribers, price changes will be communicated with reasonable advance notice
-        and will take effect at the next renewal date.
+        and will take effect at the next renewal date, subject to any additional approval PayPal may
+        require for a revised subscription.
       </p>
 
       <h2>10. Content Requirements</h2>
@@ -138,7 +153,7 @@ export default function Page() {
       <h2>11. Changes to These Terms</h2>
       <p>
         We may update these terms at any time. Updated terms will apply to renewals and new
-        purchases after the effective date.
+        purchases after the effective date, subject to applicable law.
       </p>
 
       <h2>12. Contact</h2>

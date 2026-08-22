@@ -23,7 +23,7 @@ export const metadata: Metadata = {
 
 export default function Page() {
   return (
-    <LegalPage title={TITLE} path={PATH} lastUpdated="June 29, 2026">
+    <LegalPage title={TITLE} path={PATH} lastUpdated="August 22, 2026">
       <p>
         These Advertising and Featured Placement Terms apply to all paid visibility products on
         MasseurMatch, including featured placements, boost credits, sponsored positions, and any
@@ -102,7 +102,7 @@ export default function Page() {
       </ul>
       <p>
         Removal or rejection of a placement due to a policy violation does not entitle the
-        advertiser to a refund.
+        advertiser to a refund, except where required by applicable law.
       </p>
 
       <h2>5. Placement Availability</h2>
@@ -115,10 +115,16 @@ export default function Page() {
 
       <h2>6. Billing and Refunds</h2>
       <p>
-        Advertising and placement fees are governed by the
+        Advertising and placement fees are processed through PayPal and are governed by the
         <a href="/subscriptions">Paid Subscription and Add-On Terms</a> and the
         <a href="/refund-policy">Refund and Cancellation Policy</a>. Placement fees are generally
-        non-refundable once a placement period has begun.
+        non-refundable once a placement period has begun, except where required by applicable law or
+        expressly approved under the Refund and Cancellation Policy.
+      </p>
+      <p>
+        Approved refunds are submitted through PayPal to the original payment source when supported.
+        Posting and settlement timing may depend on PayPal, the funding source, and the applicable
+        bank or card issuer.
       </p>
 
       <h2>7. Disclosure of Paid Placement</h2>
