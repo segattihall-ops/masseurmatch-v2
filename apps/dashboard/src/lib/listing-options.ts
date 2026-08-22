@@ -413,8 +413,8 @@ export const AFFILIATIONS = [
 /** Earliest year the career-start and education pickers offer. */
 export const YEAR_MIN = 1956;
 
-/** Latest year they offer. */
-export const YEAR_MAX = 2026;
+/** Latest UTC year offered; dynamic so the picker does not require annual maintenance. */
+export const YEAR_MAX = new Date().getUTCFullYear();
 
 /** Every year those pickers offer, newest first. */
 export const YEARS: readonly string[] = Array.from({ length: YEAR_MAX - YEAR_MIN + 1 }, (_, i) =>
