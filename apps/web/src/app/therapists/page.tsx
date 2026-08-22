@@ -62,10 +62,10 @@ export default async function TherapistsIndexPage() {
           Male massage therapists
         </h1>
         <p className="mt-4 max-w-2xl leading-relaxed text-text-secondary">
-          Browse {therapists.length} public male massage therapist {therapists.length === 1 ? "profile" : "profiles"} across{" "}
-          {cities.length} {cities.length === 1 ? "city" : "cities"}. Compare services, rates,
-          availability, LGBTQ+ affirming profile details and location before contacting a provider
-          directly.
+          Browse {therapists.length} public male massage therapist{" "}
+          {therapists.length === 1 ? "profile" : "profiles"} across {cities.length}{" "}
+          {cities.length === 1 ? "city" : "cities"}. Compare services, rates, availability, LGBTQ+
+          affirming profile details and location before contacting a provider directly.
         </p>
         <div className="mt-6 flex flex-wrap gap-3 text-sm font-semibold">
           <Link href="/near-me" className="text-brand-secondary hover:underline">

@@ -101,7 +101,8 @@ export default function GayMassagePage() {
       <InstitutionalBand>
         MasseurMatch helps people looking for gay massage, gay-friendly massage or male massage for
         men discover independent therapists through current public profiles. The directory is for
-        discovery and comparison; providers remain responsible for their own services and appointments.
+        discovery and comparison; providers remain responsible for their own services and
+        appointments.
       </InstitutionalBand>
 
       <InstitutionalSection
@@ -198,14 +199,13 @@ export default function GayMassagePage() {
         />
       </InstitutionalSection>
 
-      <InstitutionalSection
-        eyebrow="Questions"
-        title="Gay massage: frequently asked questions"
-      >
+      <InstitutionalSection eyebrow="Questions" title="Gay massage: frequently asked questions">
         <div className="grid gap-8 md:grid-cols-2">
           {FAQS.map((faq) => (
             <div key={faq.question}>
-              <h3 className="font-display text-xl font-semibold text-text-primary">{faq.question}</h3>
+              <h3 className="font-display text-xl font-semibold text-text-primary">
+                {faq.question}
+              </h3>
               <p className="mt-3 text-sm leading-7 text-text-secondary">{faq.answer}</p>
             </div>
           ))}

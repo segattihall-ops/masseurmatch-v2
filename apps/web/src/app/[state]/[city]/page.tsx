@@ -186,8 +186,8 @@ export default async function CityPage({ params }: CityParams) {
           </h1>
           <p className="mt-4 max-w-3xl text-ds-18 leading-8 text-text-secondary">
             Browse {therapists.length} public {therapists.length === 1 ? "profile" : "profiles"} in{" "}
-            {city.name}. Compare services, rates, availability, incall or outcall options and
-            LGBTQ+ affirming profile details before contacting an independent therapist directly.
+            {city.name}. Compare services, rates, availability, incall or outcall options and LGBTQ+
+            affirming profile details before contacting an independent therapist directly.
           </p>
 
           <StaggerList
@@ -218,13 +218,16 @@ export default async function CityPage({ params }: CityParams) {
                   Find massage for men in {city.name}
                 </h2>
                 <p className="mt-4 max-w-2xl leading-7 text-text-secondary">
-                  Looking for a male massage therapist or gay-friendly massage option in {city.name}?{" "}
-                  MasseurMatch helps you compare independent providers by public profile details,
+                  Looking for a male massage therapist or gay-friendly massage option in {city.name}
+                  ? MasseurMatch helps you compare independent providers by public profile details,
                   listed techniques, session format, rates, availability and trust signals. The
                   directory does not handle booking or payment, so confirm final details directly
                   with the provider you choose.
                 </p>
-                <nav aria-label={`${city.name} massage resources`} className="mt-6 flex flex-wrap gap-3">
+                <nav
+                  aria-label={`${city.name} massage resources`}
+                  className="mt-6 flex flex-wrap gap-3"
+                >
                   <Link
                     href="/near-me"
                     className="rounded-full border border-border px-4 py-2 text-sm font-semibold text-text-primary transition hover:border-brand-secondary hover:text-brand-secondary"

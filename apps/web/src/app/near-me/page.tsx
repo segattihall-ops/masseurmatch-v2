@@ -210,7 +210,9 @@ export default function Page() {
         <div className="grid gap-8 lg:grid-cols-3">
           {FAQS.map((faq) => (
             <div key={faq.question}>
-              <h3 className="font-display text-xl font-semibold text-text-primary">{faq.question}</h3>
+              <h3 className="font-display text-xl font-semibold text-text-primary">
+                {faq.question}
+              </h3>
               <p className="mt-3 text-sm leading-7 text-text-secondary">{faq.answer}</p>
             </div>
           ))}
