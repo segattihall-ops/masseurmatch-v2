@@ -1,6 +1,8 @@
 "use server";
 
 import { getViewer } from "@masseurmatch/db/auth";
+import { createServiceClient } from "@masseurmatch/db/client";
+import { isEnforcementBlocked } from "@masseurmatch/db/review-lifecycle";
 import { HIDDEN } from "@masseurmatch/db/visibility";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -10,14 +12,6 @@ import { getOrCreateMyProfile, updateMyProfile, updateModerationState } from "@/
 
 import type { StepState } from "./form-state";
 
-/**
- * Onboarding writes.
- *
- * Every step validates with the same zod schema the browser used. The client
- * pass is a convenience; this one is the gate. A hand-crafted POST that skips
- * the form entirely still lands here.
- */
-
 async function requireTherapistId(): Promise<string> {
   const viewer = await getViewer();
   if (!viewer) redirect("/sign-in?next=%2Fonboarding");
@@ -25,7 +19,6 @@ async function requireTherapistId(): Promise<string> {
   return viewer.user.id;
 }
 
-/** zod's flatten() shape, narrowed to what the forms render. */
 function fieldErrors(error: {
   flatten: () => { fieldErrors: Record<string, string[] | undefined> };
 }): Record<string, string[]> {
@@ -72,7 +65,7 @@ export async function saveServices(_prev: StepState, formData: FormData): Promis
     additional_services: formData
       .getAll("additional_services")
       .map(String)
-      .map((s) => s.trim())
+      .map((service) => service.trim())
       .filter(Boolean),
     incall_price: toPrice(formData.get("incall_price")),
     outcall_price: toPrice(formData.get("outcall_price")),
@@ -81,9 +74,7 @@ export async function saveServices(_prev: StepState, formData: FormData): Promis
   if (!parsed.success) return { fieldErrors: fieldErrors(parsed.error) };
 
   const { incall_price, outcall_price } = parsed.data;
-  // `starting_price` is what the public card renders, so keep it consistent
-  // rather than letting two columns disagree about the same number.
-  const prices = [incall_price, outcall_price].filter((p): p is number => p !== null);
+  const prices = [incall_price, outcall_price].filter((price): price is number => price !== null);
 
   await getOrCreateMyProfile(userId);
   const written = await updateMyProfile(userId, {
@@ -97,33 +88,55 @@ export async function saveServices(_prev: StepState, formData: FormData): Promis
 }
 
 /**
- * Submit for review.
+ * Submit or resubmit for human review.
  *
- * Re-checks completeness on the server: the button is hidden when steps are
- * missing, but a hidden button is not a control. Sets `pending`, which is what
- * the phase 6 moderation queue reads, and keeps visibility `hidden` until a
- * reviewer approves — so submitting can never itself publish a profile.
+ * Completeness and enforcement are re-checked server-side. A rejected profile
+ * may return to `pending`, but suspension/ban is a separate enforcement state
+ * and can never be cleared by this provider action. Submission keeps the
+ * listing hidden and never grants approval or verification.
  */
 export async function submitForReview(_prev: StepState): Promise<StepState> {
   const userId = await requireTherapistId();
   const { snapshot, status } = await getOrCreateMyProfile(userId);
 
-  if (status === "approved") {
-    return { error: "Your profile is already approved." };
-  }
-  if (!canSubmit(snapshot)) {
-    return { error: "Finish the earlier steps before submitting." };
+  if (status === "approved") return { error: "Your profile is already approved." };
+  if (status === "pending") return { error: "Your profile is already waiting for review." };
+  if (!canSubmit(snapshot)) return { error: "Finish the earlier steps before submitting." };
+
+  const service = createServiceClient();
+  const { data: current, error: currentError } = await service
+    .from("profiles")
+    .select("profile_status,moderation_status,is_suspended,is_banned")
+    .eq("id", userId)
+    .maybeSingle();
+
+  if (currentError) return { error: `Could not verify your review state: ${currentError.message}` };
+  if (!current) return { error: "Could not find your profile. Please sign in again." };
+  if (
+    status === "suspended" ||
+    isEnforcementBlocked({
+      profileStatus: current.profile_status,
+      moderationStatus: current.moderation_status,
+      isSuspended: current.is_suspended,
+      isBanned: current.is_banned,
+    })
+  ) {
+    return {
+      error: "This profile is under enforcement and cannot be resubmitted. Open a support ticket for review.",
+    };
   }
 
-  // Through the privileged writer, not the therapist's own permission: these
-  // two columns are exactly what decides whether a listing is public. See
-  // `updateModerationState` and docs/SELF-GRANT.md.
   const written = await updateModerationState(userId, {
     profile_status: "pending",
     visibility_status: HIDDEN,
+    moderation_status: "pending",
+    reviewed_at: null,
   });
   if (written === 0) return { error: "Could not submit. Please sign in again." };
 
   revalidatePath("/onboarding");
+  revalidatePath("/pro/approval-status");
+  revalidatePath("/pro/listing");
+  revalidatePath("/admin/moderation");
   return { ok: true };
 }
