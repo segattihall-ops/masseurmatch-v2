@@ -13,8 +13,11 @@ import { useRouter } from "next/navigation";
 
 const SORTS: { value: DirectorySort; label: string }[] = [
   { value: "recommended", label: "Recommended" },
+  { value: "distance", label: "Nearest" },
+  { value: "featured", label: "Featured first" },
   { value: "price", label: "Lowest price" },
   { value: "rating", label: "Highest rated" },
+  { value: "reviews", label: "Most reviewed" },
 ];
 
 const TIER_LABELS: Record<DirectoryTier, string> = {
@@ -33,8 +36,11 @@ type SearchValues = {
   tier: DirectoryTier | "";
   min: string;
   max: string;
+  radius: string;
   sort: DirectorySort;
   available: boolean;
+  featured: boolean;
+  offers: boolean;
   verified: boolean;
   lgbtq: boolean;
   master: boolean;
@@ -57,7 +63,10 @@ function sendSearchAnalytics(values: SearchValues) {
         tier: values.tier || undefined,
         min: values.min || undefined,
         max: values.max || undefined,
+        radius: values.radius || undefined,
         available: values.available,
+        featured: values.featured,
+        offers: values.offers,
         verified: values.verified,
         lgbtq: values.lgbtq,
         master: values.master,
@@ -99,6 +108,7 @@ export function SearchControls({
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const autoLocateRef = useRef(false);
   const [isPending, startTransition] = useTransition();
   const [expanded, setExpanded] = useState(
     Boolean(
@@ -107,7 +117,10 @@ export function SearchControls({
       values.tier ||
       values.min ||
       values.max ||
+      values.radius ||
       values.available ||
+      values.featured ||
+      values.offers ||
       values.verified ||
       values.lgbtq ||
       values.master,
@@ -129,8 +142,11 @@ export function SearchControls({
       tier: String(data.get("tier") ?? "") as SearchValues["tier"],
       min: String(data.get("min") ?? "").trim(),
       max: String(data.get("max") ?? "").trim(),
+      radius: String(data.get("radius") ?? "").trim(),
       sort: (String(data.get("sort") ?? "recommended") || "recommended") as DirectorySort,
       available: data.get("available") === "1",
+      featured: data.get("featured") === "1",
+      offers: data.get("offers") === "1",
       verified: data.get("verified") === "1",
       lgbtq: data.get("lgbtq") === "1",
       master: data.get("master") === "1",
@@ -151,8 +167,11 @@ export function SearchControls({
         ["tier", next.tier],
         ["min", next.min],
         ["max", next.max],
+        ["radius", next.radius],
         ["sort", next.sort === "recommended" ? "" : next.sort],
         ["available", next.available ? "1" : ""],
+        ["featured", next.featured ? "1" : ""],
+        ["offers", next.offers ? "1" : ""],
         ["verified", next.verified ? "1" : ""],
         ["lgbtq", next.lgbtq ? "1" : ""],
         ["master", next.master ? "1" : ""],
@@ -246,17 +265,28 @@ export function SearchControls({
 
   useEffect(() => {
     if (values.city || !formRef.current) return;
+
     try {
       const stored = localStorage.getItem("mm:geolocation-city");
-      if (!stored) return;
       const select = formRef.current.elements.namedItem("city") as HTMLSelectElement | null;
-      if (!select || !Array.from(select.options).some((option) => option.value === stored)) return;
-      select.value = stored;
-      navigate(50);
+      if (
+        stored &&
+        select &&
+        Array.from(select.options).some((option) => option.value === stored)
+      ) {
+        select.value = stored;
+        setLocationMessage("Using your saved nearby city.");
+        navigate(50);
+        return;
+      }
     } catch {
-      // Storage is optional.
+      // Storage is optional. Continue with the browser location request.
     }
-    // Deliberately run only on the server-provided city value.
+
+    if (autoLocateRef.current) return;
+    autoLocateRef.current = true;
+    void locateUser();
+    // Location is intentionally requested whenever search opens without a city.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [values.city]);
 
@@ -346,7 +376,7 @@ export function SearchControls({
           disabled={locating}
           className="rounded-full border border-border bg-bg-subtle px-4 py-2 text-xs font-semibold text-text-primary transition hover:bg-brand-soft disabled:opacity-50"
         >
-          {locating ? "Finding your city…" : "Use my location"}
+          {locating ? "Finding your city…" : "Find near me"}
         </button>
         <span className="text-xs text-text-secondary" aria-live="polite">
           {locationMessage ??
@@ -395,7 +425,7 @@ export function SearchControls({
             </div>
           </fieldset>
 
-          <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-6">
             <div>
               <label
                 htmlFor="session"
@@ -467,6 +497,27 @@ export function SearchControls({
               />
             </div>
             <div>
+              <label
+                htmlFor="radius"
+                className="mb-1.5 block text-sm font-medium text-text-primary"
+              >
+                Nearby radius
+              </label>
+              <select
+                id="radius"
+                name="radius"
+                defaultValue={values.radius}
+                className={fieldClass()}
+                onChange={() => navigate()}
+              >
+                <option value="10">10 miles</option>
+                <option value="25">25 miles</option>
+                <option value="50">50 miles</option>
+                <option value="100">100 miles</option>
+                <option value="250">250 miles</option>
+              </select>
+            </div>
+            <div>
               <label htmlFor="sort" className="mb-1.5 block text-sm font-medium text-text-primary">
                 Sort by
               </label>
@@ -486,10 +537,12 @@ export function SearchControls({
             </div>
           </div>
 
-          <fieldset className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <fieldset className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <legend className="sr-only">Trust and availability filters</legend>
             {[
               ["available", "Available now", values.available],
+              ["featured", "Featured profiles", values.featured],
+              ["offers", "Offers & discounts", values.offers],
               ["verified", "Verified only", values.verified],
               ["lgbtq", "LGBTQ+ affirming", values.lgbtq],
               ["master", "10+ years experience", values.master],

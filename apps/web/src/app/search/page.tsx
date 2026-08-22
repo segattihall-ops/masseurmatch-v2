@@ -62,6 +62,9 @@ interface SearchParams {
     lgbtq?: string;
     min?: string;
     max?: string;
+    radius?: string;
+    featured?: string;
+    offers?: string;
     tier?: string;
     master?: string;
     sort?: string;
@@ -120,6 +123,9 @@ function pageHref(searchParams: SearchParams["searchParams"], page: number): str
     "lgbtq",
     "min",
     "max",
+    "radius",
+    "featured",
+    "offers",
     "tier",
     "master",
     "sort",
@@ -166,10 +172,17 @@ export default async function SearchPage({ searchParams }: SearchParams) {
   const maxPrice = positiveNumber(searchParams.max);
   const page = positivePage(searchParams.page);
   const goal = isDirectoryObjective(searchParams.goal) ? searchParams.goal : undefined;
+  const requestedSort = searchParams.sort;
   const sort: DirectorySort =
-    searchParams.sort === "price" || searchParams.sort === "rating"
-      ? searchParams.sort
-      : "recommended";
+    requestedSort === "distance" ||
+    requestedSort === "featured" ||
+    requestedSort === "price" ||
+    requestedSort === "rating" ||
+    requestedSort === "reviews"
+      ? requestedSort
+      : selectedCity
+        ? "distance"
+        : "recommended";
 
   const filters: DirectoryFilters = {
     city: (selectedCity?.citySlug ?? searchParams.city?.trim()) || undefined,
@@ -184,6 +197,9 @@ export default async function SearchPage({ searchParams }: SearchParams) {
     availableNow: searchParams.available === "1",
     verified: searchParams.verified === "1",
     lgbtq: searchParams.lgbtq === "1",
+    featured: searchParams.featured === "1",
+    offers: searchParams.offers === "1",
+    radiusMiles: selectedCity ? (positiveNumber(searchParams.radius) ?? 25) : undefined,
     minPrice,
     maxPrice,
     tier: isDirectoryTier(searchParams.tier) ? searchParams.tier : undefined,
@@ -283,8 +299,11 @@ export default async function SearchPage({ searchParams }: SearchParams) {
           tier: filters.tier ?? "",
           min: typeof filters.minPrice === "number" ? String(filters.minPrice) : "",
           max: typeof filters.maxPrice === "number" ? String(filters.maxPrice) : "",
+          radius: typeof filters.radiusMiles === "number" ? String(filters.radiusMiles) : "25",
           sort,
           available: Boolean(filters.availableNow),
+          featured: Boolean(filters.featured),
+          offers: Boolean(filters.offers),
           verified: Boolean(filters.verified),
           lgbtq: Boolean(filters.lgbtq),
           master: filters.minExperienceYears === 10,

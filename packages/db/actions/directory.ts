@@ -57,6 +57,8 @@ const LISTING_COLUMNS = [
   "city",
   "state",
   "neighborhood",
+  "latitude",
+  "longitude",
   "avatar_url",
   "photo_url",
   "service_categories",
@@ -86,6 +88,9 @@ const LISTING_COLUMNS = [
   "body_type",
   "start_year",
   "updated_at",
+  "promotions",
+  "regular_discounts",
+  "day_of_week_discount",
 ];
 
 const DETAIL_COLUMNS = [
@@ -94,8 +99,6 @@ const DETAIL_COLUMNS = [
   "tagline",
   "languages",
   "website",
-  "latitude",
-  "longitude",
   "zip_code",
   "seo_title",
   "seo_description",
@@ -154,6 +157,55 @@ async function selectProfiles<T>(
   return [];
 }
 
+type CoordinateCarrier = {
+  city: string | null;
+  state: string | null;
+  latitude: number | null;
+  longitude: number | null;
+};
+
+type CityCoordinateRow = {
+  slug: string | null;
+  state: string | null;
+  state_code: string | null;
+  latitude: number | string | null;
+  longitude: number | string | null;
+};
+
+function coordinateNumber(value: number | string | null | undefined): number | null {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function stateMatches(row: CityCoordinateRow, state: string | null): boolean {
+  if (!state) return true;
+  const wanted = state.toLowerCase();
+  return row.state_code?.toLowerCase() === wanted || row.state?.toLowerCase() === wanted;
+}
+
+async function hydrateCityCoordinates<T extends CoordinateCarrier>(rows: T[]): Promise<T[]> {
+  if (rows.length === 0 || rows.every((row) => row.latitude !== null && row.longitude !== null)) {
+    return rows;
+  }
+
+  const client = createAnonClient();
+  const { data, error } = await client
+    .from("cities")
+    .select("slug,state,state_code,latitude,longitude");
+  if (error || !data) return rows;
+
+  const cities = data as unknown as CityCoordinateRow[];
+  return rows.map((row) => {
+    if (row.latitude !== null && row.longitude !== null) return row;
+    if (!row.city) return row;
+    const slug = citySlug(row.city);
+    const city = cities.find((entry) => entry.slug === slug && stateMatches(entry, row.state));
+    const latitude = coordinateNumber(city?.latitude);
+    const longitude = coordinateNumber(city?.longitude);
+    return latitude === null || longitude === null ? row : { ...row, latitude, longitude };
+  });
+}
+
 async function fetchVisibleListings(): Promise<TherapistListing[]> {
   if (directoryUnavailable()) return [];
 
@@ -165,7 +217,8 @@ async function fetchVisibleListings(): Promise<TherapistListing[]> {
       .eq("visibility_status", PUBLIC),
   );
 
-  return rows.filter(isRoutable).sort(compareByRank);
+  const hydrated = await hydrateCityCoordinates(rows);
+  return hydrated.filter(isRoutable).sort(compareByRank);
 }
 
 /** Every publicly visible, routable therapist. Cached for an hour. */
@@ -259,7 +312,7 @@ export async function getProfileBySlug(slug: string): Promise<ProfileDetail | nu
       .limit(1),
   );
 
-  const profile = rows[0];
+  const [profile] = await hydrateCityCoordinates(rows);
   if (!profile) return null;
 
   const { data: photos } = await client
@@ -348,11 +401,72 @@ function cityMatches(therapist: TherapistListing, filters: DirectoryFilters): bo
   return !wantedState || !visit.entry.state || visit.entry.state.toLowerCase() === wantedState;
 }
 
+type SearchOrigin = { latitude: number; longitude: number };
+
+function distanceMiles(from: SearchOrigin, to: SearchOrigin): number {
+  const radians = (value: number) => (value * Math.PI) / 180;
+  const earthRadiusMiles = 3958.8;
+  const dLat = radians(to.latitude - from.latitude);
+  const dLon = radians(to.longitude - from.longitude);
+  const lat1 = radians(from.latitude);
+  const lat2 = radians(to.latitude);
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2;
+  return earthRadiusMiles * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function hasOfferValue(value: unknown): boolean {
+  if (Array.isArray(value)) return value.length > 0;
+  if (value && typeof value === "object") return Object.keys(value).length > 0;
+  return typeof value === "string" ? value.trim().length > 0 : Boolean(value);
+}
+
+async function searchOrigin(filters: DirectoryFilters): Promise<SearchOrigin | null> {
+  if (!filters.city) return null;
+  const client = createAnonClient();
+  const { data, error } = await client
+    .from("cities")
+    .select("slug,state,state_code,latitude,longitude")
+    .eq("slug", filters.city);
+  if (error || !data) return null;
+  const rows = data as unknown as CityCoordinateRow[];
+  const row = rows.find((entry) => stateMatches(entry, filters.state ?? null)) ?? rows[0];
+  const latitude = coordinateNumber(row?.latitude);
+  const longitude = coordinateNumber(row?.longitude);
+  return latitude === null || longitude === null ? null : { latitude, longitude };
+}
+
 function filterTherapistsInMemory(
   source: TherapistListing[],
   filters: DirectoryFilters,
+  origin: SearchOrigin | null = null,
 ): TherapistListing[] {
-  let therapists = source.filter((therapist) => cityMatches(therapist, filters));
+  let therapists: TherapistListing[];
+
+  if (filters.city && filters.radiusMiles && origin) {
+    const wantedCity = filters.city.toLowerCase();
+    therapists = source
+      .map((therapist) => {
+        const visit = travelVisit(therapist.travel_schedule, wantedCity);
+        const distance = visit
+          ? 0
+          : therapist.latitude !== null && therapist.longitude !== null
+            ? distanceMiles(origin, {
+                latitude: therapist.latitude,
+                longitude: therapist.longitude,
+              })
+            : null;
+        return {
+          ...therapist,
+          distance_miles: distance === null ? null : Number(distance.toFixed(1)),
+        };
+      })
+      .filter(
+        (therapist) =>
+          therapist.distance_miles !== null && therapist.distance_miles! <= filters.radiusMiles!,
+      );
+  } else {
+    therapists = source.filter((therapist) => cityMatches(therapist, filters));
+  }
 
   if (filters.service) {
     const wanted = normalizeSearch(filters.service);
@@ -396,6 +510,19 @@ function filterTherapistsInMemory(
     therapists = therapists.filter((therapist) => therapist.lgbtq_affirming === true);
   }
 
+  if (filters.featured) {
+    therapists = therapists.filter((therapist) => therapist.is_featured === true);
+  }
+
+  if (filters.offers) {
+    therapists = therapists.filter(
+      (therapist) =>
+        hasOfferValue(therapist.promotions) ||
+        hasOfferValue(therapist.regular_discounts) ||
+        hasOfferValue(therapist.day_of_week_discount),
+    );
+  }
+
   if (typeof filters.minPrice === "number" && Number.isFinite(filters.minPrice)) {
     const floor = filters.minPrice;
     therapists = therapists.filter((therapist) => {
@@ -429,7 +556,22 @@ function filterTherapistsInMemory(
     });
   }
 
-  if (filters.sort === "price") {
+  if (filters.sort === "distance") {
+    therapists = [...therapists].sort(
+      (a, b) =>
+        (a.distance_miles ?? Number.MAX_SAFE_INTEGER) -
+          (b.distance_miles ?? Number.MAX_SAFE_INTEGER) || compareByRank(a, b),
+    );
+  } else if (filters.sort === "featured") {
+    therapists = [...therapists].sort(
+      (a, b) =>
+        Number(b.is_featured ?? false) - Number(a.is_featured ?? false) || compareByRank(a, b),
+    );
+  } else if (filters.sort === "reviews") {
+    therapists = [...therapists].sort(
+      (a, b) => (b.review_count ?? 0) - (a.review_count ?? 0) || compareByRank(a, b),
+    );
+  } else if (filters.sort === "price") {
     therapists = [...therapists].sort((a, b) => {
       const priceA = startingPrice(a);
       const priceB = startingPrice(b);
@@ -452,7 +594,8 @@ function filterTherapistsInMemory(
 
 /** Backwards-compatible unpaginated search used by SEO/service pages. */
 export async function searchTherapists(filters: DirectoryFilters): Promise<TherapistListing[]> {
-  return filterTherapistsInMemory(await getVisibleTherapists(), filters);
+  const [source, origin] = await Promise.all([getVisibleTherapists(), searchOrigin(filters)]);
+  return filterTherapistsInMemory(source, filters, origin);
 }
 
 type SearchRpcRow = TherapistListing & { total_count: number | null };
@@ -481,6 +624,22 @@ export async function searchTherapistsPage(
   const pageSize = Math.min(48, Math.max(1, Math.trunc(filters.pageSize ?? 24) || 24));
 
   if (directoryUnavailable()) return { items: [], total: 0, page, pageSize };
+
+  const enhancedSearch =
+    Boolean(filters.radiusMiles || filters.featured || filters.offers) ||
+    filters.sort === "distance" ||
+    filters.sort === "featured" ||
+    filters.sort === "reviews";
+  if (enhancedSearch) {
+    const all = await searchTherapists(filters);
+    const offset = (page - 1) * pageSize;
+    return {
+      items: all.slice(offset, offset + pageSize),
+      total: all.length,
+      page,
+      pageSize,
+    };
+  }
 
   const client = createAnonClient();
   const rpcClient = client as unknown as RpcClient;
@@ -522,7 +681,7 @@ export async function searchTherapistsPage(
     );
   }
 
-  const all = filterTherapistsInMemory(await getVisibleTherapists(), filters);
+  const all = await searchTherapists(filters);
   const offset = (page - 1) * pageSize;
   return {
     items: all.slice(offset, offset + pageSize),

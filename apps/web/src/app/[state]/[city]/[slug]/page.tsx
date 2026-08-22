@@ -249,7 +249,12 @@ export default async function ProfilePage({ params }: ProfileParams) {
     getPublicProfileSupplement(profile.id),
     getPublicImportedReviews(profile.id, 100),
     profile.city
-      ? searchTherapists({ city: citySlug(profile.city), state: profile.state?.toLowerCase() })
+      ? searchTherapists({
+          city: citySlug(profile.city),
+          state: profile.state?.toLowerCase(),
+          radiusMiles: 50,
+          sort: "distance",
+        })
       : Promise.resolve([]),
   ]);
   const relatedProfiles = await withApprovedProfilePhotos(

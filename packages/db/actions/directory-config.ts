@@ -58,6 +58,13 @@ export interface TherapistListing {
   body_type: string | null;
   start_year: number | null;
   updated_at: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  promotions: unknown;
+  regular_discounts: unknown;
+  day_of_week_discount: unknown;
+  /** Calculated at search time from an approximate city/service-area center. */
+  distance_miles?: number | null;
 }
 
 /** A photo attached to a profile. */
@@ -73,8 +80,6 @@ export interface ProfileDetail extends TherapistListing {
   tagline: string | null;
   languages: string[] | null;
   website: string | null;
-  latitude: number | null;
-  longitude: number | null;
   zip_code: string | null;
   seo_title: string | null;
   seo_description: string | null;
@@ -91,9 +96,17 @@ export interface CityListing {
 }
 
 /** How search results may be ordered. `recommended` is `compareByRank`. */
-export type DirectorySort = "recommended" | "price" | "rating";
+export type DirectorySort =
+  "recommended" | "distance" | "featured" | "price" | "rating" | "reviews";
 
-export const DIRECTORY_SORTS: DirectorySort[] = ["recommended", "price", "rating"];
+export const DIRECTORY_SORTS: DirectorySort[] = [
+  "recommended",
+  "distance",
+  "featured",
+  "price",
+  "rating",
+  "reviews",
+];
 
 export type DirectoryTier = "free" | "standard" | "pro" | "elite";
 export const DIRECTORY_TIERS: DirectoryTier[] = ["free", "standard", "pro", "elite"];
@@ -140,6 +153,11 @@ export interface DirectoryFilters {
   verified?: boolean;
   /** Only therapists who marked their practice LGBTQ+ affirming. */
   lgbtq?: boolean;
+  /** Legacy/live directory parity filters. */
+  featured?: boolean;
+  offers?: boolean;
+  /** When a city is selected, include profiles in nearby supported cities. */
+  radiusMiles?: number;
   minPrice?: number;
   /** Keep listings whose cheapest offered session is at or under this. */
   maxPrice?: number;

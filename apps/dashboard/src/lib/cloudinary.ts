@@ -181,3 +181,89 @@ export async function verifyUploadedAsset(
 
   return { url: asset.secure_url, bytes: asset.bytes ?? 0, format: asset.format ?? "" };
 }
+
+/** Profile intro video constraints. Server verification is authoritative. */
+export const VIDEO_ALLOWED_FORMATS = ["mp4", "mov", "webm"] as const;
+export const MAX_VIDEO_UPLOAD_BYTES = 80 * 1024 * 1024;
+export const MAX_VIDEO_DURATION_SECONDS = 30;
+
+export type VideoUploadTicket = UploadTicket;
+
+export function createVideoUploadTicket(userId: string, nonce: string): VideoUploadTicket {
+  const cloudName = requireEnv("NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME");
+  const apiKey = requireEnv("CLOUDINARY_API_KEY");
+  const apiSecret = requireEnv("CLOUDINARY_API_SECRET");
+  const timestamp = Math.floor(Date.now() / 1000);
+  const folder = `therapists/${userId}/video`;
+  const publicId = `${folder}/${nonce}`;
+  const allowedFormats = VIDEO_ALLOWED_FORMATS.join(",");
+  const signedParams: Record<string, string | number> = {
+    allowed_formats: allowedFormats,
+    folder,
+    max_bytes: MAX_VIDEO_UPLOAD_BYTES,
+    public_id: publicId,
+    timestamp,
+  };
+  const toSign = Object.keys(signedParams)
+    .sort()
+    .map((key) => `${key}=${signedParams[key]}`)
+    .join("&");
+  const signature = createHash("sha1").update(`${toSign}${apiSecret}`).digest("hex");
+
+  return {
+    cloudName,
+    apiKey,
+    timestamp,
+    signature,
+    folder,
+    publicId,
+    allowedFormats,
+    maxBytes: MAX_VIDEO_UPLOAD_BYTES,
+    uploadUrl: `https://api.cloudinary.com/v1_1/${cloudName}/video/upload`,
+  };
+}
+
+export async function verifyUploadedVideoAsset(
+  userId: string,
+  publicId: string,
+): Promise<{ url: string; bytes: number; format: string; duration: number }> {
+  if (!publicId.startsWith(`therapists/${userId}/video/`)) {
+    throw new Error("That video does not belong to your profile.");
+  }
+
+  const cloudName = requireEnv("NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME");
+  const apiKey = requireEnv("CLOUDINARY_API_KEY");
+  const apiSecret = requireEnv("CLOUDINARY_API_SECRET");
+  const response = await fetch(
+    `https://api.cloudinary.com/v1_1/${cloudName}/resources/video/upload/${encodeURIComponent(publicId)}`,
+    {
+      headers: {
+        Authorization: `Basic ${Buffer.from(`${apiKey}:${apiSecret}`).toString("base64")}`,
+      },
+      cache: "no-store",
+    },
+  );
+  if (!response.ok) throw new Error("Could not verify that video with Cloudinary.");
+
+  const asset = (await response.json()) as {
+    secure_url?: string;
+    bytes?: number;
+    format?: string;
+    duration?: number;
+  };
+  const duration = Number(asset.duration ?? 0);
+  if (!asset.secure_url) throw new Error("Cloudinary returned no URL for that video.");
+  if ((asset.bytes ?? 0) > MAX_VIDEO_UPLOAD_BYTES) throw new Error("That video is too large.");
+  if (!(VIDEO_ALLOWED_FORMATS as readonly string[]).includes(asset.format ?? "")) {
+    throw new Error("That video type is not allowed.");
+  }
+  if (!Number.isFinite(duration) || duration <= 0 || duration > MAX_VIDEO_DURATION_SECONDS) {
+    throw new Error(`Profile videos must be ${MAX_VIDEO_DURATION_SECONDS} seconds or shorter.`);
+  }
+  return {
+    url: asset.secure_url,
+    bytes: asset.bytes ?? 0,
+    format: asset.format ?? "",
+    duration,
+  };
+}
