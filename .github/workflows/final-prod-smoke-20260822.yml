@@ -18,31 +18,41 @@ jobs:
       NEW_PROJECT_ID: prj_nFOivhSy4Ta4j221zzOImPWPwSdv
       EXPECTED_DEPLOYMENT: dpl_HmAriMzQLqLzo4DUDjvEZx1ydaKY
     steps:
-      - name: Move apex to V2 while preserving redirect
+      - name: Move www to V2 first
         shell: bash
         run: |
           set -euo pipefail
-          response="$(curl -fsS -X POST \
+          body="$(mktemp)"
+          status="$(curl -sS -X POST \
             -H "Authorization: Bearer $VERCEL_TOKEN" \
             -H 'Content-Type: application/json' \
-            "https://api.vercel.com/v1/projects/$OLD_PROJECT/domains/masseurmatch.com/move?teamId=$TEAM_ID" \
-            --data "{\"projectId\":\"$NEW_PROJECT_ID\",\"gitBranch\":null,\"redirect\":\"www.masseurmatch.com\",\"redirectStatusCode\":308}")"
-          printf '%s' "$response" | jq '{name,projectId,redirect,redirectStatusCode,verified}'
-          test "$(printf '%s' "$response" | jq -r '.projectId')" = "$NEW_PROJECT_ID"
-          test "$(printf '%s' "$response" | jq -r '.redirect')" = "www.masseurmatch.com"
-
-      - name: Move www to V2
-        shell: bash
-        run: |
-          set -euo pipefail
-          response="$(curl -fsS -X POST \
-            -H "Authorization: Bearer $VERCEL_TOKEN" \
-            -H 'Content-Type: application/json' \
+            -o "$body" -w '%{http_code}' \
             "https://api.vercel.com/v1/projects/$OLD_PROJECT/domains/www.masseurmatch.com/move?teamId=$TEAM_ID" \
             --data "{\"projectId\":\"$NEW_PROJECT_ID\",\"gitBranch\":null}")"
-          printf '%s' "$response" | jq '{name,projectId,redirect,redirectStatusCode,verified}'
-          test "$(printf '%s' "$response" | jq -r '.projectId')" = "$NEW_PROJECT_ID"
-          test "$(printf '%s' "$response" | jq -r '.name')" = "www.masseurmatch.com"
+          echo "www move status=$status"
+          cat "$body" | jq '{name,projectId,redirect,redirectStatusCode,verified,error}'
+          test "$status" = "200"
+          test "$(jq -r '.projectId' "$body")" = "$NEW_PROJECT_ID"
+
+      - name: Move apex redirect if Vercel did not move it with www
+        shell: bash
+        run: |
+          set -euo pipefail
+          domain_data="$(curl -fsS -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v1/domains/masseurmatch.com/project-domains?teamId=$TEAM_ID&limit=100")"
+          apex_project="$(printf '%s' "$domain_data" | jq -r '.projectDomains[] | select(.name == "masseurmatch.com") | .projectId')"
+          echo "apex project before explicit move=$apex_project"
+          if [ "$apex_project" != "$NEW_PROJECT_ID" ]; then
+            body="$(mktemp)"
+            status="$(curl -sS -X POST \
+              -H "Authorization: Bearer $VERCEL_TOKEN" \
+              -H 'Content-Type: application/json' \
+              -o "$body" -w '%{http_code}' \
+              "https://api.vercel.com/v1/projects/$OLD_PROJECT/domains/masseurmatch.com/move?teamId=$TEAM_ID" \
+              --data "{\"projectId\":\"$NEW_PROJECT_ID\",\"gitBranch\":null,\"redirect\":\"www.masseurmatch.com\",\"redirectStatusCode\":308}")"
+            echo "apex move status=$status"
+            cat "$body" | jq '{name,projectId,redirect,redirectStatusCode,verified,error}'
+            test "$status" = "200"
+          fi
 
       - name: Verify domain ownership and production deployment
         shell: bash
@@ -51,6 +61,8 @@ jobs:
           domain_data="$(curl -fsS -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v1/domains/masseurmatch.com/project-domains?teamId=$TEAM_ID&limit=100")"
           printf '%s' "$domain_data" | jq '.projectDomains[] | select(.name == "masseurmatch.com" or .name == "www.masseurmatch.com") | {name,projectId,redirect,redirectStatusCode,verified}'
           test "$(printf '%s' "$domain_data" | jq -r --arg pid "$NEW_PROJECT_ID" '[.projectDomains[] | select((.name == "masseurmatch.com" or .name == "www.masseurmatch.com") and .projectId == $pid)] | length')" = "2"
+          test "$(printf '%s' "$domain_data" | jq -r '.projectDomains[] | select(.name == "masseurmatch.com") | .redirect')" = "www.masseurmatch.com"
+          test "$(printf '%s' "$domain_data" | jq -r '.projectDomains[] | select(.name == "masseurmatch.com") | .redirectStatusCode')" = "308"
 
           body="$(mktemp)"
           headers="$(mktemp)"
