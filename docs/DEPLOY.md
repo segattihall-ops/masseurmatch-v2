@@ -154,7 +154,7 @@ Set these under **Settings** → **Environment Variables** on each project, for
 > Renaming is not optional and old names are not aliased — a variable under the
 > wrong name is the same as an unset one.
 
-The two apps need _different_ variables. This matters: nothing in `apps/web`
+The three apps need _different_ variables. This matters: nothing in `apps/web`
 reads any PayPal variable, so PayPal credentials set on `masseurmatch-v2` do
 nothing at all.
 
@@ -195,6 +195,30 @@ nothing at all.
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY`    | optional     | Both Turnstile keys, or neither — one alone leaves the check off                                                                                                   |
 | `TURNSTILE_SECRET_KEY`              | optional     | Server only                                                                                                                                                        |
 | `NEXT_PUBLIC_SENTRY_DSN`            | optional     |                                                                                                                                                                    |
+
+### `masseurmatch-v2-admin` (the admin app)
+
+This project was created after the section above was written and spent its
+first hours returning `500` on every page: the runtime logs read
+`Missing NEXT_PUBLIC_SUPABASE_URL`, 68 times, because nothing here had ever
+been set. There is no partial mode — `createSessionClient()` throws before any
+page renders, so the first three rows are the difference between a working app
+and a blank error.
+
+| Variable                         | Required | Notes                                                                                                                                                  |
+| -------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `NEXT_PUBLIC_SUPABASE_URL`       | yes      | Nothing renders without it                                                                                                                             |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY`  | yes      | Throws on the next line of the same call                                                                                                               |
+| `SUPABASE_SERVICE_ROLE_KEY`      | yes      | Server only. The verification, ticket, moderation and audit-log queues read with it. Bypasses RLS — never prefix with `NEXT_PUBLIC_`                   |
+| `NEXT_PUBLIC_SITE_URL`           | yes      | `https://www.masseurmatch.com`. Without it, "view public profile" falls back to this project's own host and every such link 404s on the admin domain   |
+| `NEXT_PUBLIC_ADMIN_URL`          | yes      | `https://admin.masseurmatch.com` — this app's own domain. Where Google returns an operator after sign-in; must match the redirect allow-list (step 4b) |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | optional | Both Turnstile keys, or neither — one alone leaves the check off                                                                                       |
+| `TURNSTILE_SECRET_KEY`           | optional | Server only                                                                                                                                            |
+| `NEXT_PUBLIC_SENTRY_DSN`         | optional |                                                                                                                                                        |
+
+Adding these needs a **redeploy** to take effect. Vercel fixes a deployment's
+environment when it is built; the deployment already serving the domain keeps
+the environment it was built with, however the dashboard now reads.
 
 ### Adding a variable Vercel does not already know about
 
@@ -362,11 +386,18 @@ an error page.
 > whoever owns the domain.
 
 1. Supabase → **Authentication** → **URL Configuration** → **Redirect URLs**.
-2. Add both:
+2. Add all four:
    - `https://dashboard.masseurmatch.com/auth/callback`
    - `https://dashboard.masseurmatch.com/auth/callback**`
+   - `https://admin.masseurmatch.com/auth/callback`
+   - `https://admin.masseurmatch.com/auth/callback**`
 
-   Two entries because the links carry a query string
+   The admin pair is what makes "Continue with Google" work on the admin app.
+   Supabase matches `redirectTo` against this list and refuses anything absent,
+   so without it the operator reaches Google, approves, and is bounced to the
+   Site URL — the old site — instead of coming back signed in.
+
+   Two entries per host because the links carry a query string
    (`?setup=1&next=…`, `?next=%2Freset-password`) and Supabase's documentation
    defines its wildcards (`*` stops at a separator, `**` does not, `.` and `/`
    are the separators) without saying whether the query string takes part in the
@@ -411,12 +442,27 @@ decision you have already made.
 **Google.** Already enabled on this Supabase project — `/auth/v1/settings`
 reports `google: true` — so "Continue with Google" works as soon as the
 `/auth/callback` entry from step 4b is in the allow-list. Nothing else to set.
+The OAuth client in Google Cloud needs no new redirect URI for a second app
+either: it points at Supabase's own `/auth/v1/callback`, not at ours.
 
 Worth knowing: Google is the one flow where signing up and signing in are the
 same click, so the role grant cannot be inferred from the button. It is decided
 from the auth user's `created_at` instead — an account created in the last ten
 minutes is new, anything older is a returning user and keeps whatever role it
 has. See `apps/dashboard/src/lib/oauth.ts`.
+
+**Google on the admin app.** The same button, and deliberately not the same
+rule behind it. `apps/admin` grants nothing: its callback exchanges the code for
+a session and stops, with no account setup and no role write. Authorisation
+stays with `requireAdmin()` reading `user_roles` on the server, so an operator
+signs in with Google exactly as they do with a password — and a Google account
+without the admin role authenticates successfully and still sees nothing but
+`/not-authorized`. Granting a role there would turn "anyone with a Google
+account" into "anyone who can reach the admin sign-in page".
+
+That page names the account it refused and offers a sign-out, because the
+account chooser makes arriving as the wrong person a one-click mistake, and
+without a way to drop the session the sign-in page just redirects back to it.
 
 **Phone.** Uses Supabase's own SMS provider settings (Twilio), so there is no
 new variable here either. Two properties are deliberate and will look like bugs
