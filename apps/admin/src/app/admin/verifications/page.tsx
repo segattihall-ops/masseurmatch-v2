@@ -5,10 +5,8 @@ import Link from "next/link";
 import { requireAdmin } from "@/lib/guards";
 import { DOCUMENT_KINDS, isDocumentKind } from "@/lib/identity-documents";
 import { documentViewUrl } from "@/lib/identity-storage";
-import { hasStripeIdentityKey } from "@/lib/stripe-identity";
 
 import { VerificationQueue, type VerificationRow } from "./queue";
-import { StripeIdentityQueue, type StripeIdentityRow } from "./stripe-queue";
 
 export const metadata: Metadata = {
   title: "Identity verifications",
@@ -39,11 +37,7 @@ export default async function VerificationsPage() {
 
   const service = createServiceClient();
 
-  const [
-    { data, error },
-    { count: manualPending, error: manualError },
-    { data: stripeData, error: stripeError },
-  ] = await Promise.all([
+  const [{ data, error }, { count: manualPending, error: manualError }] = await Promise.all([
     service
       .from("profile_documents")
       .select("id,profile_id,document_type,type,status,created_at,storage_path,url")
@@ -55,18 +49,9 @@ export default async function VerificationsPage() {
       .select("id", { count: "exact", head: true })
       .eq("provider", "manual")
       .eq("status", "pending"),
-    service
-      .from("identity_verifications")
-      .select(
-        "id,profile_id,status,last_error,created_at,stripe_session_id,stripe_verification_session_id",
-      )
-      .eq("provider", "stripe")
-      .in("status", ["pending", "processing", "requires_input"])
-      .order("created_at", { ascending: true })
-      .limit(100),
   ]);
 
-  const queueError = error ?? manualError ?? stripeError;
+  const queueError = error ?? manualError;
   if (queueError) {
     return (
       <main className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
@@ -79,15 +64,7 @@ export default async function VerificationsPage() {
   }
 
   const pending = data ?? [];
-  const legacyStripe = stripeData ?? [];
-  const profileIds = [
-    ...new Set(
-      [
-        ...pending.map((row) => row.profile_id),
-        ...legacyStripe.map((row) => row.profile_id),
-      ].filter(Boolean),
-    ),
-  ] as string[];
+  const profileIds = [...new Set(pending.map((row) => row.profile_id).filter(Boolean))] as string[];
 
   const names = new Map<string, string>();
   if (profileIds.length > 0) {
@@ -121,15 +98,6 @@ export default async function VerificationsPage() {
     }),
   );
 
-  const stripeRows: StripeIdentityRow[] = legacyStripe.map((row) => ({
-    id: row.id,
-    name: (row.profile_id && names.get(row.profile_id)) || "Unknown therapist",
-    status: row.status,
-    submittedAt: row.created_at ? new Date(row.created_at).toISOString().slice(0, 10) : null,
-    lastError: row.last_error,
-    hasSession: Boolean(row.stripe_verification_session_id || row.stripe_session_id),
-  }));
-
   const identityRows = rows.filter((row) => row.isIdentity);
   const credentialRows = rows.filter((row) => !row.isIdentity);
   const manualCount = manualPending ?? 0;
@@ -140,8 +108,8 @@ export default async function VerificationsPage() {
         <div className="min-w-0">
           <h1 className="text-2xl font-semibold text-ink sm:text-3xl">Identity verifications</h1>
           <p className="mt-1 max-w-2xl text-sm leading-6 text-ink/60">
-            Review V2 government ID submissions, manual identity checks, legacy Stripe Identity
-            sessions, and professional credentials as separate trust signals.
+            Review V2 government ID submissions, manual identity checks, and professional
+            credentials as separate trust signals.
           </p>
         </div>
         <Link
@@ -152,7 +120,7 @@ export default async function VerificationsPage() {
         </Link>
       </div>
 
-      <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="mb-8 grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div className="rounded-xl border border-ink/10 bg-surface p-3">
           <p className="text-xs text-ink/50">V2 identity docs</p>
           <p className="mt-1 text-2xl font-semibold text-ink">{identityRows.length}</p>
@@ -160,10 +128,6 @@ export default async function VerificationsPage() {
         <div className="rounded-xl border border-ink/10 bg-surface p-3">
           <p className="text-xs text-ink/50">Manual submissions</p>
           <p className="mt-1 text-2xl font-semibold text-ink">{manualCount}</p>
-        </div>
-        <div className="rounded-xl border border-ink/10 bg-surface p-3">
-          <p className="text-xs text-ink/50">Legacy Stripe</p>
-          <p className="mt-1 text-2xl font-semibold text-ink">{stripeRows.length}</p>
         </div>
         <div className="rounded-xl border border-ink/10 bg-surface p-3">
           <p className="text-xs text-ink/50">Legacy credentials</p>
@@ -184,8 +148,6 @@ export default async function VerificationsPage() {
           emptyMessage="No V2 identity documents are waiting for review."
         />
       </section>
-
-      <StripeIdentityQueue rows={stripeRows} configured={hasStripeIdentityKey()} />
 
       <section className="mt-10">
         <div className="mb-3">
