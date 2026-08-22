@@ -40,7 +40,8 @@ export function StripeIdentityQueue({
         <Card className="mb-4 border-wineSoft bg-wineSoft/30 p-4">
           <p className="text-sm leading-6 text-wineDark">
             Stripe Identity sync is not configured in this Admin deployment. Add{" "}
-            <code>STRIPE_IDENTITY_RESTRICTED_KEY</code> (preferred) or <code>STRIPE_SECRET_KEY</code>
+            <code>STRIPE_IDENTITY_RESTRICTED_KEY</code> (preferred) or{" "}
+            <code>STRIPE_SECRET_KEY</code>
             to Vercel to enable status refresh for these legacy sessions.
           </p>
         </Card>

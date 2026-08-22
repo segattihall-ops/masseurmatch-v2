@@ -82,9 +82,10 @@ export default async function VerificationsPage() {
   const legacyStripe = stripeData ?? [];
   const profileIds = [
     ...new Set(
-      [...pending.map((row) => row.profile_id), ...legacyStripe.map((row) => row.profile_id)].filter(
-        Boolean,
-      ),
+      [
+        ...pending.map((row) => row.profile_id),
+        ...legacyStripe.map((row) => row.profile_id),
+      ].filter(Boolean),
     ),
   ] as string[];
 

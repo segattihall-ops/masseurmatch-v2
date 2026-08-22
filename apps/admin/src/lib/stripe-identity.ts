@@ -46,8 +46,7 @@ export async function retrieveStripeIdentitySession(
   );
 
   const payload = (await response.json().catch(() => null)) as
-    | (Partial<StripeIdentitySession> & { error?: { message?: string } })
-    | null;
+    (Partial<StripeIdentitySession> & { error?: { message?: string } }) | null;
 
   if (!response.ok) {
     throw new Error(payload?.error?.message || `Stripe Identity returned HTTP ${response.status}.`);
@@ -67,7 +66,9 @@ export async function retrieveStripeIdentitySession(
     last_error:
       payload.last_error && typeof payload.last_error === "object" ? payload.last_error : null,
     last_verification_report:
-      typeof payload.last_verification_report === "string" ? payload.last_verification_report : null,
+      typeof payload.last_verification_report === "string"
+        ? payload.last_verification_report
+        : null,
     livemode: payload.livemode === true,
   };
 }

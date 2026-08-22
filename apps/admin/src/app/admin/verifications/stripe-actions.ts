@@ -8,10 +8,7 @@ import type { StepState } from "@/app/onboarding/form-state";
 import { requireAdmin } from "@/lib/guards";
 import { retrieveStripeIdentitySession } from "@/lib/stripe-identity";
 
-export async function syncStripeIdentity(
-  _prev: StepState,
-  formData: FormData,
-): Promise<StepState> {
+export async function syncStripeIdentity(_prev: StepState, formData: FormData): Promise<StepState> {
   const viewer = await requireAdmin("/verifications");
   const verificationId = String(formData.get("verification_id") ?? "").trim();
   if (!verificationId) return { error: "No Stripe Identity verification selected." };
@@ -67,7 +64,9 @@ export async function syncStripeIdentity(
   }
 
   const currentMetadata =
-    verification.metadata && typeof verification.metadata === "object" && !Array.isArray(verification.metadata)
+    verification.metadata &&
+    typeof verification.metadata === "object" &&
+    !Array.isArray(verification.metadata)
       ? (verification.metadata as Record<string, Json | undefined>)
       : {};
   const metadata = {
