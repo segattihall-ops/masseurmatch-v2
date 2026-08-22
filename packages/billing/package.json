@@ -6,12 +6,14 @@
   "exports": {
     ".": "./index.ts",
     "./plans": "./plans.ts",
-    "./provider": "./provider.ts"
+    "./provider": "./provider.ts",
+    "./paypal-plan-configuration": "./paypal-plan-configuration.ts"
   },
   "files": [
     "index.ts",
     "plans.ts",
     "provider.ts",
+    "paypal-plan-configuration.ts",
     "providers"
   ],
   "scripts": {
