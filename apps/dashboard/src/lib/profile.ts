@@ -46,7 +46,7 @@ const PROFILE_COLUMNS =
   "is_verified_phone,is_verified_identity,identity_verified_at," +
   "subscription_status,photo_limit,updated_at," +
   "available_now,available_now_expires,travel_schedule,traveling,offers_outcall,outcall," +
-  "profile_completeness,completion_percentage,profile_views";
+  "profile_completeness,completion_percentage,profile_views,contact_clicks,spike_until";
 
 export type MyProfile = {
   id: string;
@@ -95,6 +95,16 @@ export type MyProfile = {
   profile_completeness: number | null;
   completion_percentage: number | null;
   profile_views: number | null;
+  /** All-time contact clicks, counted by the public site. */
+  contact_clicks: number | null;
+  /**
+   * When the running visibility Spike ends.
+   *
+   * Same class of bug as `available_now`: `startSpike` reads it through a cast,
+   * so leaving it unselected meant `spikeAllowance` never saw a Spike already
+   * running and the "one at a time" guard could not fire.
+   */
+  spike_until: string | null;
 };
 
 export type MyProfileView = {

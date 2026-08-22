@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
@@ -46,5 +46,31 @@ describe("Pro navigation", () => {
     for (const action of QUICK_ACTIONS) {
       expect(sidebar.has(action.href)).toBe(true);
     }
+  });
+});
+
+/**
+ * Nothing under `/therapist` renders its own copy of a page.
+ *
+ * That segment is the legacy shell. Every route in it now redirects into
+ * `/pro`, which is the only shell with a mobile navigation and the only place
+ * these pages are implemented. The rule is worth checking rather than
+ * remembering: the pages this replaced had drifted far enough apart that the
+ * legacy subscription page was quoting Standard at $29 against a real price of
+ * $39, and the legacy coach page was reading nothing at all.
+ */
+describe("legacy /therapist routes", () => {
+  const therapistDir = fileURLToPath(new URL("../src/app/therapist/", import.meta.url));
+  const pages = readdirSync(therapistDir, { recursive: true, encoding: "utf8" }).filter((entry) =>
+    entry.endsWith("page.tsx"),
+  );
+
+  it("still has routes to redirect", () => {
+    expect(pages.length).toBeGreaterThan(0);
+  });
+
+  it.each(pages)("%s redirects into /pro", (page) => {
+    const source = readFileSync(`${therapistDir}${page}`, "utf8");
+    expect(source).toMatch(/redirect\("\/pro\//);
   });
 });
