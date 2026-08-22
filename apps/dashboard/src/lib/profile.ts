@@ -20,13 +20,33 @@ import type { OnboardingSnapshot } from "./onboarding";
  * keyed on `id` and the current ones keyed on `user_id` agree today.
  */
 
+/**
+ * Every column the dashboard reads about the caller.
+ *
+ * The availability block — `available_now`, `available_now_expires`,
+ * `travel_schedule`, `offers_outcall`, `outcall` — is here because leaving it
+ * out did not fail loudly. `isAvailableNow()` takes an object with optional
+ * fields, so an unselected `available_now` is `undefined`, and `undefined` is
+ * falsy: the badge read OFF for everyone, the "you are already available"
+ * guard in `setAvailableNow` never fired, and the dashboard's travel card was
+ * permanently empty. A missing column in a select list is a silent `false`
+ * everywhere it is read, which is why the list has to match what the callers
+ * actually ask for.
+ *
+ * `tier_granted_until` is deliberately absent: it is in
+ * `migrations/courtesy_tier_grants.sql` but not in the generated types, and
+ * naming a column that does not exist fails the whole select rather than that
+ * one field. `resolveTier` treats it as absent and falls back to `free`.
+ */
 const PROFILE_COLUMNS =
   "id,user_id,display_name,full_name,headline,bio,city,state,phone,email,slug," +
   "service_categories,additional_services,incall_price,outcall_price,starting_price," +
   "avatar_url,photo_url,profile_status,visibility_status,subscription_tier," +
   "moderation_status,moderation_notes," +
   "is_verified_phone,is_verified_identity,identity_verified_at," +
-  "subscription_status,photo_limit,updated_at";
+  "subscription_status,photo_limit,updated_at," +
+  "available_now,available_now_expires,travel_schedule,traveling,offers_outcall,outcall," +
+  "profile_completeness,completion_percentage,profile_views";
 
 export type MyProfile = {
   id: string;
@@ -58,6 +78,23 @@ export type MyProfile = {
   subscription_status: string | null;
   photo_limit: number | null;
   updated_at: string;
+
+  /** Availability, as stored. Read through `@masseurmatch/db/available-now`. */
+  available_now: boolean | null;
+  available_now_expires: string | null;
+  /** Raw `jsonb`. Parse with `parseTravelSchedule` rather than trusting the shape. */
+  travel_schedule: unknown;
+  traveling: boolean | null;
+  offers_outcall: boolean | null;
+  outcall: boolean | null;
+  /**
+   * Two of production's four rival completeness columns. Neither is computed by
+   * anything in this repo — `scoreProfile` derives the number the dashboard
+   * shows — so these are only read to display what the old admin CMS wrote.
+   */
+  profile_completeness: number | null;
+  completion_percentage: number | null;
+  profile_views: number | null;
 };
 
 export type MyProfileView = {

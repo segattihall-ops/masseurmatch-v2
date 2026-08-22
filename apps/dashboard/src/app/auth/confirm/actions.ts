@@ -1,10 +1,12 @@
 "use server";
 
 import { createSessionClient } from "@masseurmatch/db/auth";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { ensureProviderAccount } from "@/lib/account-setup";
 import { emailLinkType } from "@/lib/email-links";
+import { REFERRAL_COOKIE } from "@/lib/referrals";
 import { safeNext } from "@/lib/safe-next";
 
 /**
@@ -44,11 +46,19 @@ export async function confirmEmailLink(formData: FormData): Promise<void> {
           (result.data.user.user_metadata?.name as string | undefined) ??
           null,
         email: result.data.user.email ?? null,
+        // Set by `/r/<code>` before they signed up. This is the arrival that
+        // matters: it is the same interstitial every confirmation email lands
+        // on, so a referral that missed the sign-up call is credited here.
+        referralCode: cookies().get(REFERRAL_COOKIE)?.value ?? null,
       });
     } catch (cause) {
       console.error("[auth/confirm] could not finish account setup", cause);
       redirect("/sign-in?notice=setup-failed");
     }
+
+    // Claimed or refused, the cookie has done its job. Leaving it would
+    // attribute the next account created in this browser to the same referrer.
+    cookies().delete(REFERRAL_COOKIE);
   }
 
   redirect(next);

@@ -2,13 +2,14 @@
 
 import { verifyTurnstile } from "@masseurmatch/config/observability";
 import { createSessionClient } from "@masseurmatch/db/auth";
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { ensureProviderAccount } from "@/lib/account-setup";
 import { validateCredentials } from "@/lib/credentials";
 import { dashboardUrl } from "@/lib/dashboard-url";
 import { clientAddress, LIMITS, rateLimit } from "@/lib/rate-limit";
+import { REFERRAL_COOKIE } from "@/lib/referrals";
 import { safeNext } from "@/lib/safe-next";
 
 import type { SignUpState } from "./form-state";
@@ -96,7 +97,15 @@ export async function signUp(_prev: SignUpState, formData: FormData): Promise<Si
 
   if (data.user && !alreadyRegistered) {
     try {
-      await ensureProviderAccount(data.user.id, { fullName, email });
+      await ensureProviderAccount(data.user.id, {
+        fullName,
+        email,
+        // Left by `/r/<code>`, which is where the referral link lands. A form
+        // field could carry it too, but only on this path — the confirmation
+        // email and the Google round trip both come back with nothing of ours
+        // attached, and the cookie is what survives them.
+        referralCode: cookies().get(REFERRAL_COOKIE)?.value ?? null,
+      });
     } catch (cause) {
       // The auth account now exists but has no role, which would strand them on
       // /not-authorized after confirming. Said out loud rather than swallowed —

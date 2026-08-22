@@ -10,6 +10,8 @@ import {
   type TrendRow,
 } from "@masseurmatch/db/demand";
 
+import { getOrCreateMyProfile } from "./profile";
+
 /**
  * Demand Radar for one therapist's city.
  *
@@ -87,4 +89,24 @@ export async function getCityDemand(
     peers: peers.count ?? 0,
     available: true,
   };
+}
+
+/** A city's demand, plus the city it is for. */
+export type MyCityDemand = CityDemand & { city: string | null; state: string | null };
+
+/**
+ * Demand Radar for the signed-in therapist.
+ *
+ * Both routes that render the radar — `/pro/demand-radar` and the legacy
+ * `/therapist/demand-radar` — go through this, so neither can end up reading a
+ * different city from the other. The city comes from the profile rather than a
+ * query parameter: this is a therapist's own market, not a lookup tool.
+ */
+export async function getMyCityDemand(
+  userId: string,
+  now: Date = new Date(),
+): Promise<MyCityDemand> {
+  const { profile } = await getOrCreateMyProfile(userId);
+  const demand = await getCityDemand(profile.city, profile.state, profile.id, now);
+  return { ...demand, city: profile.city, state: profile.state };
 }

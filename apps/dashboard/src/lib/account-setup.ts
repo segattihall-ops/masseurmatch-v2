@@ -3,6 +3,8 @@ import "server-only";
 import { createServiceClient } from "@masseurmatch/db/client";
 import { HIDDEN } from "@masseurmatch/db/visibility";
 
+import { claimReferralSignup } from "./referral-rewards";
+
 /**
  * Everything a brand-new account needs before the dashboard will load for it.
  *
@@ -42,6 +44,13 @@ import { HIDDEN } from "@masseurmatch/db/visibility";
 export type NewAccount = {
   fullName?: string | null;
   email?: string | null;
+  /**
+   * The code from the `/r/<code>` link this person arrived through, when there
+   * was one. Claiming it costs nothing if the account never confirms: the
+   * signup only becomes a reward once the referred therapist pays for a month,
+   * which an abandoned account never does.
+   */
+  referralCode?: string | null;
 };
 
 /** The database's word for a therapist. See the `Role` doc in packages/db/auth.ts. */
@@ -72,6 +81,14 @@ export async function ensureProviderAccount(
       throw new Error(`Could not set up the account: ${granted.error.message}`);
     }
   }
+
+  // Attribution, before the early return below, so the confirmation callback
+  // reaches it too — the profile usually already exists by then and this would
+  // otherwise only ever run on the sign-up call. Never allowed to throw: a
+  // missing row in a rewards table is worth far less than stranding somebody
+  // who has just signed up on an error page. The RPC decides what an unknown
+  // code, a repeat claim or a self-referral mean, and a repeat is a no-op.
+  await claimReferralSignup(account.referralCode, userId);
 
   const existingProfile = await supabase
     .from("profiles")
