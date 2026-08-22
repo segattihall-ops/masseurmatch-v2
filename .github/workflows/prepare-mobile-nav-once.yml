@@ -1,9 +1,9 @@
 name: Prepare mobile nav once
 
 on:
-  push:
+  pull_request:
     branches:
-      - feat/launch-mobile-nav
+      - main
 
 permissions:
   contents: write
