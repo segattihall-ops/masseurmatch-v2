@@ -82,7 +82,9 @@ function requestedPlan(formData: FormData): string | null {
  * A stale $99 Elite plan must fail here rather than charge a therapist a price
  * different from the $129 catalogue.
  */
-async function assertProviderPlanIsSafe(plan: Parameters<typeof assertPayPalPlanMatchesCatalog>[0]) {
+async function assertProviderPlanIsSafe(
+  plan: Parameters<typeof assertPayPalPlanMatchesCatalog>[0],
+) {
   if (activeProviderId() === "paypal") {
     await assertPayPalPlanMatchesCatalog(plan);
   }

@@ -28,9 +28,7 @@ describe("PayPal plan catalogue guard", () => {
   });
 
   it("blocks inactive, non-monthly and non-USD plans", () => {
-    expect(payPalPlanMatchesCatalog("standard", plan("39.00", { status: "INACTIVE" }))).toBe(
-      false,
-    );
+    expect(payPalPlanMatchesCatalog("standard", plan("39.00", { status: "INACTIVE" }))).toBe(false);
 
     expect(
       payPalPlanMatchesCatalog("standard", {
