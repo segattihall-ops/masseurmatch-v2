@@ -46,6 +46,11 @@ export default defineConfig({
       testMatch: /dashboard\.spec\.ts/,
       use: { baseURL: `http://localhost:${DASHBOARD}` },
     },
+    {
+      name: "launch-critical",
+      testMatch: /launch-critical\.spec\.ts/,
+      use: { baseURL: `http://localhost:${WEB}` },
+    },
   ],
 
   webServer: [
