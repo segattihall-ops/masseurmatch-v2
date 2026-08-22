@@ -76,9 +76,14 @@ export async function GET(request: NextRequest) {
       const payload = (await response.json()) as ReversePayload;
       const address = payload.address ?? {};
       detectedCity =
-        address.city ?? address.town ?? address.village ?? address.municipality ?? address.county ?? null;
+        address.city ??
+        address.town ??
+        address.village ??
+        address.municipality ??
+        address.county ??
+        null;
       const iso = address["ISO3166-2-lvl4"];
-      detectedStateCode = iso ? iso.split("-").pop() ?? null : null;
+      detectedStateCode = iso ? (iso.split("-").pop() ?? null) : null;
     }
   } catch {
     // Deterministic nearest-city fallback below keeps the feature usable.
@@ -104,17 +109,21 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  const available = CITY_POINTS
-    .map((point) => {
-      const city = cities.find((candidate) => candidate.citySlug === point.slug);
-      return city ? { point, city, distance: distanceMiles(lat, lng, point) } : null;
-    })
+  const available = CITY_POINTS.map((point) => {
+    const city = cities.find((candidate) => candidate.citySlug === point.slug);
+    return city ? { point, city, distance: distanceMiles(lat, lng, point) } : null;
+  })
     .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry))
     .sort((a, b) => a.distance - b.distance);
   const nearest = available[0];
 
   if (!nearest) {
-    return NextResponse.json({ ok: true, supported: false, detectedCity, stateCode: detectedStateCode });
+    return NextResponse.json({
+      ok: true,
+      supported: false,
+      detectedCity,
+      stateCode: detectedStateCode,
+    });
   }
 
   return NextResponse.json({

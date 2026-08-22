@@ -68,7 +68,10 @@ function sendSearchAnalytics(values: SearchValues) {
 
   try {
     if (navigator.sendBeacon) {
-      navigator.sendBeacon("/api/analytics/legacy", new Blob([payload], { type: "application/json" }));
+      navigator.sendBeacon(
+        "/api/analytics/legacy",
+        new Blob([payload], { type: "application/json" }),
+      );
       return;
     }
     void fetch("/api/analytics/legacy", {
@@ -100,14 +103,14 @@ export function SearchControls({
   const [expanded, setExpanded] = useState(
     Boolean(
       values.goal ||
-        values.session ||
-        values.tier ||
-        values.min ||
-        values.max ||
-        values.available ||
-        values.verified ||
-        values.lgbtq ||
-        values.master,
+      values.session ||
+      values.tier ||
+      values.min ||
+      values.max ||
+      values.available ||
+      values.verified ||
+      values.lgbtq ||
+      values.master,
     ),
   );
   const [locating, setLocating] = useState(false);
@@ -183,14 +186,15 @@ export function SearchControls({
     }
   }
 
-  async function handleMyLocation() {
+  async function locateUser() {
     if (locating) return;
     setLocating(true);
     setLocationMessage(null);
 
     if (!navigator.geolocation) {
       const resolved = await resolveApproximateLocation();
-      if (!resolved) setLocationMessage("Location is not available in this browser. Choose a city instead.");
+      if (!resolved)
+        setLocationMessage("Location is not available in this browser. Choose a city instead.");
       setLocating(false);
       return;
     }
@@ -219,7 +223,8 @@ export function SearchControls({
           navigate();
         } catch {
           const resolved = await resolveApproximateLocation();
-          if (!resolved) setLocationMessage("We could not resolve your city. Choose one from the list.");
+          if (!resolved)
+            setLocationMessage("We could not resolve your city. Choose one from the list.");
         } finally {
           setLocating(false);
         }
@@ -230,7 +235,7 @@ export function SearchControls({
           setLocationMessage(
             error.code === error.PERMISSION_DENIED
               ? "Location permission was denied. Choose a city from the list."
-              : "We could not get your location. Choose one from the list.",
+              : "We could not get your location. Choose a city from the list.",
           );
         }
         setLocating(false);
@@ -285,10 +290,19 @@ export function SearchControls({
           <label htmlFor="city" className="mb-1.5 block text-sm font-semibold text-text-primary">
             City
           </label>
-          <select id="city" name="city" defaultValue={values.city} className={fieldClass()} onChange={() => navigate()}>
+          <select
+            id="city"
+            name="city"
+            defaultValue={values.city}
+            className={fieldClass()}
+            onChange={() => navigate()}
+          >
             <option value="">All cities</option>
             {cities.map((city) => (
-              <option key={`${city.stateSlug}/${city.citySlug}`} value={`${city.stateSlug}/${city.citySlug}`}>
+              <option
+                key={`${city.stateSlug}/${city.citySlug}`}
+                value={`${city.stateSlug}/${city.citySlug}`}
+              >
                 {city.name}, {city.state}
               </option>
             ))}
@@ -299,7 +313,13 @@ export function SearchControls({
           <label htmlFor="service" className="mb-1.5 block text-sm font-semibold text-text-primary">
             Service or technique
           </label>
-          <select id="service" name="service" defaultValue={values.service} className={fieldClass()} onChange={() => navigate()}>
+          <select
+            id="service"
+            name="service"
+            defaultValue={values.service}
+            className={fieldClass()}
+            onChange={() => navigate()}
+          >
             <option value="">All services</option>
             {services.map((service) => (
               <option key={service} value={service}>
@@ -322,22 +342,27 @@ export function SearchControls({
       <div className="mt-4 flex flex-wrap items-center gap-3">
         <button
           type="button"
-          onClick={() => void handleMyLocation()}
+          onClick={() => void locateUser()}
           disabled={locating}
           className="rounded-full border border-border bg-bg-subtle px-4 py-2 text-xs font-semibold text-text-primary transition hover:bg-brand-soft disabled:opacity-50"
         >
           {locating ? "Finding your city…" : "Use my location"}
         </button>
         <span className="text-xs text-text-secondary" aria-live="polite">
-          {locationMessage ?? `${resultCount} ${resultCount === 1 ? "profile" : "profiles"} match these filters`}
+          {locationMessage ??
+            `${resultCount} ${resultCount === 1 ? "profile" : "profiles"} match these filters`}
         </span>
-        {isPending ? <span className="text-xs font-semibold text-brand-secondary">Updating…</span> : null}
+        {isPending ? (
+          <span className="text-xs font-semibold text-brand-secondary">Updating…</span>
+        ) : null}
       </div>
 
       {expanded ? (
         <div className="mt-6 border-t border-border pt-6">
           <fieldset>
-            <legend className="text-sm font-semibold text-text-primary">What are you looking for?</legend>
+            <legend className="text-sm font-semibold text-text-primary">
+              What are you looking for?
+            </legend>
             <div className="mt-3 flex flex-wrap gap-2">
               <label className="cursor-pointer">
                 <input
@@ -372,7 +397,10 @@ export function SearchControls({
 
           <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
             <div>
-              <label htmlFor="session" className="mb-1.5 block text-sm font-medium text-text-primary">
+              <label
+                htmlFor="session"
+                className="mb-1.5 block text-sm font-medium text-text-primary"
+              >
                 Session
               </label>
               <select
@@ -391,7 +419,13 @@ export function SearchControls({
               <label htmlFor="tier" className="mb-1.5 block text-sm font-medium text-text-primary">
                 Profile tier
               </label>
-              <select id="tier" name="tier" defaultValue={values.tier} className={fieldClass()} onChange={() => navigate()}>
+              <select
+                id="tier"
+                name="tier"
+                defaultValue={values.tier}
+                className={fieldClass()}
+                onChange={() => navigate()}
+              >
                 <option value="">All tiers</option>
                 {DIRECTORY_TIERS.map((tier) => (
                   <option key={tier} value={tier}>
@@ -436,7 +470,13 @@ export function SearchControls({
               <label htmlFor="sort" className="mb-1.5 block text-sm font-medium text-text-primary">
                 Sort by
               </label>
-              <select id="sort" name="sort" defaultValue={values.sort} className={fieldClass()} onChange={() => navigate()}>
+              <select
+                id="sort"
+                name="sort"
+                defaultValue={values.sort}
+                className={fieldClass()}
+                onChange={() => navigate()}
+              >
                 {SORTS.map((sort) => (
                   <option key={sort.value} value={sort.value}>
                     {sort.label}

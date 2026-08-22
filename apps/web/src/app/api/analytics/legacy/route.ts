@@ -1,5 +1,4 @@
 import { createServiceClient } from "@masseurmatch/db/client";
-import type { Json } from "@masseurmatch/db/types";
 import { NextResponse, type NextRequest } from "next/server";
 
 export const runtime = "nodejs";
@@ -11,7 +10,8 @@ const seen = new Map<string, { count: number; resetAt: number }>();
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function callerKey(request: NextRequest): string {
-  const ip = (request.headers.get("x-forwarded-for") ?? "unknown").split(",")[0]?.trim() ?? "unknown";
+  const ip =
+    (request.headers.get("x-forwarded-for") ?? "unknown").split(",")[0]?.trim() ?? "unknown";
   let hash = 0;
   for (let i = 0; i < ip.length; i += 1) hash = (hash * 31 + ip.charCodeAt(i)) | 0;
   return String(hash);
@@ -35,8 +35,8 @@ function text(value: unknown, max: number): string | null {
   return trimmed || null;
 }
 
-function compactFilters(value: unknown): Json | undefined {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
+function compactFilters(value: unknown): Record<string, string | boolean | number> | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   const out: Record<string, string | boolean | number> = {};
   for (const [key, raw] of Object.entries(value as Record<string, unknown>).slice(0, 30)) {
     if (typeof raw === "string") out[key.slice(0, 60)] = raw.slice(0, 200);
@@ -48,9 +48,10 @@ function compactFilters(value: unknown): Json | undefined {
 export async function POST(request: NextRequest) {
   if (!allow(callerKey(request))) return NextResponse.json({ ok: false }, { status: 429 });
 
-  const body = (await request.json().catch(() => null)) as
-    | { type?: unknown; data?: Record<string, unknown> }
-    | null;
+  const body = (await request.json().catch(() => null)) as {
+    type?: unknown;
+    data?: Record<string, unknown>;
+  } | null;
   if (!body || !body.data) return NextResponse.json({ ok: false }, { status: 400 });
 
   let client;
