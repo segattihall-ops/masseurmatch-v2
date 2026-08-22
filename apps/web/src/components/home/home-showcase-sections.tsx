@@ -1,58 +1,52 @@
 import Link from "next/link";
-import {
-  Card,
-  CardContent,
-  FadeIn,
-  StaggerItem,
-  StaggerList,
-  buttonVariants,
-} from "@masseurmatch/ui";
+import { FadeIn, StaggerItem, StaggerList } from "@masseurmatch/ui";
 import type { CityListing, TherapistListing } from "@masseurmatch/db/actions/directory-config";
 import { cityPath } from "@masseurmatch/db/actions/directory-config";
 
+import {
+  InstitutionalCardGrid,
+  InstitutionalCta,
+  InstitutionalFaq,
+  InstitutionalSection,
+} from "@/components/institutional/institutional-page";
 import { TherapistCard } from "@/components/therapist-card";
 
-const sectionHeading =
-  "font-display text-ds-32 font-bold tracking-tight text-text-primary sm:text-ds-40";
+const primaryAction =
+  "inline-flex min-h-12 items-center justify-center rounded-full bg-brand-secondary px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-secondary/15 transition duration-300 hover:-translate-y-0.5 hover:bg-action-primary-hover hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2";
+
+const secondaryAction =
+  "inline-flex min-h-12 items-center justify-center rounded-full border border-border-strong bg-bg-surface px-6 py-3 text-sm font-semibold text-text-primary transition duration-300 hover:-translate-y-0.5 hover:bg-bg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2";
 
 export function HomeFeaturedTherapists({ therapists }: { therapists: TherapistListing[] }) {
   if (therapists.length === 0) return null;
 
   return (
-    <section className="border-y border-border-subtle bg-gradient-to-b from-bg-subtle to-background py-20 sm:py-24 lg:py-28">
-      <div className="mx-auto w-full max-w-7xl px-6">
-        <FadeIn
-          whileInView
-          className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between"
-        >
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-brand-secondary">
-              Featured profiles
-            </p>
-            <h2 className={`mt-4 ${sectionHeading}`}>Featured therapists ready to explore</h2>
-            <p className="mt-4 max-w-2xl text-ds-18 leading-8 text-text-secondary">
-              Compare reviewed public profiles, location, services, session formats, and published
-              rates before contacting a therapist directly.
-            </p>
-          </div>
-          <Link href="/search" className={buttonVariants({ size: "lg", variant: "outline" })}>
-            Browse all
-          </Link>
-        </FadeIn>
-
-        <StaggerList
-          whileInView
-          as="ul"
-          className="mt-12 grid list-none grid-cols-1 gap-6 p-0 sm:grid-cols-2 lg:grid-cols-3"
-        >
-          {therapists.map((therapist) => (
-            <StaggerItem as="li" key={therapist.id} className="h-full">
-              <TherapistCard therapist={therapist} variant="home" />
-            </StaggerItem>
-          ))}
-        </StaggerList>
+    <InstitutionalSection
+      eyebrow="Featured profiles"
+      title="Featured therapists ready to explore"
+      intro="Compare reviewed public profiles, location, services, session formats, and published rates before contacting a therapist directly."
+    >
+      <div className="flex justify-end">
+        <Link href="/search" className={secondaryAction}>
+          Browse all
+          <span aria-hidden="true" className="ml-2">
+            →
+          </span>
+        </Link>
       </div>
-    </section>
+
+      <StaggerList
+        whileInView
+        as="ul"
+        className="mt-8 grid list-none grid-cols-1 gap-6 p-0 sm:grid-cols-2 lg:grid-cols-3"
+      >
+        {therapists.map((therapist) => (
+          <StaggerItem as="li" key={therapist.id} className="h-full">
+            <TherapistCard therapist={therapist} variant="home" />
+          </StaggerItem>
+        ))}
+      </StaggerList>
+    </InstitutionalSection>
   );
 }
 
@@ -77,60 +71,41 @@ const discoveryFeatures = [
 
 export function HomeDiscoverySection() {
   return (
-    <section className="bg-background py-20 sm:py-24 lg:py-28" aria-labelledby="discovery-title">
-      <div className="mx-auto w-full max-w-7xl px-6">
-        <FadeIn whileInView className="mx-auto max-w-3xl text-center">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-brand-secondary">
-            Smarter discovery
-          </p>
-          <h2 id="discovery-title" className={`mt-4 ${sectionHeading}`}>
-            Find the right profile without the noise
-          </h2>
-          <p className="mt-5 text-ds-18 leading-8 text-text-secondary">
-            The V2 directory keeps discovery simple: search real listings, compare the details that
-            matter, then connect directly.
-          </p>
-        </FadeIn>
+    <InstitutionalSection
+      eyebrow="Smarter discovery"
+      title="Find the right profile without the noise"
+      intro="The V2 directory keeps discovery simple: search real listings, compare the details that matter, then connect directly."
+    >
+      <InstitutionalCardGrid
+        cards={discoveryFeatures.map(([title, body], index) => ({
+          eyebrow: String(index + 1).padStart(2, "0"),
+          title,
+          body,
+        }))}
+      />
 
-        <StaggerList
-          whileInView
-          as="ul"
-          className="mt-12 grid list-none grid-cols-1 gap-5 p-0 sm:grid-cols-2 lg:grid-cols-4"
-        >
-          {discoveryFeatures.map(([title, description], index) => (
-            <StaggerItem as="li" key={title}>
-              <Card className="h-full border-border-subtle bg-bg-surface">
-                <CardContent className="p-7 pt-7">
-                  <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-brand-soft text-sm font-bold text-brand-secondary">
-                    {String(index + 1).padStart(2, "0")}
-                  </span>
-                  <h3 className="mt-6 font-display text-ds-18 font-semibold text-text-primary">
-                    {title}
-                  </h3>
-                  <p className="mt-3 text-sm leading-6 text-text-secondary">{description}</p>
-                </CardContent>
-              </Card>
-            </StaggerItem>
-          ))}
-        </StaggerList>
-
-        <FadeIn
-          whileInView
-          className="mt-14 rounded-[2rem] border border-border-subtle bg-bg-subtle px-7 py-9 text-center sm:px-10 sm:py-12"
-        >
-          <h3 className="font-display text-ds-24 font-bold text-text-primary">
-            Ready to narrow the directory?
-          </h3>
-          <p className="mx-auto mt-3 max-w-2xl leading-7 text-text-secondary">
-            Start with search, then use local pages and profile details to compare the best fit for
-            your needs.
-          </p>
-          <Link href="/search" className={`mt-7 ${buttonVariants({ size: "lg" })}`}>
-            Search therapists
-          </Link>
-        </FadeIn>
-      </div>
-    </section>
+      <FadeIn
+        whileInView
+        className="mt-12 rounded-[2rem] border border-border-subtle bg-bg-subtle px-7 py-9 text-center sm:px-10 sm:py-12"
+      >
+        <p className="text-[10px] font-semibold uppercase tracking-[0.26em] text-brand-secondary">
+          Start searching
+        </p>
+        <h3 className="mt-3 font-display text-2xl font-semibold tracking-tight text-text-primary sm:text-3xl">
+          Ready to narrow the directory?
+        </h3>
+        <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-text-secondary sm:text-base">
+          Start with search, then use local pages and profile details to compare the best fit for
+          your needs.
+        </p>
+        <Link href="/search" className={`mt-7 ${primaryAction}`}>
+          Search therapists
+          <span aria-hidden="true" className="ml-2">
+            →
+          </span>
+        </Link>
+      </FadeIn>
+    </InstitutionalSection>
   );
 }
 
@@ -140,74 +115,63 @@ export function HomeCityDiscovery({ cities }: { cities: CityListing[] }) {
   const visibleCities = cities.slice(0, 8);
 
   return (
-    <section className="border-y border-border-subtle bg-bg-subtle py-20 sm:py-24 lg:py-28">
-      <div className="mx-auto w-full max-w-7xl px-6">
-        <FadeIn
-          whileInView
-          className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between"
-        >
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-brand-secondary">
-              Browse by city
-            </p>
-            <h2 className={`mt-4 ${sectionHeading}`}>Explore male massage by city</h2>
-            <p className="mt-4 max-w-2xl text-ds-18 leading-8 text-text-secondary">
-              Open local directory pages and compare therapists using live public listing data.
-            </p>
-          </div>
-          <Link href="/cities" className={buttonVariants({ size: "lg", variant: "outline" })}>
-            View all cities
-          </Link>
-        </FadeIn>
-
-        <StaggerList
-          whileInView
-          as="ul"
-          className="mt-12 grid list-none grid-cols-1 gap-5 p-0 sm:grid-cols-2 lg:grid-cols-4"
-        >
-          {visibleCities.map((city) => (
-            <StaggerItem as="li" key={cityPath(city)}>
-              <Link
-                href={cityPath(city)}
-                className="group block h-full rounded-3xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              >
-                <Card className="h-full min-h-44 border-border-subtle transition-transform duration-200 group-hover:-translate-y-1">
-                  <CardContent className="flex h-full flex-col justify-between p-7 pt-7">
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-secondary">
-                        Local directory
-                      </p>
-                      <h3 className="mt-5 font-display text-ds-24 font-bold text-text-primary">
-                        {city.name}
-                      </h3>
-                      <p className="mt-1 text-sm text-text-secondary">{city.state}</p>
-                    </div>
-                    <p className="mt-7 text-sm font-semibold text-brand-secondary">
-                      {city.therapistCount} {city.therapistCount === 1 ? "profile" : "profiles"}
-                    </p>
-                  </CardContent>
-                </Card>
-              </Link>
-            </StaggerItem>
-          ))}
-        </StaggerList>
-
-        <FadeIn
-          whileInView
-          className="mt-10 rounded-3xl border border-border-subtle bg-background px-7 py-7 text-center"
-        >
-          <p className="text-sm leading-6 text-text-secondary">
-            City pages reflect therapists currently visible in the public directory.
-          </p>
-          <Link
-            href="/cities"
-            className="mt-3 inline-flex text-sm font-semibold text-brand-secondary underline-offset-4 hover:underline"
-          >
-            Browse the directory by location
-          </Link>
-        </FadeIn>
+    <InstitutionalSection
+      eyebrow="Browse by city"
+      title="Explore male massage by city"
+      intro="Open local directory pages and compare therapists using live public listing data."
+    >
+      <div className="flex justify-end">
+        <Link href="/cities" className={secondaryAction}>
+          View all cities
+          <span aria-hidden="true" className="ml-2">
+            →
+          </span>
+        </Link>
       </div>
-    </section>
+
+      <StaggerList
+        whileInView
+        as="ul"
+        className="mt-8 grid list-none gap-px overflow-hidden rounded-[2rem] border border-border-subtle bg-border-subtle p-0 sm:grid-cols-2 lg:grid-cols-4"
+      >
+        {visibleCities.map((city) => (
+          <StaggerItem as="li" key={cityPath(city)} className="bg-bg-surface">
+            <Link
+              href={cityPath(city)}
+              className="group flex min-h-56 h-full flex-col justify-between p-7 transition duration-300 hover:bg-bg-subtle sm:p-8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+            >
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-brand-secondary">
+                  Local directory
+                </p>
+                <h3 className="mt-4 font-display text-xl font-semibold tracking-tight text-text-primary">
+                  {city.name}
+                </h3>
+                <p className="mt-2 text-sm leading-6 text-text-secondary">{city.state}</p>
+              </div>
+              <p className="mt-8 text-xs font-semibold uppercase tracking-[0.16em] text-brand-secondary">
+                {city.therapistCount} {city.therapistCount === 1 ? "profile" : "profiles"} →
+              </p>
+            </Link>
+          </StaggerItem>
+        ))}
+      </StaggerList>
+
+      <FadeIn
+        whileInView
+        className="mt-10 rounded-3xl border border-border-subtle bg-bg-subtle px-7 py-7 text-center"
+      >
+        <p className="text-sm leading-6 text-text-secondary">
+          City pages reflect therapists currently visible in the public directory.
+        </p>
+        <Link
+          href="/cities"
+          className="mt-3 inline-flex text-sm font-semibold text-brand-secondary underline-offset-4 hover:underline"
+        >
+          Browse the directory by location
+        </Link>
+      </FadeIn>
+    </InstitutionalSection>
   );
 }
 
@@ -242,57 +206,49 @@ const howItWorksSteps = [
 
 export function HomeHowItWorks() {
   return (
-    <section className="bg-background py-20 sm:py-24 lg:py-28" aria-labelledby="how-home-title">
-      <div className="mx-auto w-full max-w-7xl px-6">
-        <FadeIn whileInView className="mx-auto max-w-3xl text-center">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-brand-secondary">
-            Simple process
-          </p>
-          <h2 id="how-home-title" className={`mt-4 ${sectionHeading}`}>
-            How it works
-          </h2>
-          <p className="mt-5 text-ds-18 leading-8 text-text-secondary">
-            Three steps from discovery to direct contact, without turning MasseurMatch into a
-            booking marketplace.
-          </p>
-        </FadeIn>
+    <InstitutionalSection
+      eyebrow="Simple process"
+      title="How it works"
+      intro="Three steps from discovery to direct contact, without turning MasseurMatch into a booking marketplace."
+    >
+      <StaggerList
+        whileInView
+        as="ol"
+        className="grid list-none gap-px overflow-hidden rounded-[2rem] border border-border-subtle bg-border-subtle p-0 lg:grid-cols-3"
+      >
+        {howItWorksSteps.map((step) => (
+          <StaggerItem as="li" key={step.number} className="min-h-80 bg-bg-surface p-7 sm:p-8">
+            <span className="font-display text-5xl font-bold tracking-[-0.04em] text-brand-secondary/10">
+              {step.number}
+            </span>
+            <h3 className="mt-8 font-display text-xl font-semibold tracking-tight text-text-primary">
+              {step.title}
+            </h3>
+            <p className="mt-4 text-sm leading-7 text-text-secondary">{step.description}</p>
+            <ul className="mt-6 list-none space-y-2 p-0">
+              {step.features.map((feature) => (
+                <li
+                  key={feature}
+                  className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-text-muted"
+                >
+                  <span className="h-1.5 w-1.5 rounded-full bg-brand-secondary" />
+                  {feature}
+                </li>
+              ))}
+            </ul>
+          </StaggerItem>
+        ))}
+      </StaggerList>
 
-        <div className="mx-auto mt-14 max-w-5xl space-y-7">
-          {howItWorksSteps.map((step) => (
-            <FadeIn key={step.number} whileInView>
-              <div className="grid gap-6 rounded-[2rem] border border-border-subtle bg-bg-surface p-7 sm:p-9 lg:grid-cols-[96px_1fr]">
-                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-secondary font-display text-ds-18 font-bold text-text-inverse">
-                  {step.number}
-                </div>
-                <div>
-                  <h3 className="font-display text-ds-24 font-bold text-text-primary">
-                    {step.title}
-                  </h3>
-                  <p className="mt-3 max-w-3xl leading-7 text-text-secondary">{step.description}</p>
-                  <ul className="mt-5 grid list-none gap-2 p-0 sm:grid-cols-2">
-                    {step.features.map((feature) => (
-                      <li
-                        key={feature}
-                        className="flex items-center gap-2 text-sm font-medium text-text-primary"
-                      >
-                        <span className="h-1.5 w-1.5 rounded-full bg-brand-secondary" />
-                        {feature}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            </FadeIn>
-          ))}
-        </div>
-
-        <FadeIn whileInView className="mt-12 text-center">
-          <Link href="/how-it-works" className={buttonVariants({ size: "lg", variant: "outline" })}>
-            Learn how MasseurMatch works
-          </Link>
-        </FadeIn>
+      <div className="mt-10 flex justify-center">
+        <Link href="/how-it-works" className={secondaryAction}>
+          Learn how MasseurMatch works
+          <span aria-hidden="true" className="ml-2">
+            →
+          </span>
+        </Link>
       </div>
-    </section>
+    </InstitutionalSection>
   );
 }
 
@@ -317,90 +273,78 @@ const trustPillars = [
 
 export function HomeTrustSection() {
   return (
-    <section className="border-y border-border-subtle bg-text-primary py-20 text-text-inverse sm:py-24 lg:py-28">
-      <div className="mx-auto w-full max-w-7xl px-6">
-        <FadeIn whileInView className="mx-auto max-w-3xl text-center">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-brand-electric">
-            Trust and safety
-          </p>
-          <h2 className="mt-4 font-display text-ds-32 font-bold tracking-tight sm:text-ds-40">
-            Built around clearer expectations
-          </h2>
-          <p className="mt-5 text-ds-18 leading-8 text-text-inverse/75">
-            MasseurMatch makes its directory role, profile review, and platform signals explicit so
-            visitors can make better informed decisions.
-          </p>
-        </FadeIn>
+    <InstitutionalSection
+      dark
+      eyebrow="Trust and safety"
+      title="Built around clearer expectations"
+      intro="MasseurMatch makes its directory role, profile review, and platform signals explicit so visitors can make better informed decisions."
+    >
+      <InstitutionalCardGrid
+        dark
+        cards={trustPillars.map(([title, body], index) => ({
+          eyebrow: String(index + 1).padStart(2, "0"),
+          title,
+          body,
+        }))}
+      />
 
-        <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {trustPillars.map(([title, description], index) => (
-            <article key={title} className="rounded-[1.5rem] border border-white/10 bg-white/5 p-7">
-              <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10 text-sm font-bold text-brand-electric">
-                {String(index + 1).padStart(2, "0")}
-              </span>
-              <h3 className="mt-6 font-display text-ds-18 font-semibold">{title}</h3>
-              <p className="mt-3 text-sm leading-6 text-text-inverse/70">{description}</p>
-            </article>
+      <FadeIn
+        whileInView
+        className="mt-12 overflow-hidden rounded-[2rem] border border-white/[0.08] bg-[#151517]"
+      >
+        <div className="border-b border-white/[0.08] p-7 sm:p-8">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#d66b7a]">
+            How we build trust
+          </p>
+          <h3 className="mt-3 font-display text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+            Know what each signal means
+          </h3>
+        </div>
+        <div className="grid gap-px bg-white/[0.08] sm:grid-cols-3">
+          {[
+            [
+              "Profile review",
+              "Before publication",
+              "New profiles are reviewed before they become publicly visible.",
+            ],
+            [
+              "Identity badges",
+              "Identity only",
+              "A badge is not professional licensing, certification, or a service-quality guarantee.",
+            ],
+            [
+              "Directory model",
+              "Independent providers",
+              "Therapists manage their own services, appointments, qualifications, and payments.",
+            ],
+          ].map(([eyebrow, title, body]) => (
+            <div key={eyebrow} className="bg-[#111113] p-7 sm:p-8">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/38">
+                {eyebrow}
+              </p>
+              <p className="mt-3 font-display text-xl font-semibold tracking-tight text-white">
+                {title}
+              </p>
+              <p className="mt-3 text-sm leading-7 text-white/58">{body}</p>
+            </div>
           ))}
         </div>
-
-        <FadeIn
-          whileInView
-          className="mt-14 rounded-[2rem] border border-white/10 bg-white/5 p-7 sm:p-10"
-        >
-          <div className="border-b border-white/10 pb-7">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-electric">
-              How we build trust
-            </p>
-            <h3 className="mt-3 font-display text-ds-24 font-bold">Know what each signal means</h3>
-          </div>
-          <div className="mt-7 grid gap-5 sm:grid-cols-3">
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
-              <p className="text-xs uppercase tracking-[0.14em] text-text-inverse/55">
-                Profile review
-              </p>
-              <p className="mt-3 font-display text-ds-18 font-semibold">Before publication</p>
-              <p className="mt-2 text-sm leading-6 text-text-inverse/65">
-                New profiles are reviewed before they become publicly visible.
-              </p>
-            </div>
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
-              <p className="text-xs uppercase tracking-[0.14em] text-text-inverse/55">
-                Identity badges
-              </p>
-              <p className="mt-3 font-display text-ds-18 font-semibold">Identity only</p>
-              <p className="mt-2 text-sm leading-6 text-text-inverse/65">
-                A badge is not professional licensing, certification, or a service-quality
-                guarantee.
-              </p>
-            </div>
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
-              <p className="text-xs uppercase tracking-[0.14em] text-text-inverse/55">
-                Directory model
-              </p>
-              <p className="mt-3 font-display text-ds-18 font-semibold">Independent providers</p>
-              <p className="mt-2 text-sm leading-6 text-text-inverse/65">
-                Therapists manage their own services, appointments, qualifications, and payments.
-              </p>
-            </div>
-          </div>
-          <div className="mt-7 flex flex-wrap gap-4">
-            <Link
-              href="/safety"
-              className="text-sm font-semibold text-brand-electric underline-offset-4 hover:underline"
-            >
-              Safety guidance
-            </Link>
-            <Link
-              href="/badge-disclaimer"
-              className="text-sm font-semibold text-brand-electric underline-offset-4 hover:underline"
-            >
-              Badge disclaimer
-            </Link>
-          </div>
-        </FadeIn>
-      </div>
-    </section>
+        <div className="flex flex-wrap gap-4 border-t border-white/[0.08] p-7 sm:p-8">
+          <Link
+            href="/safety"
+            className="text-sm font-semibold text-[#d66b7a] underline-offset-4 hover:underline"
+          >
+            Safety guidance
+          </Link>
+          <Link
+            href="/badge-disclaimer"
+            className="text-sm font-semibold text-[#d66b7a] underline-offset-4 hover:underline"
+          >
+            Badge disclaimer
+          </Link>
+        </div>
+      </FadeIn>
+    </InstitutionalSection>
   );
 }
 
@@ -415,66 +359,72 @@ const providerBenefits = [
 
 export function HomeProviderGrowth() {
   return (
-    <section className="bg-background py-20 sm:py-24 lg:py-28">
-      <div className="mx-auto grid w-full max-w-7xl gap-12 px-6 lg:grid-cols-2 lg:items-center lg:gap-16">
-        <FadeIn whileInView>
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-brand-secondary">
-            For massage therapists
+    <InstitutionalSection
+      eyebrow="For massage therapists"
+      title="Grow your practice with MasseurMatch"
+      intro="Build a public directory presence in the cities you actually work, show prospective clients what you offer, and let them contact you directly. MasseurMatch is not a booking service and does not take a commission from your massage-session payments."
+    >
+      <div className="grid overflow-hidden rounded-[2rem] border border-border-subtle lg:grid-cols-2">
+        <FadeIn whileInView direction="right" className="bg-bg-surface p-7 sm:p-9 lg:p-12">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-brand-secondary">
+            Built for independent providers
           </p>
-          <h2 className={`mt-4 ${sectionHeading}`}>
-            Grow your practice <span className="text-brand-secondary">with MasseurMatch</span>
-          </h2>
-          <p className="mt-6 text-ds-18 leading-8 text-text-secondary">
-            Build a public directory presence in the cities you actually work, show prospective
-            clients what you offer, and let them contact you directly. MasseurMatch is not a booking
-            service and does not take a commission from your massage-session payments.
-          </p>
-          <ul className="mt-8 grid list-none gap-3 p-0 sm:grid-cols-2">
+          <h3 className="mt-4 font-display text-3xl font-semibold tracking-tight text-text-primary">
+            A professional public presence you control.
+          </h3>
+          <ul className="mt-7 grid list-none gap-3 p-0 sm:grid-cols-2">
             {providerBenefits.map((benefit) => (
-              <li
-                key={benefit}
-                className="flex items-center gap-2 text-sm font-semibold text-text-primary"
-              >
+              <li key={benefit} className="flex items-center gap-2 text-sm font-medium text-text-primary">
                 <span className="h-1.5 w-1.5 rounded-full bg-brand-secondary" />
                 {benefit}
               </li>
             ))}
           </ul>
           <div className="mt-9 flex flex-wrap gap-3">
-            <Link href="/for-therapists" className={buttonVariants({ size: "lg" })}>
+            <Link href="/for-therapists" className={primaryAction}>
               Join MasseurMatch
+              <span aria-hidden="true" className="ml-2">
+                →
+              </span>
             </Link>
-            <Link href="/pricing" className={buttonVariants({ size: "lg", variant: "outline" })}>
+            <Link href="/pricing" className={secondaryAction}>
               View pricing
             </Link>
           </div>
         </FadeIn>
 
-        <div className="space-y-4">
-          {[
-            [
-              "Professional profile",
-              "Present specialties, service formats, rates, location, photos, and direct contact details clearly.",
-            ],
-            [
-              "Direct connections",
-              "Prospective clients can use your public profile to reach you without an internal booking marketplace.",
-            ],
-            [
-              "Keep your session revenue",
-              "MasseurMatch does not process or take a commission from payments for massage sessions.",
-            ],
-          ].map(([title, description]) => (
-            <Card key={title} className="border-border-subtle">
-              <CardContent className="p-7 pt-7">
-                <h3 className="font-display text-ds-18 font-semibold text-text-primary">{title}</h3>
-                <p className="mt-2 text-sm leading-6 text-text-secondary">{description}</p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <FadeIn
+          whileInView
+          direction="left"
+          delay={0.08}
+          className="border-t border-border-subtle bg-bg-subtle p-7 sm:p-9 lg:border-l lg:border-t-0 lg:p-12"
+        >
+          <div className="divide-y divide-border-subtle">
+            {[
+              [
+                "Professional profile",
+                "Present specialties, service formats, rates, location, photos, and direct contact details clearly.",
+              ],
+              [
+                "Direct connections",
+                "Prospective clients can use your public profile to reach you without an internal booking marketplace.",
+              ],
+              [
+                "Keep your session revenue",
+                "MasseurMatch does not process or take a commission from payments for massage sessions.",
+              ],
+            ].map(([title, description]) => (
+              <div key={title} className="py-6 first:pt-0 last:pb-0">
+                <h3 className="font-display text-xl font-semibold tracking-tight text-text-primary">
+                  {title}
+                </h3>
+                <p className="mt-3 text-sm leading-7 text-text-secondary">{description}</p>
+              </div>
+            ))}
+          </div>
+        </FadeIn>
       </div>
-    </section>
+    </InstitutionalSection>
   );
 }
 
@@ -507,68 +457,34 @@ export const homeFaqItems = [
 
 export function HomeFaq() {
   return (
-    <section className="border-y border-border-subtle bg-bg-subtle py-20 sm:py-24 lg:py-28">
-      <div className="mx-auto w-full max-w-5xl px-6">
-        <FadeIn whileInView>
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-brand-secondary">
-            Common questions
-          </p>
-          <h2 className="mt-4 font-display text-[clamp(2.5rem,5vw,4.5rem)] font-bold leading-[0.98] tracking-tight text-text-primary">
-            Everything you need to know.
-          </h2>
-        </FadeIn>
-
-        <div className="mt-10 divide-y divide-border-subtle border-y border-border-subtle">
-          {homeFaqItems.map(([question, answer]) => (
-            <details key={question} className="group py-6">
-              <summary className="cursor-pointer list-none pr-8 font-display text-ds-18 font-semibold text-text-primary marker:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:text-ds-24">
-                {question}
-              </summary>
-              <p className="mt-4 max-w-3xl leading-7 text-text-secondary">{answer}</p>
-            </details>
-          ))}
-        </div>
-
-        <Link
-          href="/faq"
-          className="mt-7 inline-flex text-sm font-semibold text-brand-secondary underline-offset-4 hover:underline"
-        >
-          View all FAQs
-        </Link>
-      </div>
-    </section>
+    <InstitutionalSection
+      eyebrow="Common questions"
+      title="Everything you need to know."
+      intro="A quick guide to how the directory, profile review, direct contact, and identity signals work."
+    >
+      <InstitutionalFaq
+        items={homeFaqItems.map(([question, answer]) => ({ question, answer }))}
+      />
+      <Link
+        href="/faq"
+        className="mt-7 inline-flex text-sm font-semibold text-brand-secondary underline-offset-4 hover:underline"
+      >
+        View all FAQs
+      </Link>
+    </InstitutionalSection>
   );
 }
 
 export function HomeFinalCta() {
   return (
-    <section className="relative overflow-hidden bg-text-primary py-24 text-text-inverse lg:py-32">
-      <div className="pointer-events-none absolute inset-0" aria-hidden="true">
-        <div className="absolute left-1/2 top-1/2 h-96 w-96 -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand-secondary/20 blur-3xl" />
-      </div>
-      <div className="relative mx-auto w-full max-w-4xl px-6 text-center">
-        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-text-inverse/60">
-          For therapists
-        </p>
-        <h2 className="mt-5 font-display text-[clamp(2.75rem,7vw,5.75rem)] font-bold leading-[0.92] tracking-tight">
-          Get listed today.
-        </h2>
-        <p className="mx-auto mt-6 max-w-xl text-ds-18 leading-8 text-text-inverse/70">
-          Create a professional public profile, reach local discovery pages, and let prospective
-          clients contact you directly.
-        </p>
-        <div className="mt-9 flex flex-wrap justify-center gap-3">
-          <Link href="/for-therapists" className={buttonVariants({ size: "lg" })}>
-            List your practice
-          </Link>
-          <Link
-            href="/pricing"
-            className="inline-flex min-h-11 items-center justify-center rounded-xl border border-white/20 px-6 text-sm font-semibold text-text-inverse transition hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-          >
-            View pricing
-          </Link>
-        </div>
-      </div>
-    </section>
+    <InstitutionalCta
+      eyebrow="For therapists"
+      title="Get listed today."
+      description="Create a professional public profile, reach local discovery pages, and let prospective clients contact you directly."
+      actions={[
+        { label: "List your practice", href: "/for-therapists" },
+        { label: "View pricing", href: "/pricing", secondary: true },
+      ]}
+    />
   );
 }
