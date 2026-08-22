@@ -28,7 +28,7 @@ import { KnottyChat } from "./knotty-chat";
 
 export const revalidate = DIRECTORY_REVALIDATE_SECONDS;
 
-const HOME_TITLE = `${SITE_NAME} — Male Massage Therapist Directory`;
+const HOME_TITLE = `${SITE_NAME} | Male Massage Therapists Near You`;
 
 export const metadata: Metadata = {
   title: HOME_TITLE,
@@ -52,6 +52,13 @@ const discoverySignals = [
   ["Public profiles", "Provider-submitted details"],
   ["Direct contact", "No booking middleman"],
   ["Local discovery", "City and service pages"],
+] as const;
+
+const seoHubs = [
+  ["Male massage near me", "/near-me"],
+  ["Gay-friendly massage", "/gay-massage"],
+  ["Massage for men", "/massage-for-men"],
+  ["Masajes para hombres", "/es/masajes-para-hombres"],
 ] as const;
 
 function usableImage(value: string | null | undefined): value is string {
@@ -136,7 +143,7 @@ export default async function HomePage() {
               id="home-hero-title"
               className="mt-5 max-w-5xl font-display text-[clamp(2.75rem,7vw,6.5rem)] font-bold leading-[0.96] tracking-[-0.045em] text-white"
             >
-              Discover independent male massage therapists.
+              Find independent male massage therapists near you.
               <span className="mt-2 block text-[#d66b7a] sm:mt-3">
                 Compare profiles. Contact directly.
               </span>
@@ -166,6 +173,21 @@ export default async function HomePage() {
                 </span>
               </Link>
             </div>
+
+            <nav
+              aria-label="Popular massage searches"
+              className="mt-6 flex flex-wrap gap-x-5 gap-y-2"
+            >
+              {seoHubs.map(([label, href]) => (
+                <Link
+                  key={href}
+                  href={href}
+                  className="text-xs font-semibold text-white/55 underline-offset-4 transition hover:text-white hover:underline"
+                >
+                  {label}
+                </Link>
+              ))}
+            </nav>
           </div>
 
           <div className="mt-16 grid gap-px overflow-hidden rounded-3xl border border-white/[0.08] bg-white/[0.08] sm:grid-cols-3 lg:mt-20">
