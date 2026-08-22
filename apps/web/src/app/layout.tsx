@@ -5,6 +5,7 @@ import { MotionProvider, PageTransition } from "@masseurmatch/ui";
 import "@masseurmatch/ui/styles.css";
 import "./globals.css";
 
+import { SiteBottomBar } from "@/components/site-bottom-bar";
 import { SiteFooter, SiteHeader } from "@/components/site-chrome";
 import { satoshi } from "./fonts";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
@@ -23,11 +24,12 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en-US" className={satoshi.variable}>
-      <body className="flex min-h-screen flex-col overflow-x-hidden bg-background font-sans text-foreground antialiased">
+      <body className="flex min-h-screen flex-col overflow-x-hidden bg-background pb-[calc(3.5rem+env(safe-area-inset-bottom))] font-sans text-foreground antialiased sm:pb-0">
         <MotionProvider>
           <SiteHeader />
           <PageTransition className="flex-1">{children}</PageTransition>
           <SiteFooter />
+          <SiteBottomBar />
         </MotionProvider>
       </body>
     </html>
