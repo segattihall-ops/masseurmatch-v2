@@ -1,4 +1,5 @@
 import { createServiceClient } from "@masseurmatch/db/client";
+import type { Json } from "@masseurmatch/db/types";
 import { NextResponse, type NextRequest } from "next/server";
 
 export const runtime = "nodejs";
@@ -34,9 +35,9 @@ function text(value: unknown, max: number): string | null {
   return trimmed || null;
 }
 
-function compactFilters(value: unknown): Record<string, unknown> | null {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
-  const out: Record<string, unknown> = {};
+function compactFilters(value: unknown): Json | undefined {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
+  const out: Record<string, string | boolean | number> = {};
   for (const [key, raw] of Object.entries(value as Record<string, unknown>).slice(0, 30)) {
     if (typeof raw === "string") out[key.slice(0, 60)] = raw.slice(0, 200);
     else if (typeof raw === "boolean" || typeof raw === "number") out[key.slice(0, 60)] = raw;
@@ -76,7 +77,11 @@ export async function POST(request: NextRequest) {
   if (body.type === "inquiry") {
     const profileId = text(body.data.profile_id, 64);
     const inquiryType = text(body.data.inquiry_type, 40);
-    if (!profileId || !UUID.test(profileId) || !["call", "text", "email", "contact_form"].includes(inquiryType ?? "")) {
+    if (
+      !profileId ||
+      !UUID.test(profileId) ||
+      !["call", "text", "email", "contact_form"].includes(inquiryType ?? "")
+    ) {
       return NextResponse.json({ ok: false }, { status: 400 });
     }
     const { error } = await client.from("inquiry_analytics").insert({
