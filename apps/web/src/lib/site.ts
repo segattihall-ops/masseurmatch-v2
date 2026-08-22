@@ -40,7 +40,7 @@ export const SITE_URL = resolveSiteUrl().replace(/\/$/, "");
 export const SITE_NAME = "MasseurMatch";
 
 export const SITE_DESCRIPTION =
-  "A premium directory for discovering independent male massage therapists, comparing provider-submitted profile details, and contacting providers directly.";
+  "Find independent male massage therapists by city. Compare public profiles, services, rates, availability, gay-friendly details and contact providers directly.";
 
 /** Absolute URL for a site-relative path. */
 export function absoluteUrl(path = "/"): string {

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { FadeIn, StaggerItem, StaggerList } from "@masseurmatch/ui";
 import {
@@ -21,24 +22,7 @@ import { cityItemListJsonLd, jsonLdScript } from "@/lib/jsonld";
 import { absoluteUrl, SITE_NAME } from "@/lib/site";
 import { withApprovedProfilePhotos } from "@/lib/therapist-photos";
 
-/**
- * Do not put the city route itself in Next's Full Route Cache.
- *
- * A city can become valid the moment an admin approves the first profile in
- * that location. Admin and Public are separate Vercel projects, so the Admin
- * deployment cannot invalidate a 404 already cached by the Public deployment.
- * Keeping this route dynamic lets the fresh Postgres fallback below run on the
- * very next request. The established-directory reads remain cached internally,
- * so this fixes stale 404s without turning every directory query into a cold
- * database read.
- */
 export const revalidate = 0;
-
-/**
- * Canonical v2 cities are pre-rendered below, while valid legacy
- * `/{city}/{segment}` pages are resolved on demand. Unknown combinations still
- * return a real 404.
- */
 export const dynamicParams = true;
 
 interface CityParams {
@@ -50,6 +34,23 @@ type FreshCanonicalCity = {
   therapists: TherapistListing[];
 };
 
+function cityFaqs(city: CityListing) {
+  return [
+    {
+      question: `How do I find a male massage therapist in ${city.name}?`,
+      answer: `Browse public male massage therapist profiles in ${city.name}, compare listed services, rates, availability and session format, then contact the independent provider directly to confirm the details.`,
+    },
+    {
+      question: `Can I find gay-friendly or LGBTQ+ affirming massage therapists in ${city.name}?`,
+      answer: `Yes. Provider profiles can include LGBTQ+ affirming information and other trust signals. Review each public profile and contact the therapist directly about the setting, service and fit you want.`,
+    },
+    {
+      question: `Can I compare incall and outcall massage in ${city.name}?`,
+      answer: `Yes. Profiles can show whether a therapist offers incall, outcall or both. Confirm the exact location, travel area, timing and total rate directly with the provider before arranging a session.`,
+    },
+  ] as const;
+}
+
 export async function generateStaticParams() {
   const cities = await getCities();
   return cities.map((city) => ({ state: city.stateSlug, city: city.citySlug }));
@@ -60,17 +61,6 @@ async function getLegacyCity(citySlugValue: string): Promise<CityListing | null>
   return cities.find((city) => city.citySlug === citySlugValue.toLowerCase()) ?? null;
 }
 
-/**
- * Recover a canonical city that was approved after the hourly directory cache
- * was populated.
- *
- * Admin and Public are separate Vercel applications, so a revalidation in the
- * Admin app cannot invalidate Public's Next.js data cache. Search already uses
- * the uncached Postgres RPC; use it only as a fallback when `getCities()` has
- * not learned the city yet. That prevents a newly approved city/profile from
- * returning a false 404 for up to an hour while preserving the cached path for
- * established cities.
- */
 async function getFreshCanonicalCity(
   state: string,
   city: string,
@@ -123,10 +113,8 @@ export async function generateMetadata({ params }: CityParams): Promise<Metadata
   const city = cachedCity ?? (await getFreshCanonicalCity(params.state, params.city))?.city ?? null;
 
   if (city) {
-    const title = `Massage Therapists in ${city.name}, ${city.state}`;
-    const description = `${city.therapistCount} verified male massage ${
-      city.therapistCount === 1 ? "therapist" : "therapists"
-    } in ${city.name}, ${city.state}. Compare services, pricing and availability on ${SITE_NAME}.`;
+    const title = `Male Massage Therapists in ${city.name}, ${city.state}`;
+    const description = `Find male massage therapists in ${city.name}, ${city.state}. Compare public profiles, gay-friendly options, services, rates, incall/outcall and availability.`;
     const canonical = absoluteUrl(`/${city.stateSlug}/${city.citySlug}`);
 
     return {
@@ -167,6 +155,16 @@ export default async function CityPage({ params }: CityParams) {
     const rawTherapists =
       freshCity?.therapists ?? (await getTherapistsByCity(params.state, params.city));
     const therapists = await withApprovedProfilePhotos(rawTherapists);
+    const faqs = cityFaqs(city);
+    const faqJsonLd = {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      mainEntity: faqs.map((faq) => ({
+        "@type": "Question",
+        name: faq.question,
+        acceptedAnswer: { "@type": "Answer", text: faq.answer },
+      })),
+    };
 
     return (
       <>
@@ -174,17 +172,22 @@ export default async function CityPage({ params }: CityParams) {
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: jsonLdScript(cityItemListJsonLd(city, therapists)) }}
         />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: jsonLdScript(faqJsonLd) }}
+        />
 
         <main className="mx-auto w-full max-w-6xl px-6 pb-16 pt-16">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-secondary">
             {city.state}
           </p>
           <h1 className="mt-4 font-display text-ds-40 font-bold tracking-tight text-text-primary">
-            Massage therapists in {city.name}
+            Male massage therapists in {city.name}
           </h1>
-          <p className="mt-4 max-w-2xl text-ds-18 text-text-secondary">
-            {therapists.length} verified {therapists.length === 1 ? "therapist" : "therapists"},
-            ranked by standing.
+          <p className="mt-4 max-w-3xl text-ds-18 leading-8 text-text-secondary">
+            Browse {therapists.length} public {therapists.length === 1 ? "profile" : "profiles"} in{" "}
+            {city.name}. Compare services, rates, availability, incall or outcall options and LGBTQ+
+            affirming profile details before contacting an independent therapist directly.
           </p>
 
           <StaggerList
@@ -204,6 +207,69 @@ export default async function CityPage({ params }: CityParams) {
               <p className="text-text-secondary">No therapists are listed here right now.</p>
             </FadeIn>
           ) : null}
+
+          <section className="mt-16 border-t border-border pt-12">
+            <div className="grid gap-10 lg:grid-cols-[1.1fr_0.9fr]">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-secondary">
+                  Local massage directory
+                </p>
+                <h2 className="mt-3 font-display text-ds-32 font-bold tracking-tight text-text-primary">
+                  Find massage for men in {city.name}
+                </h2>
+                <p className="mt-4 max-w-2xl leading-7 text-text-secondary">
+                  Looking for a male massage therapist or gay-friendly massage option in {city.name}
+                  ? MasseurMatch helps you compare independent providers by public profile details,
+                  listed techniques, session format, rates, availability and trust signals. The
+                  directory does not handle booking or payment, so confirm final details directly
+                  with the provider you choose.
+                </p>
+                <nav
+                  aria-label={`${city.name} massage resources`}
+                  className="mt-6 flex flex-wrap gap-3"
+                >
+                  <Link
+                    href="/near-me"
+                    className="rounded-full border border-border px-4 py-2 text-sm font-semibold text-text-primary transition hover:border-brand-secondary hover:text-brand-secondary"
+                  >
+                    Male massage near me
+                  </Link>
+                  <Link
+                    href="/therapists"
+                    className="rounded-full border border-border px-4 py-2 text-sm font-semibold text-text-primary transition hover:border-brand-secondary hover:text-brand-secondary"
+                  >
+                    All male massage therapists
+                  </Link>
+                  <Link
+                    href="/gay-massage"
+                    className="rounded-full border border-border px-4 py-2 text-sm font-semibold text-text-primary transition hover:border-brand-secondary hover:text-brand-secondary"
+                  >
+                    Gay & LGBTQ+ friendly massage
+                  </Link>
+                  <Link
+                    href="/services"
+                    className="rounded-full border border-border px-4 py-2 text-sm font-semibold text-text-primary transition hover:border-brand-secondary hover:text-brand-secondary"
+                  >
+                    Browse massage services
+                  </Link>
+                </nav>
+              </div>
+
+              <div>
+                <h2 className="font-display text-ds-24 font-bold tracking-tight text-text-primary">
+                  Frequently asked questions
+                </h2>
+                <div className="mt-5 space-y-6">
+                  {faqs.map((faq) => (
+                    <div key={faq.question}>
+                      <h3 className="font-semibold text-text-primary">{faq.question}</h3>
+                      <p className="mt-2 text-sm leading-6 text-text-secondary">{faq.answer}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </section>
         </main>
       </>
     );

@@ -32,10 +32,11 @@ export const PRIMARY_NAV: NavItem[] = [
     label: "Find a therapist",
     links: [
       { href: "/search", label: "Search" },
-      { href: "/therapists", label: "All therapists" },
+      { href: "/therapists", label: "Male massage therapists" },
+      { href: "/near-me", label: "Male massage near me" },
+      { href: "/gay-massage", label: "Gay-friendly massage" },
       { href: "/cities", label: "Browse by city" },
       { href: "/states", label: "Browse by state" },
-      { href: "/near-me", label: "Near me" },
       { href: "/services", label: "By service" },
     ],
   },
