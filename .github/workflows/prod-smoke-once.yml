@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - chore/launch-prod-smoke
+  pull_request:
+    branches:
+      - main
 
 permissions:
   contents: read
