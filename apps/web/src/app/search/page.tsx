@@ -134,24 +134,6 @@ function pageHref(searchParams: SearchParams["searchParams"], page: number): str
   return query ? `/search?${query}` : "/search";
 }
 
-function hasIndexChangingFilters(searchParams: SearchParams["searchParams"]): boolean {
-  return [
-    searchParams.city,
-    searchParams.service,
-    searchParams.q,
-    searchParams.goal,
-    searchParams.session,
-    searchParams.available,
-    searchParams.verified,
-    searchParams.lgbtq,
-    searchParams.min,
-    searchParams.max,
-    searchParams.tier,
-    searchParams.master,
-    searchParams.sort,
-  ].some((value) => Boolean(value?.trim()));
-}
-
 export async function generateMetadata({ searchParams }: SearchParams): Promise<Metadata> {
   const cities = await getCities();
   const selectedCity = resolveCity(searchParams.city, cities);
@@ -166,9 +148,7 @@ export async function generateMetadata({ searchParams }: SearchParams): Promise<
     title,
     description,
     alternates: { canonical: absoluteUrl("/search") },
-    robots: hasIndexChangingFilters(searchParams)
-      ? { index: false, follow: true }
-      : { index: true, follow: true },
+    robots: { index: false, follow: true },
     openGraph: {
       type: "website",
       siteName: SITE_NAME,
