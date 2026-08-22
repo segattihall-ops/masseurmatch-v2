@@ -15,6 +15,62 @@ const nextConfig = {
   },
   async redirects() {
     return [
+      // Meaningful legacy replacements. Keep these above the generic /admin/*
+      // bridge so an old bookmark lands on the real V2 successor in one hop.
+      { source: "/admin/profile-cms", destination: "/people", permanent: true },
+      { source: "/admin/keywords", destination: "/demand-radar", permanent: true },
+      {
+        source: "/admin/dashboard/keyword-trends",
+        destination: "/demand-radar",
+        permanent: true,
+      },
+      { source: "/admin/sms", destination: "/messaging", permanent: true },
+      { source: "/admin/resend-topics", destination: "/emails", permanent: true },
+      { source: "/admin/settings", destination: "/tools", permanent: true },
+      { source: "/admin/seo", destination: "/tools", permanent: true },
+      {
+        source: "/admin/legal",
+        destination: "https://www.masseurmatch.com/legal",
+        permanent: true,
+      },
+      {
+        source: "/admin/onboarding",
+        destination: "https://dashboard.masseurmatch.com/sign-up",
+        permanent: true,
+      },
+      { source: "/admin/login", destination: "/sign-in", permanent: true },
+      { source: "/admin/bookings", destination: "/tools", permanent: true },
+      { source: "/admin/ab-tests", destination: "/tools", permanent: true },
+      {
+        source: "/admin/spike/design-system/buttons",
+        destination: "/tools",
+        permanent: true,
+      },
+
+      // Root-form aliases also exist because the dedicated Admin app removes
+      // /admin from canonical URLs.
+      { source: "/profile-cms", destination: "/people", permanent: true },
+      { source: "/keywords", destination: "/demand-radar", permanent: true },
+      {
+        source: "/dashboard/keyword-trends",
+        destination: "/demand-radar",
+        permanent: true,
+      },
+      { source: "/sms", destination: "/messaging", permanent: true },
+      { source: "/resend-topics", destination: "/emails", permanent: true },
+      { source: "/settings", destination: "/tools", permanent: true },
+      { source: "/seo", destination: "/tools", permanent: true },
+      { source: "/legal", destination: "https://www.masseurmatch.com/legal", permanent: true },
+      {
+        source: "/onboarding",
+        destination: "https://dashboard.masseurmatch.com/sign-up",
+        permanent: true,
+      },
+      { source: "/login", destination: "/sign-in", permanent: true },
+      { source: "/bookings", destination: "/tools", permanent: true },
+      { source: "/ab-tests", destination: "/tools", permanent: true },
+      { source: "/spike/design-system/buttons", destination: "/tools", permanent: true },
+
       { source: "/admin", destination: "/", permanent: true },
       { source: "/admin/:path*", destination: "/:path*", permanent: true },
       { source: "/support", destination: "/tickets", permanent: true },
@@ -45,6 +101,12 @@ const nextConfig = {
       { source: "/approvals/:id", destination: "/admin/approvals/:id" },
       { source: "/complaints", destination: "/admin/complaints" },
       { source: "/logs", destination: "/admin/logs" },
+      { source: "/emails", destination: "/admin/emails" },
+      { source: "/messaging", destination: "/admin/messaging" },
+      { source: "/migrations", destination: "/admin/migrations" },
+      { source: "/blog", destination: "/admin/blog" },
+      { source: "/cities", destination: "/admin/cities" },
+      { source: "/tools", destination: "/admin/tools" },
     ];
   },
   reactStrictMode: true,
