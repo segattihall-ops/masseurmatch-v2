@@ -239,25 +239,42 @@ export async function decideManualIdentity(formData: FormData): Promise<void> {
   }
 
   if (verification.profile_id) {
-    const { error: profileError } = await service
-      .from("profiles")
-      .update(
-        decision === "approve"
-          ? {
-              is_verified_identity: true,
-              verification_status: "verified",
-              identity_verified_at: now,
-              updated_at: now,
-            }
-          : {
-              is_verified_identity: false,
-              verification_status: "rejected",
-              updated_at: now,
-            },
-      )
-      .eq("id", verification.profile_id);
-    if (profileError) {
-      throw new Error(`Verification saved, but profile status failed: ${profileError.message}`);
+    if (decision === "approve") {
+      const { error: profileError } = await service
+        .from("profiles")
+        .update({
+          is_verified_identity: true,
+          verification_status: "verified",
+          identity_verified_at: now,
+          updated_at: now,
+        })
+        .eq("id", verification.profile_id);
+      if (profileError) {
+        throw new Error(`Verification saved, but profile status failed: ${profileError.message}`);
+      }
+    } else {
+      // A failed manual attempt must not revoke a badge that may already have
+      // been earned through another verification method (Stripe or V2 docs).
+      const { data: profile, error: profileReadError } = await service
+        .from("profiles")
+        .select("is_verified_identity")
+        .eq("id", verification.profile_id)
+        .maybeSingle();
+      if (profileReadError) {
+        throw new Error(
+          `Verification saved, but profile status could not be checked: ${profileReadError.message}`,
+        );
+      }
+
+      if (!profile?.is_verified_identity) {
+        const { error: profileError } = await service
+          .from("profiles")
+          .update({ verification_status: "rejected", updated_at: now })
+          .eq("id", verification.profile_id);
+        if (profileError) {
+          throw new Error(`Verification saved, but profile status failed: ${profileError.message}`);
+        }
+      }
     }
   }
 
@@ -317,6 +334,10 @@ export async function decideManualIdentity(formData: FormData): Promise<void> {
     }
   }
 
+  revalidatePath("/verifications/manual");
+  revalidatePath("/verifications");
+  revalidatePath("/reports");
+  revalidatePath("/");
   revalidatePath("/admin/verifications/manual");
   revalidatePath("/admin/verifications");
   revalidatePath("/admin/reports");
