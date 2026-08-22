@@ -11,6 +11,7 @@ import {
   PLANS,
   photoLimitFor,
   planFor,
+  SUBSCRIPTION_STATUSES,
 } from "../plans";
 import { activeProviderId } from "../provider";
 import { authorizeNetProvider, verifyAuthorizeNetSignature } from "../providers/authorizenet";
@@ -89,6 +90,30 @@ describe("plans", () => {
     expect(formatPrice(PLANS.free)).toBe("Free");
     expect(formatPrice(PLANS.standard)).toBe("$39");
     expect(formatPrice(PLANS.elite)).toBe("$129");
+  });
+});
+
+describe("the status vocabulary", () => {
+  // therapist_subscriptions.status carries a CHECK constraint listing these
+  // exact six values (supabase/migrations/20260822030000_subscription_status_none.sql).
+  // The two drifted apart once already: the column was built with five, the
+  // code had six, and the missing one was `none` — the status every PayPal
+  // subscription is created with. Nothing threw at build time; every therapist
+  // who tried to subscribe just got "Could not start the subscription".
+  //
+  // So this pins the contract. Adding a status here without widening the CHECK
+  // fails this test rather than production.
+  it("matches the CHECK constraint on therapist_subscriptions.status", () => {
+    expect([...SUBSCRIPTION_STATUSES].sort()).toEqual(
+      ["active", "canceled", "expired", "none", "past_due", "trialing"].sort(),
+    );
+  });
+
+  it("includes the state a subscription is created in, before the payer approves", () => {
+    // PayPal's APPROVAL_PENDING and APPROVED both map to `none`, and the row is
+    // written before the redirect so the webhook can find it by id.
+    expect(SUBSCRIPTION_STATUSES).toContain("none");
+    expect(entitlesListing("none")).toBe(false);
   });
 });
 
