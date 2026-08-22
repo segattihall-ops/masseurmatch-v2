@@ -9,7 +9,7 @@ import {
 } from "@/content/competitors";
 import { absoluteUrl, SITE_NAME } from "@/lib/site";
 
-const TITLE = "Compare MasseurMatch";
+const TITLE = "Compare MasseurMatch with other massage directories";
 const PATH = "/compare";
 
 export const metadata: Metadata = {
@@ -27,17 +27,53 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-static";
 
-const TIERS: CompetitorTier[] = [1, 2, 3];
+const PRIMARY_NAMES = new Set(["MasseurFinder", "RentMasseur"]);
+const primaryComparisons = competitorsByTier.filter((competitor) => PRIMARY_NAMES.has(competitor.name));
+const TIERS: CompetitorTier[] = [2, 3];
 
 export default function ComparePage() {
   return (
-    <main className="mx-auto w-full max-w-4xl px-6 pb-16 pt-16">
+    <main className="mx-auto w-full max-w-5xl px-6 pb-16 pt-16">
       <header>
-        <h1 className="font-display text-ds-40 font-bold tracking-tight text-text-primary">
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-secondary">
+          Directory comparisons
+        </p>
+        <h1 className="mt-3 max-w-4xl font-display text-ds-40 font-bold tracking-tight text-text-primary">
           {TITLE}
         </h1>
-        <p className="mt-4 max-w-2xl leading-relaxed text-text-secondary">{COMPARISON_HUB_INTRO}</p>
+        <p className="mt-4 max-w-3xl leading-relaxed text-text-secondary">{COMPARISON_HUB_INTRO}</p>
       </header>
+
+      <section className="mt-10 rounded-3xl border border-brand-secondary/20 bg-brand-soft p-6 sm:p-8">
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-secondary">
+          Most compared
+        </p>
+        <h2 className="mt-2 font-display text-ds-24 font-bold tracking-tight text-text-primary">
+          Start with the two major alternatives
+        </h2>
+        <div className="mt-5 grid gap-4 sm:grid-cols-2">
+          {primaryComparisons.map((competitor) => (
+            <Link
+              key={competitor.slug}
+              href={`/compare/${competitor.slug}`}
+              className="rounded-3xl border border-border bg-bg-surface p-6 shadow-ds-sm transition hover:-translate-y-0.5 hover:border-brand-secondary/40 hover:shadow-ds-md"
+            >
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-text-secondary">
+                MasseurMatch vs
+              </p>
+              <h3 className="mt-2 font-display text-2xl font-bold text-text-primary">
+                {competitor.name}
+              </h3>
+              <p className="mt-3 text-sm leading-6 text-text-secondary">
+                {competitor.hubDescription}
+              </p>
+              <span className="mt-5 inline-flex text-sm font-semibold text-brand-secondary">
+                Open comparison →
+              </span>
+            </Link>
+          ))}
+        </div>
+      </section>
 
       {TIERS.map((tier) => {
         const group = competitorsByTier.filter((competitor) => competitor.tier === tier);
