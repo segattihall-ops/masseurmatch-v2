@@ -76,7 +76,10 @@ export default function MasajesParaHombresPage() {
 
   return (
     <InstitutionalPage>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(faqJsonLd) }} />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLdScript(faqJsonLd) }}
+      />
 
       <InstitutionalHero
         eyebrow="Masajes para hombres"
@@ -88,9 +91,18 @@ export default function MasajesParaHombresPage() {
           { label: "Buscar masajistas", href: "/search", secondary: true },
         ]}
         stats={[
-          { value: "Búsqueda local", label: "Compara perfiles públicos en las ciudades disponibles." },
-          { value: "Incall / outcall", label: "Revisa el formato de sesión que ofrece cada proveedor." },
-          { value: "Contacto directo", label: "Confirma precios, ubicación y disponibilidad directamente." },
+          {
+            value: "Búsqueda local",
+            label: "Compara perfiles públicos en las ciudades disponibles.",
+          },
+          {
+            value: "Incall / outcall",
+            label: "Revisa el formato de sesión que ofrece cada proveedor.",
+          },
+          {
+            value: "Contacto directo",
+            label: "Confirma precios, ubicación y disponibilidad directamente.",
+          },
         ]}
       />
 
@@ -107,31 +119,68 @@ export default function MasajesParaHombresPage() {
       >
         <InstitutionalSteps
           steps={[
-            { title: "Elige tu ciudad", body: "Abre una página local para ver los perfiles públicos disponibles en ese mercado.", meta: "Cerca de mí" },
-            { title: "Compara servicios", body: "Revisa técnicas, especialidades, precios y detalles publicados por cada proveedor.", meta: "Servicios" },
-            { title: "Revisa incall y outcall", body: "Comprueba si viajas al proveedor o si el proveedor ofrece servicio en una ubicación acordada.", meta: "Formato de sesión" },
-            { title: "Contacta directamente", body: "Confirma ubicación exacta, horario, precio total y detalles del servicio antes de la cita.", meta: "Contacto directo" },
+            {
+              title: "Elige tu ciudad",
+              body: "Abre una página local para ver los perfiles públicos disponibles en ese mercado.",
+              meta: "Cerca de mí",
+            },
+            {
+              title: "Compara servicios",
+              body: "Revisa técnicas, especialidades, precios y detalles publicados por cada proveedor.",
+              meta: "Servicios",
+            },
+            {
+              title: "Revisa incall y outcall",
+              body: "Comprueba si viajas al proveedor o si el proveedor ofrece servicio en una ubicación acordada.",
+              meta: "Formato de sesión",
+            },
+            {
+              title: "Contacta directamente",
+              body: "Confirma ubicación exacta, horario, precio total y detalles del servicio antes de la cita.",
+              meta: "Contacto directo",
+            },
           ]}
         />
       </InstitutionalSection>
 
-      <InstitutionalSection dark eyebrow="Qué puedes comparar" title="Información útil antes de contactar.">
+      <InstitutionalSection
+        dark
+        eyebrow="Qué puedes comparar"
+        title="Información útil antes de contactar."
+      >
         <InstitutionalCardGrid
           dark
           cards={[
-            { title: "Técnicas de masaje", body: "Compara deep tissue, Swedish, sports, Thai y otras técnicas listadas en el perfil." },
-            { title: "Precios", body: "Usa los precios publicados como referencia y confirma el total directamente con el proveedor." },
-            { title: "Disponibilidad", body: "Revisa la disponibilidad visible y confirma la hora exacta directamente." },
-            { title: "LGBTQ+ friendly", body: "Los perfiles pueden incluir información affirming para ayudar a comparar el ambiente y el fit." },
+            {
+              title: "Técnicas de masaje",
+              body: "Compara deep tissue, Swedish, sports, Thai y otras técnicas listadas en el perfil.",
+            },
+            {
+              title: "Precios",
+              body: "Usa los precios publicados como referencia y confirma el total directamente con el proveedor.",
+            },
+            {
+              title: "Disponibilidad",
+              body: "Revisa la disponibilidad visible y confirma la hora exacta directamente.",
+            },
+            {
+              title: "LGBTQ+ friendly",
+              body: "Los perfiles pueden incluir información affirming para ayudar a comparar el ambiente y el fit.",
+            },
           ]}
         />
       </InstitutionalSection>
 
-      <InstitutionalSection eyebrow="Preguntas" title="Masajes para hombres: preguntas frecuentes">
+      <InstitutionalSection
+        eyebrow="Preguntas"
+        title="Masajes para hombres: preguntas frecuentes"
+      >
         <div className="grid gap-8 md:grid-cols-2">
           {FAQS.map((faq) => (
             <div key={faq.question}>
-              <h3 className="font-display text-xl font-semibold text-text-primary">{faq.question}</h3>
+              <h3 className="font-display text-xl font-semibold text-text-primary">
+                {faq.question}
+              </h3>
               <p className="mt-3 text-sm leading-7 text-text-secondary">{faq.answer}</p>
             </div>
           ))}
