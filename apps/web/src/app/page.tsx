@@ -174,7 +174,10 @@ export default async function HomePage() {
               </Link>
             </div>
 
-            <nav aria-label="Popular massage searches" className="mt-6 flex flex-wrap gap-x-5 gap-y-2">
+            <nav
+              aria-label="Popular massage searches"
+              className="mt-6 flex flex-wrap gap-x-5 gap-y-2"
+            >
               {seoHubs.map(([label, href]) => (
                 <Link
                   key={href}
