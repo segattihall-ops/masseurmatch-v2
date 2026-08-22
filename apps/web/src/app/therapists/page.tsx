@@ -9,9 +9,9 @@ import Link from "next/link";
 
 import { absoluteUrl, SITE_NAME } from "@/lib/site";
 
-const TITLE = "All Therapists";
+const TITLE = "Male Massage Therapists";
 const DESCRIPTION =
-  "Every verified male massage therapist listed on MasseurMatch, grouped by city.";
+  "Browse male massage therapists by city on MasseurMatch. Compare public profiles, services, rates, gay-friendly details, availability and direct-contact options.";
 const PATH = "/therapists";
 
 export const metadata: Metadata = {
@@ -29,16 +29,6 @@ export const metadata: Metadata = {
 
 export const revalidate = DIRECTORY_REVALIDATE_SECONDS;
 
-/**
- * The full therapist index.
- *
- * This sits alongside `/therapists/[slug]`, which is the *legacy redirect* for
- * the old site's profile URLs — a static segment and a dynamic one at the same
- * level, which Next resolves in that order, so neither shadows the other.
- *
- * Grouped by city rather than listed flat: a directory's index is a navigation
- * aid, and 28 names in one column tells a reader nothing about where anyone is.
- */
 export default async function TherapistsIndexPage() {
   const therapists = await getVisibleTherapists();
 
@@ -65,13 +55,29 @@ export default async function TherapistsIndexPage() {
   return (
     <main className="mx-auto w-full max-w-4xl px-6 pb-16 pt-16">
       <header>
-        <h1 className="font-display text-ds-40 font-bold tracking-tight text-text-primary">
-          {TITLE}
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-secondary">
+          Male massage directory
+        </p>
+        <h1 className="mt-4 font-display text-ds-40 font-bold tracking-tight text-text-primary">
+          Male massage therapists
         </h1>
         <p className="mt-4 max-w-2xl leading-relaxed text-text-secondary">
-          {therapists.length} {therapists.length === 1 ? "therapist" : "therapists"} across{" "}
-          {cities.length} {cities.length === 1 ? "city" : "cities"}.
+          Browse {therapists.length} public male massage therapist{" "}
+          {therapists.length === 1 ? "profile" : "profiles"} across {cities.length}{" "}
+          {cities.length === 1 ? "city" : "cities"}. Compare services, rates, availability, LGBTQ+
+          affirming profile details and location before contacting a provider directly.
         </p>
+        <div className="mt-6 flex flex-wrap gap-3 text-sm font-semibold">
+          <Link href="/near-me" className="text-brand-secondary hover:underline">
+            Male massage therapist near me
+          </Link>
+          <Link href="/gay-massage" className="text-brand-secondary hover:underline">
+            Gay-friendly massage
+          </Link>
+          <Link href="/services" className="text-brand-secondary hover:underline">
+            Browse massage services
+          </Link>
+        </div>
       </header>
 
       {cities.length === 0 ? (
@@ -82,7 +88,7 @@ export default async function TherapistsIndexPage() {
             <section key={city.href}>
               <h2 className="font-display text-ds-24 font-bold tracking-tight text-text-primary">
                 <Link href={city.href} className="hover:text-brand-secondary">
-                  {city.label}
+                  Male massage therapists in {city.label}
                 </Link>
               </h2>
               <ul className="mt-3 grid gap-2 sm:grid-cols-2">
