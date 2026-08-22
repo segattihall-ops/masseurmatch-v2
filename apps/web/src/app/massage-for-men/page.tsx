@@ -100,7 +100,8 @@ export default function MassageForMenPage() {
           },
           {
             value: "Direct contact",
-            label: "Confirm final details with the independent provider before arranging a session.",
+            label:
+              "Confirm final details with the independent provider before arranging a session.",
           },
         ]}
       />
