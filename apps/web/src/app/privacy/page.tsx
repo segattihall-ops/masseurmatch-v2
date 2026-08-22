@@ -21,6 +21,7 @@ export default function PrivacyPage() {
       <h1 className="font-display text-ds-40 font-bold tracking-tight text-text-primary">
         Privacy Policy
       </h1>
+      <p className="mt-3 text-sm text-text-muted">Last updated August 22, 2026</p>
 
       <div className="mt-10 space-y-10">
         <section className="space-y-3">
@@ -41,6 +42,22 @@ export default function PrivacyPage() {
           <p className="text-text-secondary">
             {
               "Identity documents are handled by our verification partner and are not stored on our servers. We retain only the outcome of the check."
+            }
+          </p>
+        </section>
+
+        <section className="space-y-3">
+          <h2 className="font-display text-ds-24 font-bold tracking-tight text-text-primary">
+            Payment processing
+          </h2>
+          <p className="text-text-secondary">
+            {
+              "MasseurMatch uses PayPal as its third-party payment processor for paid platform products. Payment credentials and full payment-method details are handled by PayPal rather than stored in full by MasseurMatch. We may receive transaction identifiers, subscription status, payment status, billing dates, amounts, and other limited information needed to administer subscriptions, reconcile payments, prevent fraud, handle support, and process approved refunds. PayPal processes payment information under its own privacy terms."
+            }
+          </p>
+          <p className="text-text-secondary">
+            {
+              "MasseurMatch does not process payments between clients and independent providers for massage or bodywork sessions. Those payment arrangements are made directly between the client and provider."
             }
           </p>
         </section>
