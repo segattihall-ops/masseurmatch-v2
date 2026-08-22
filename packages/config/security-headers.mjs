@@ -43,6 +43,9 @@ export function contentSecurityPolicy(options = {}) {
     // style attributes, so 'unsafe-inline' is required for styles too.
     "style-src": ["'self'", "'unsafe-inline'"],
     "img-src": ["'self'", "data:", "blob:", "https://res.cloudinary.com", ...supabase],
+    // Provider intro videos are delivered from the same Cloudinary account as
+    // profile photos. Keep media explicit instead of widening default-src.
+    "media-src": ["'self'", "blob:", "https://res.cloudinary.com"],
     "font-src": ["'self'", "data:"],
     "connect-src": ["'self'", ...supabase, ...(options.extraConnect ?? [])],
     // Cloudinary's signed upload endpoint is posted to directly from the
@@ -82,10 +85,11 @@ export function securityHeaders({ csp, noIndex = false }) {
     // Send the full URL same-origin, only the origin cross-origin. Profile URLs
     // identify a therapist, so they should not leak into third-party logs.
     { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-    // Nothing here needs any of these.
+    // The public search is location-aware. Only first-party code may request
+    // geolocation; camera and microphone remain disabled everywhere.
     {
       key: "Permissions-Policy",
-      value: "camera=(), microphone=(), geolocation=(), interest-cohort=()",
+      value: "camera=(), microphone=(), geolocation=(self), interest-cohort=()",
     },
   ];
 
