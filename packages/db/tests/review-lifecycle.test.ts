@@ -43,4 +43,30 @@ describe("review lifecycle", () => {
     expect(isEnforcementBlocked({ ...base, isBanned: true })).toBe(true);
     expect(isEnforcementBlocked(base)).toBe(false);
   });
+
+  it("preserves the launch journey from requested changes through re-approval", () => {
+    const requestedChanges = {
+      ...base,
+      profileStatus: "rejected",
+      moderationStatus: "rejected",
+    };
+    expect(canProviderResubmit(requestedChanges)).toBe(true);
+    expect(isReviewableModerationState(requestedChanges)).toBe(false);
+
+    const resubmitted = {
+      ...base,
+      profileStatus: "pending",
+      moderationStatus: "pending",
+    };
+    expect(canProviderResubmit(resubmitted)).toBe(false);
+    expect(isReviewableModerationState(resubmitted)).toBe(true);
+
+    const approved = {
+      ...base,
+      profileStatus: "approved",
+      moderationStatus: "approved",
+    };
+    expect(canProviderResubmit(approved)).toBe(false);
+    expect(isReviewableModerationState(approved)).toBe(false);
+  });
 });
