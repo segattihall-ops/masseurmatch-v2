@@ -1,12 +1,7 @@
 "use server";
 
-import {
-  activeProviderId,
-  assertPayPalPlanMatchesCatalog,
-  getProvider,
-  isPlanId,
-  PLANS,
-} from "@masseurmatch/billing";
+import { activeProviderId, getProvider, isPlanId, PLANS } from "@masseurmatch/billing";
+import { assertPayPalPlanMatchesCatalog } from "@masseurmatch/billing/paypal-plan-configuration";
 import { getViewer } from "@masseurmatch/db/auth";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
