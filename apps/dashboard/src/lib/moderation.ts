@@ -11,7 +11,7 @@ export type ModerationAction = (typeof MODERATION_ACTIONS)[number];
 
 export const ACTION_LABELS: Record<ModerationAction, string> = {
   approve: "Approve",
-  reject: "Reject",
+  reject: "Request changes",
   suspend: "Suspend",
 };
 
