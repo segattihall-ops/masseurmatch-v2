@@ -110,7 +110,10 @@ export default async function HomePage() {
             backgroundSize: "30px 30px",
           }}
         />
-        <div aria-hidden="true" className="pointer-events-none absolute -right-36 top-8 sm:-right-20">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -right-36 top-8 sm:-right-20"
+        >
           <ScrollParallax
             distance={34}
             className="h-[30rem] w-[30rem] rounded-full bg-brand-secondary/15 blur-3xl sm:h-[38rem] sm:w-[38rem]"

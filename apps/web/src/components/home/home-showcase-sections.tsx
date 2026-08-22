@@ -374,7 +374,10 @@ export function HomeProviderGrowth() {
           </h3>
           <ul className="mt-7 grid list-none gap-3 p-0 sm:grid-cols-2">
             {providerBenefits.map((benefit) => (
-              <li key={benefit} className="flex items-center gap-2 text-sm font-medium text-text-primary">
+              <li
+                key={benefit}
+                className="flex items-center gap-2 text-sm font-medium text-text-primary"
+              >
                 <span className="h-1.5 w-1.5 rounded-full bg-brand-secondary" />
                 {benefit}
               </li>
@@ -462,9 +465,7 @@ export function HomeFaq() {
       title="Everything you need to know."
       intro="A quick guide to how the directory, profile review, direct contact, and identity signals work."
     >
-      <InstitutionalFaq
-        items={homeFaqItems.map(([question, answer]) => ({ question, answer }))}
-      />
+      <InstitutionalFaq items={homeFaqItems.map(([question, answer]) => ({ question, answer }))} />
       <Link
         href="/faq"
         className="mt-7 inline-flex text-sm font-semibold text-brand-secondary underline-offset-4 hover:underline"
