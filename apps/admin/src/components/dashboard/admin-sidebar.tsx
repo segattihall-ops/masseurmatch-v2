@@ -6,14 +6,20 @@ import {
   Camera,
   CreditCard,
   FileCheck,
+  FileInput,
   Flag,
   LifeBuoy,
   LogOut,
+  Mail,
+  MapPin,
   Menu,
+  MessageSquareText,
+  Newspaper,
   ScrollText,
   Shield,
   TrendingUp,
   Users,
+  Wrench,
   X,
 } from "lucide-react";
 import Link from "next/link";
@@ -33,8 +39,14 @@ const ADMIN_LINKS = [
   { href: "/profile-reports", label: "Safety Reports", icon: Flag },
   { href: "/reports", label: "Reports", icon: Activity },
   { href: "/tickets", label: "Tickets", icon: LifeBuoy },
-  { href: "/audit-log", label: "Audit Log", icon: ScrollText },
+  { href: "/emails", label: "Email Center", icon: Mail },
+  { href: "/messaging", label: "Messaging", icon: MessageSquareText },
+  { href: "/migrations", label: "Profile Imports", icon: FileInput },
+  { href: "/blog", label: "Blog CMS", icon: Newspaper },
+  { href: "/cities", label: "Cities", icon: MapPin },
   { href: "/demand-radar", label: "Demand Radar", icon: TrendingUp },
+  { href: "/audit-log", label: "Audit Log", icon: ScrollText },
+  { href: "/tools", label: "Tools & Parity", icon: Wrench },
 ];
 
 export function AdminSidebar() {
@@ -42,7 +54,7 @@ export function AdminSidebar() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <aside className="border-b border-border bg-surface lg:w-64 lg:flex-none lg:border-b-0 lg:border-r">
+    <aside className="border-b border-border bg-surface lg:sticky lg:top-0 lg:max-h-screen lg:w-64 lg:flex-none lg:overflow-y-auto lg:border-b-0 lg:border-r">
       <div className="flex min-h-14 items-center justify-between gap-3 px-4 lg:hidden">
         <div>
           <p className="text-sm font-semibold text-text-primary">Admin menu</p>
@@ -73,7 +85,7 @@ export function AdminSidebar() {
         id="admin-navigation"
         className={`${mobileOpen ? "block" : "hidden"} border-t border-border px-3 pb-3 pt-2 lg:block lg:border-t-0 lg:px-6 lg:pb-6 lg:pt-0`}
       >
-        <nav aria-label="Admin" className="grid gap-1 lg:space-y-2">
+        <nav aria-label="Admin" className="grid gap-1 lg:space-y-1">
           {ADMIN_LINKS.map((link) => {
             const Icon = link.icon;
             const isActive =
@@ -104,7 +116,7 @@ export function AdminSidebar() {
         <button
           type="button"
           onClick={() => signOut()}
-          className="mt-3 flex min-h-11 w-full items-center gap-3 rounded-lg px-4 py-2 text-sm font-medium text-text-secondary transition hover:bg-surface-hover lg:mt-8"
+          className="mt-3 flex min-h-11 w-full items-center gap-3 rounded-lg px-4 py-2 text-sm font-medium text-text-secondary transition hover:bg-surface-hover lg:mt-6"
         >
           <LogOut className="h-5 w-5 shrink-0" aria-hidden="true" />
           Sign Out

@@ -16,3 +16,9 @@
     background: rgb(var(--color-brand-secondary-rgb) / 0.18);
   }
 }
+
+@layer components {
+  .input {
+    @apply min-h-11 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:bg-muted disabled:opacity-60;
+  }
+}
