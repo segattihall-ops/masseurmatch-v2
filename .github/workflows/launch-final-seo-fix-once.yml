@@ -1,0 +1,94 @@
+name: Launch final SEO fix once
+
+on:
+  push:
+    branches: [fix/launch-final-verification]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/launch-final-verification
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - name: Apply SEO contract fixes found by production smoke
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+
+          search = Path('apps/web/src/app/search/page.tsx')
+          text = search.read_text()
+          function_block = '''function hasIndexChangingFilters(searchParams: SearchParams["searchParams"]): boolean {
+  return [
+    searchParams.city,
+    searchParams.service,
+    searchParams.q,
+    searchParams.goal,
+    searchParams.session,
+    searchParams.available,
+    searchParams.verified,
+    searchParams.lgbtq,
+    searchParams.min,
+    searchParams.max,
+    searchParams.tier,
+    searchParams.master,
+    searchParams.sort,
+  ].some((value) => Boolean(value?.trim()));
+}
+
+'''
+          if function_block not in text:
+              raise SystemExit('search index helper block not found')
+          text = text.replace(function_block, '')
+          robots_block = '''    robots: hasIndexChangingFilters(searchParams)
+      ? { index: false, follow: true }
+      : { index: true, follow: true },'''
+          if robots_block not in text:
+              raise SystemExit('search robots block not found')
+          text = text.replace(robots_block, '    robots: { index: false, follow: true },')
+          search.write_text(text)
+
+          sitemap = Path('apps/web/src/app/sitemap.ts')
+          text = sitemap.read_text()
+          old_comment = ''' * `/search` is intentionally excluded because robots.ts disallows crawler access
+ * to filter permutations; stable city/service/profile URLs carry the indexable
+ * discovery content instead.
+ */
+const HUBS = ["/", "/therapists", "/cities", "/states", "/guides", "/compare", "/blog"];'''
+          new_comment = ''' * `/search` remains declared for legacy sitemap continuity, but the route itself
+ * is noindex so faceted permutations do not become duplicate index entries.
+ */
+const HUBS = [
+  "/",
+  "/search",
+  "/therapists",
+  "/cities",
+  "/states",
+  "/guides",
+  "/compare",
+  "/blog",
+];'''
+          if old_comment not in text:
+              raise SystemExit('sitemap hub block not found')
+          sitemap.write_text(text.replace(old_comment, new_comment))
+          PY
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm prettier --write apps/web/src/app/search/page.tsx apps/web/src/app/sitemap.ts
+      - name: Commit final fix and remove one-time workflow
+        run: |
+          rm .github/workflows/launch-final-seo-fix-once.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "fix(web): restore search crawl contract"
+          git push origin HEAD:fix/launch-final-verification
