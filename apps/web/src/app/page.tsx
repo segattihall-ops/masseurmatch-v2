@@ -89,7 +89,7 @@ export default async function HomePage() {
   const featured = await hydrateFeaturedPhotos(therapists.slice(0, 6));
 
   return (
-    <>
+    <div className="overflow-clip bg-bg-surface text-text-primary">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLdScript(siteJsonLd()) }}
@@ -99,75 +99,89 @@ export default async function HomePage() {
 
       <section
         aria-labelledby="home-hero-title"
-        className="home-hero relative flex min-h-[calc(100svh-4rem)] w-full flex-col overflow-hidden px-5 pb-3 sm:px-8 sm:pb-7 lg:px-12 xl:px-16 2xl:px-24"
+        className="relative isolate overflow-hidden bg-[#0d0d0f] text-white"
       >
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-y-0 right-0 hidden w-1/2 lg:block"
-        >
-          <ScrollParallax distance={24} className="absolute right-[-8%] top-[11%] h-[58%] w-[72%]">
-            <div className="h-full w-full rounded-full bg-brand-soft/70 blur-3xl" />
-          </ScrollParallax>
-          <ScrollParallax distance={14} className="absolute bottom-[14%] right-[13%] h-44 w-44">
-            <div className="h-full w-full rounded-full border border-brand-secondary/15 bg-bg-surface/60" />
+          className="pointer-events-none absolute inset-0 opacity-80"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle at 1px 1px, rgba(255,255,255,0.035) 1px, transparent 0)",
+            backgroundSize: "30px 30px",
+          }}
+        />
+        <div aria-hidden="true" className="pointer-events-none absolute -right-36 top-8 sm:-right-20">
+          <ScrollParallax
+            distance={34}
+            className="h-[30rem] w-[30rem] rounded-full bg-brand-secondary/15 blur-3xl sm:h-[38rem] sm:w-[38rem]"
+          >
+            <span className="block h-full w-full" />
           </ScrollParallax>
         </div>
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-44 bg-gradient-to-t from-black/30 to-transparent"
+        />
 
-        <div className="relative z-10 flex flex-1 items-center py-[clamp(1.25rem,4vh,2.5rem)] sm:py-[clamp(2rem,6vh,5.5rem)]">
-          <div className="w-full max-w-5xl text-left">
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-brand-secondary sm:text-sm">
+        <div className="relative mx-auto flex min-h-[clamp(36rem,78svh,52rem)] w-full max-w-6xl flex-col justify-center px-6 pb-20 pt-24 sm:pb-24 sm:pt-28 lg:pb-28 lg:pt-32">
+          <div className="max-w-5xl">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[#d66b7a]">
               {SITE_NAME}
             </p>
 
             <h1
               id="home-hero-title"
-              className="mt-[clamp(0.75rem,2vh,1.25rem)] max-w-[940px] text-left font-display text-4xl font-bold leading-[1.01] tracking-[-0.04em] text-text-primary sm:mt-[clamp(1rem,3vh,1.75rem)] sm:text-[clamp(2.55rem,7.4vmin,5.25rem)]"
+              className="mt-5 max-w-5xl font-display text-[clamp(2.75rem,7vw,6.5rem)] font-bold leading-[0.96] tracking-[-0.045em] text-white"
             >
-              Verified male massage therapists, without the guesswork.
+              Verified male massage therapists,
+              <span className="mt-2 block text-[#d66b7a] sm:mt-3">without the guesswork.</span>
             </h1>
 
-            <h2 className="mt-[clamp(0.75rem,2vh,1.25rem)] max-w-4xl text-left font-sans text-[0.95rem] font-normal leading-[1.45] text-text-secondary sm:mt-[clamp(1rem,2.6vh,1.75rem)] sm:text-[clamp(1rem,2.4vmin,1.35rem)] sm:leading-[1.55]">
+            <p className="mt-7 max-w-2xl text-base leading-7 text-white/68 sm:text-lg sm:leading-8">
               {SITE_DESCRIPTION}
-            </h2>
+            </p>
 
-            <div className="mt-[clamp(1rem,3vh,1.75rem)] flex max-w-[560px] flex-col gap-2.5 sm:mt-[clamp(1.5rem,4vh,2.5rem)] sm:flex-row sm:gap-4">
+            <div className="mt-9 flex flex-wrap gap-3">
               <Link
                 href="/search"
-                className="inline-flex min-h-11 flex-1 items-center justify-center rounded-full bg-brand-secondary px-6 text-sm font-semibold text-text-inverse transition duration-200 hover:-translate-y-0.5 hover:bg-action-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:min-h-14 sm:px-8 sm:text-base lg:min-h-[60px]"
+                className="inline-flex min-h-12 items-center justify-center rounded-full bg-brand-secondary px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-secondary/15 transition duration-300 hover:-translate-y-0.5 hover:bg-action-primary-hover hover:shadow-xl"
               >
                 Find a therapist
+                <span aria-hidden="true" className="ml-2">
+                  →
+                </span>
               </Link>
               <Link
                 href="/for-therapists"
-                className="inline-flex min-h-11 flex-1 items-center justify-center rounded-full border border-border-strong bg-bg-surface/90 px-6 text-sm font-semibold text-text-primary transition duration-200 hover:-translate-y-0.5 hover:bg-bg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:min-h-14 sm:px-8 sm:text-base lg:min-h-[60px]"
+                className="inline-flex min-h-12 items-center justify-center rounded-full border border-white/15 bg-white/[0.06] px-6 py-3 text-sm font-semibold text-white transition duration-300 hover:border-white/25 hover:bg-white/[0.1]"
               >
                 List your practice
+                <span aria-hidden="true" className="ml-2">
+                  →
+                </span>
               </Link>
             </div>
           </div>
-        </div>
 
-        <div className="home-hero-signals relative z-10 mt-auto pt-3 sm:pt-[clamp(1rem,3vh,2.25rem)]">
-          <div className="grid grid-cols-3 gap-2.5 border-t border-border-subtle pt-3 sm:gap-6 sm:pt-6 lg:grid-cols-[1fr_1fr_1fr_auto] lg:items-end lg:gap-10">
+          <div className="mt-16 grid gap-px overflow-hidden rounded-3xl border border-white/[0.08] bg-white/[0.08] sm:grid-cols-3 lg:mt-20">
             {discoverySignals.map(([title, description]) => (
-              <div key={title} className="min-w-0 text-left">
-                <p className="font-display text-[11px] font-semibold leading-4 text-text-primary sm:text-base sm:leading-5 lg:text-ds-18">
+              <div key={title} className="bg-[#111113]/95 p-6 sm:p-7">
+                <p className="font-display text-2xl font-semibold tracking-tight text-white sm:text-3xl">
                   {title}
                 </p>
-                <p className="mt-1 hidden text-sm text-text-secondary sm:block">{description}</p>
+                <p className="mt-2 text-sm leading-6 text-white/55">{description}</p>
               </div>
             ))}
-
-            <a
-              href="#explore-home"
-              className="col-span-3 mt-0 inline-flex w-fit text-xs font-semibold text-brand-secondary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:mt-1 sm:text-sm lg:col-span-1 lg:mt-0 lg:justify-self-end"
-            >
-              <ScrollCue>
-                Scroll to explore
-                <span aria-hidden="true">↓</span>
-              </ScrollCue>
-            </a>
           </div>
+
+          <a
+            href="#explore-home"
+            className="absolute bottom-6 left-6 hidden text-[10px] font-semibold uppercase tracking-[0.22em] text-white/35 hover:text-white/60 sm:block"
+          >
+            <ScrollCue>
+              Scroll to explore <span aria-hidden="true">↓</span>
+            </ScrollCue>
+          </a>
         </div>
       </section>
 
@@ -178,8 +192,10 @@ export default async function HomePage() {
 
         {/* After the listings on purpose: someone who already found who they
             wanted should not be asked whether they need help finding someone. */}
-        <section className="mx-auto w-full max-w-6xl px-6 py-12">
-          <KnottyChat />
+        <section className="bg-bg-surface px-6 py-16 sm:py-20">
+          <div className="mx-auto w-full max-w-6xl">
+            <KnottyChat />
+          </div>
         </section>
 
         <HomeHowItWorks />
@@ -188,6 +204,6 @@ export default async function HomePage() {
         <HomeFaq />
         <HomeFinalCta />
       </div>
-    </>
+    </div>
   );
 }
