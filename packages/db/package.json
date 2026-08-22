@@ -10,6 +10,7 @@
     "./client": "./client.ts",
     "./auth": "./auth.ts",
     "./profile-status": "./profile-status.ts",
+    "./review-lifecycle": "./review-lifecycle.ts",
     "./visibility": "./visibility.ts",
     "./current-status": "./current-status.ts",
     "./middleware": "./middleware.ts",

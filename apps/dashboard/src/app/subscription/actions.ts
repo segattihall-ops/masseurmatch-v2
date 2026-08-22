@@ -1,6 +1,7 @@
 "use server";
 
 import { activeProviderId, getProvider, isPlanId, PLANS } from "@masseurmatch/billing";
+import { assertPayPalPlanMatchesCatalog } from "@masseurmatch/billing/paypal-plan-configuration";
 import { getViewer } from "@masseurmatch/db/auth";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -71,6 +72,20 @@ function requestedPlan(formData: FormData): string | null {
 }
 
 /**
+ * Verify that the PayPal plan configured in production is the same product we
+ * advertise before the provider is allowed to create or revise a subscription.
+ * A stale $99 Elite plan must fail here rather than charge a therapist a price
+ * different from the $129 catalogue.
+ */
+async function assertProviderPlanIsSafe(
+  plan: Parameters<typeof assertPayPalPlanMatchesCatalog>[0],
+) {
+  if (activeProviderId() === "paypal") {
+    await assertPayPalPlanMatchesCatalog(plan);
+  }
+}
+
+/**
  * Start a subscription.
  *
  * Records the row before redirecting, because the webhook is keyed on
@@ -98,7 +113,9 @@ export async function startSubscription(
 
   let approvalUrl: string;
   try {
-    const provider = getProvider();
+    await assertProviderPlanIsSafe(plan);
+    const providerId = activeProviderId();
+    const provider = getProvider(providerId);
     const ref = await provider.createSubscription(profile.id, plan);
 
     if (!ref.approvalUrl) {
@@ -108,7 +125,7 @@ export async function startSubscription(
     await recordNewSubscription({
       profileId: profile.id,
       plan,
-      provider: activeProviderId(),
+      provider: providerId,
       providerSubscriptionId: ref.id,
       status: ref.status,
       currentPeriodEnd: ref.nextChargeOn,
@@ -147,7 +164,9 @@ export async function changePlan(_prev: BillingState, formData: FormData): Promi
 
   let approvalUrl: string | null = null;
   try {
-    const ref = await getProvider().updatePlan(existing.providerSubscriptionId, plan);
+    await assertProviderPlanIsSafe(plan);
+    const providerId = activeProviderId();
+    const ref = await getProvider(providerId).updatePlan(existing.providerSubscriptionId, plan);
     await recordPlanChange(existing.id, plan);
     approvalUrl = ref.approvalUrl;
   } catch (error) {

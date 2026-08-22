@@ -4,6 +4,7 @@ import {
   Activity,
   BarChart3,
   Camera,
+  CreditCard,
   FileCheck,
   Flag,
   LifeBuoy,
@@ -24,6 +25,8 @@ import { signOut } from "@/app/sign-in/actions";
 const ADMIN_LINKS = [
   { href: "/", label: "Overview", icon: BarChart3 },
   { href: "/people", label: "People", icon: Users },
+  { href: "/analytics", label: "Analytics", icon: BarChart3 },
+  { href: "/billing", label: "Billing", icon: CreditCard },
   { href: "/moderation", label: "Approvals", icon: Shield },
   { href: "/photos", label: "Photos", icon: Camera },
   { href: "/verifications", label: "Verifications", icon: FileCheck },

@@ -6,10 +6,13 @@ import {
   getCity,
   getTherapistsByCity,
   searchTherapists,
+  searchTherapistsPage,
 } from "@masseurmatch/db/actions/directory";
 import {
   DIRECTORY_REVALIDATE_SECONDS,
+  citySlug,
   type CityListing,
+  type TherapistListing,
 } from "@masseurmatch/db/actions/directory-config";
 
 import { LegacyDirectoryLanding } from "@/components/legacy-directory-landing";
@@ -32,18 +35,83 @@ interface CityParams {
   params: { state: string; city: string };
 }
 
+type FreshCanonicalCity = {
+  city: CityListing;
+  therapists: TherapistListing[];
+};
+
 export async function generateStaticParams() {
   const cities = await getCities();
   return cities.map((city) => ({ state: city.stateSlug, city: city.citySlug }));
 }
 
-async function getLegacyCity(citySlug: string): Promise<CityListing | null> {
+async function getLegacyCity(citySlugValue: string): Promise<CityListing | null> {
   const cities = await getCities();
-  return cities.find((city) => city.citySlug === citySlug.toLowerCase()) ?? null;
+  return cities.find((city) => city.citySlug === citySlugValue.toLowerCase()) ?? null;
+}
+
+/**
+ * Recover a canonical city that was approved after the hourly directory cache
+ * was populated.
+ *
+ * Admin and Public are separate Vercel applications, so a revalidation in the
+ * Admin app cannot invalidate Public's Next.js data cache. Search already uses
+ * the uncached Postgres RPC; use it only as a fallback when `getCities()` has
+ * not learned the city yet. That prevents a newly approved city/profile from
+ * returning a false 404 for up to an hour while preserving the cached path for
+ * established cities.
+ */
+async function getFreshCanonicalCity(
+  state: string,
+  city: string,
+): Promise<FreshCanonicalCity | null> {
+  const normalizedState = state.toLowerCase();
+  const normalizedCity = city.toLowerCase();
+  const therapists: TherapistListing[] = [];
+  let page = 1;
+  let total = 0;
+
+  do {
+    const result = await searchTherapistsPage({
+      state: normalizedState,
+      city: normalizedCity,
+      page,
+      pageSize: 48,
+    });
+
+    total = result.total;
+    therapists.push(
+      ...result.items.filter(
+        (therapist) =>
+          therapist.state?.toLowerCase() === normalizedState &&
+          therapist.city !== null &&
+          citySlug(therapist.city) === normalizedCity,
+      ),
+    );
+
+    if (result.items.length < result.pageSize || page * result.pageSize >= total) break;
+    page += 1;
+  } while (page <= Math.ceil(total / 48));
+
+  const first = therapists[0];
+  if (!first?.city || !first.state) return null;
+
+  return {
+    city: {
+      citySlug: citySlug(first.city),
+      stateSlug: first.state.toLowerCase(),
+      name: first.city,
+      state: first.state,
+      therapistCount: therapists.length,
+    },
+    therapists,
+  };
 }
 
 export async function generateMetadata({ params }: CityParams): Promise<Metadata> {
-  const city = await getCity(params.state, params.city);
+  const cachedCity = await getCity(params.state, params.city);
+  const city = cachedCity ?? (await getFreshCanonicalCity(params.state, params.city))?.city ?? null;
+
   if (city) {
     const title = `Massage Therapists in ${city.name}, ${city.state}`;
     const description = `${city.therapistCount} verified male massage ${
@@ -81,10 +149,13 @@ export async function generateMetadata({ params }: CityParams): Promise<Metadata
 }
 
 export default async function CityPage({ params }: CityParams) {
-  const city = await getCity(params.state, params.city);
+  const cachedCity = await getCity(params.state, params.city);
+  const freshCity = cachedCity ? null : await getFreshCanonicalCity(params.state, params.city);
+  const city = cachedCity ?? freshCity?.city ?? null;
 
   if (city) {
-    const rawTherapists = await getTherapistsByCity(params.state, params.city);
+    const rawTherapists =
+      freshCity?.therapists ?? (await getTherapistsByCity(params.state, params.city));
     const therapists = await withApprovedProfilePhotos(rawTherapists);
 
     return (

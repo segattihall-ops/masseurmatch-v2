@@ -26,6 +26,9 @@ const nextConfig = {
     return [
       { source: "/", destination: "/admin" },
       { source: "/people", destination: "/admin/people" },
+      { source: "/people/:id", destination: "/admin/people/:id" },
+      { source: "/analytics", destination: "/admin/analytics" },
+      { source: "/billing", destination: "/admin/billing" },
       { source: "/moderation", destination: "/admin/moderation" },
       { source: "/photos", destination: "/admin/photos" },
       { source: "/verifications", destination: "/admin/verifications" },
@@ -45,7 +48,12 @@ const nextConfig = {
     ];
   },
   reactStrictMode: true,
-  transpilePackages: ["@masseurmatch/ui", "@masseurmatch/db", "@masseurmatch/config"],
+  transpilePackages: [
+    "@masseurmatch/ui",
+    "@masseurmatch/db",
+    "@masseurmatch/config",
+    "@masseurmatch/billing",
+  ],
   eslint: { ignoreDuringBuilds: true },
   experimental: {
     outputFileTracingRoot: new URL("../../", import.meta.url).pathname,
