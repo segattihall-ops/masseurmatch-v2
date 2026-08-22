@@ -143,7 +143,7 @@ describe("the 60-minute proportional rule", () => {
     for (const incall of ["-50", "12.5", "twelve"]) {
       const result = listingSchema.safeParse({
         ...minimal,
-        sessions: [{ minutes: "60", incall, outcall: "" }],
+        sessions: [{ minutes: "60", incall, outcall: "", publish: false }],
       });
       expect(result.success).toBe(false);
     }
@@ -188,7 +188,7 @@ describe("derived columns", () => {
   });
 
   it("rejects a radius that is not on the ladder", () => {
-    expect(listingSchema.safeParse({ ...minimal, outcall_radius: "40" }).success).toBe(false);
+    expect(listingSchema.safeParse({ ...minimal, outcall_radius: "42" }).success).toBe(false);
     for (const miles of OUTCALL_RADII_MILES) {
       expect(listingSchema.safeParse({ ...minimal, outcall_radius: String(miles) }).success).toBe(
         true,
@@ -302,7 +302,7 @@ describe("every patch key is a real profiles column", () => {
 
 describe("limits", () => {
   it("caps the repeatable collections where the API does", () => {
-    const row = { minutes: "60", incall: "100", outcall: "" };
+    const row = { minutes: "60", incall: "100", outcall: "", publish: false };
     const tooMany = Array.from({ length: LIMITS.sessions + 1 }, () => row);
     expect(listingSchema.safeParse({ ...minimal, sessions: tooMany }).success).toBe(false);
   });
@@ -324,36 +324,70 @@ describe("limits", () => {
   });
 });
 
-describe("legacy price columns the public site renders", () => {
+describe("the rate the listing publishes", () => {
   /*
-   * `therapist-card.tsx` shows "from $X" from `incall_price`, and the public
-   * profile page renders an Incall/Outcall pair. Neither is labelled with a
-   * duration, so both are floors — and if this editor stopped writing them,
-   * every listing it touched would lose its price display.
+   * `therapist-card.tsx` and the public profile page render `incall_price` and
+   * `outcall_price`, not `pricing_sessions`, so this editor has to write them
+   * or every listing it touches loses its price. Which rate they carry is the
+   * therapist's choice — a marked session — not the cheapest row inferred on
+   * their behalf.
    */
-  const priced = {
+  const priced = (publishIndex: number) => ({
     sessions: [
-      { minutes: "30", incall: "80", outcall: "" },
-      { minutes: "60", incall: "120", outcall: "160" },
-      { minutes: "90", incall: "170", outcall: "210" },
+      { minutes: "30", incall: "80", outcall: "", publish: publishIndex === 0 },
+      { minutes: "60", incall: "120", outcall: "160", publish: publishIndex === 1 },
+      { minutes: "90", incall: "170", outcall: "210", publish: publishIndex === 2 },
     ],
-  };
+  });
 
-  it("takes the lowest rate in each column", () => {
-    const patch = patchFor(priced);
-    expect(patch.incall_price).toBe(80);
+  it("publishes the rates from the session the therapist marked", () => {
+    const patch = patchFor(priced(1));
+    expect(patch.incall_price).toBe(120);
     expect(patch.outcall_price).toBe(160);
   });
 
-  it("takes starting_price from the lowest of both columns", () => {
-    expect(patchFor(priced).starting_price).toBe(80);
+  it("follows the mark rather than the cheapest row", () => {
+    expect(patchFor(priced(2)).incall_price).toBe(170);
+    expect(patchFor(priced(0)).incall_price).toBe(80);
   });
 
-  it("leaves them null when nothing is priced", () => {
-    const patch = patchFor({ sessions: [{ minutes: "60", incall: "", outcall: "" }] });
+  it("publishes nothing when no session is marked", () => {
+    const patch = patchFor(priced(-1));
     expect(patch.incall_price).toBeNull();
     expect(patch.outcall_price).toBeNull();
-    expect(patch.starting_price).toBeNull();
+  });
+
+  it("leaves a column null when the marked session has no rate in it", () => {
+    const patch = patchFor(priced(0));
+    expect(patch.incall_price).toBe(80);
+    expect(patch.outcall_price).toBeNull();
+  });
+
+  it("keeps starting_price a true floor, because search sorts on it", () => {
+    expect(patchFor(priced(1)).starting_price).toBe(80);
+    expect(patchFor(priced(2)).starting_price).toBe(80);
+  });
+
+  it("rejects marking more than one session", () => {
+    const result = listingSchema.safeParse({
+      ...minimal,
+      sessions: [
+        { minutes: "60", incall: "120", outcall: "", publish: true },
+        { minutes: "90", incall: "170", outcall: "", publish: true },
+      ],
+    });
+    expect(result.success).toBe(false);
+    if (result.success) return;
+    expect(result.error.issues.some((i) => i.path.join(".") === "sessions.0.publish")).toBe(true);
+  });
+
+  it("round-trips the mark", () => {
+    const patch = patchFor(priced(1));
+    expect(fromProfile(patch as ListingRow).sessions.map((s) => s.publish)).toEqual([
+      false,
+      true,
+      false,
+    ]);
   });
 });
 
@@ -394,8 +428,8 @@ describe("hydration", () => {
     products_used: ["Massage oil"],
     products_sold: ["Biofreeze"],
     sessions: [
-      { minutes: "60", incall: "120", outcall: "160" },
-      { minutes: "90", incall: "170", outcall: "210" },
+      { minutes: "60", incall: "120", outcall: "160", publish: true },
+      { minutes: "90", incall: "170", outcall: "210", publish: false },
     ],
     rate_disclaimers: ["Longer sessions available"],
     regular_discounts: ["first-time clients"],

@@ -163,7 +163,7 @@ const SECTION_OF: Record<string, SectionId> = {
   affiliations: "credentials",
 };
 
-const blankSession = () => ({ minutes: "", incall: "", outcall: "" });
+const blankSession = () => ({ minutes: "", incall: "", outcall: "", publish: false });
 const blankRange = () => ({
   days: "Every day",
   from_h: "9",
@@ -639,7 +639,7 @@ export function ListingForm({ initial }: { initial: ListingInput }) {
           blank={blankSession}
           onChange={(v) => set("sessions", v)}
           empty="No sessions yet. Add the lengths you offer and what they cost."
-          hint={`Once you price a 60-minute session, every other length is capped at a third above its proportional share of that hour. Your lowest rate becomes the "from $" on your listing.`}
+          hint={`Once you price a 60-minute session, every other length is capped at a third above its proportional share of that hour. Mark one session as the rate your listing shows.`}
           renderRow={(row, index, patch) => (
             <div className="space-y-2">
               <div className="grid gap-3 sm:grid-cols-3">
@@ -678,14 +678,34 @@ export function ListingForm({ initial }: { initial: ListingInput }) {
                   />
                 </RowField>
               </div>
+              <label className="flex cursor-pointer items-center gap-2 text-xs font-semibold text-ink">
+                <input
+                  type="radio"
+                  name="published-session"
+                  checked={row.publish}
+                  onChange={() =>
+                    set(
+                      "sessions",
+                      value.sessions.map((s, i) => ({ ...s, publish: i === index })),
+                    )
+                  }
+                  className="h-4 w-4 accent-[var(--color-action-primary)]"
+                />
+                Show this rate on my listing
+              </label>
               <RowErrors
                 errorFor={errorFor}
                 prefix={`sessions.${index}`}
-                keys={["minutes", "incall", "outcall"]}
+                keys={["minutes", "incall", "outcall", "publish"]}
               />
             </div>
           )}
         />
+
+        <p className="rounded-xl border border-border bg-bg-subtle px-4 py-3 text-xs text-text-secondary">
+          <span className="font-bold uppercase tracking-wider">Your listing shows</span>
+          <span className="ml-2 text-ink">{publishedSummary(value)}</span>
+        </p>
 
         <CheckGroup
           label="Rate disclaimers"
@@ -1121,6 +1141,20 @@ function RowErrors({
       {message}
     </p>
   );
+}
+
+/** What the public listing will actually display, in the therapist's words. */
+function publishedSummary(value: ListingInput): string {
+  const chosen = value.sessions.find((session) => session.publish);
+  if (!chosen) return "No rate \u2014 your listing will say \u201Cask me\u201D.";
+
+  const parts: string[] = [];
+  if (chosen.incall !== "") parts.push(`$${chosen.incall} in-call`);
+  if (chosen.outcall !== "") parts.push(`$${chosen.outcall} out-call`);
+  if (parts.length === 0) return "The session you marked has no rate on it yet.";
+
+  const length = chosen.minutes === "" ? "" : ` for ${chosen.minutes} minutes`;
+  return `${parts.join(" \u00B7 ")}${length}.`;
 }
 
 function heightHint(inches: string): string {

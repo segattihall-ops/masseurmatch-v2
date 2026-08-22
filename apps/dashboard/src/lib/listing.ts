@@ -103,6 +103,13 @@ export const sessionSchema = z.object({
   ),
   incall: optionalMoney,
   outcall: optionalMoney,
+  /*
+   * The one session whose rates the listing shows. The therapist chooses it;
+   * nothing derives it. Falling back to the cheapest would publish a number
+   * they never picked — a half-hour rate advertised as though it were their
+   * price — which is the opposite of what a rate is for.
+   */
+  publish: z.boolean().default(false),
 });
 
 export const hoursRangeSchema = z.object({
@@ -235,6 +242,18 @@ export const listingSchema = z
      * proportional share of that hour. Checked per column, because in-call and
      * out-call are priced independently.
      */
+    const published = v.sessions.filter((s) => s.publish);
+    if (published.length > 1) {
+      v.sessions.forEach((session, index) => {
+        if (!session.publish) return;
+        ctx.addIssue({
+          code: "custom",
+          path: ["sessions", index, "publish"],
+          message: "Only one session can be the rate your listing shows.",
+        });
+      });
+    }
+
     const hour = v.sessions.find((s) => Number(s.minutes) === 60);
     if (!hour) return;
 
@@ -282,6 +301,23 @@ export function composeStreetReference(
 ): string | null {
   const parts = [input.street_1, input.street_2].map((s) => s.trim()).filter(Boolean);
   return parts.length ? parts.join(" + ") : null;
+}
+
+/**
+ * The rate the therapist chose to publish in one column.
+ *
+ * Only a marked session counts. An unmarked listing publishes no rate rather
+ * than a guessed one — "ask me" is a truthful answer, an invented number is
+ * not.
+ */
+function publishedRate(
+  sessions: ListingInput["sessions"],
+  column: "incall" | "outcall",
+): number | null {
+  const chosen = sessions.find((session) => session.publish);
+  if (!chosen) return null;
+  const rate = Number(chosen[column]);
+  return chosen[column] !== "" && Number.isFinite(rate) && rate > 0 ? rate : null;
 }
 
 /** The lowest rate across the given columns, or null when nothing is priced. */
@@ -399,17 +435,21 @@ export function toProfilePatch(input: ListingInput) {
         minutes: Number(s.minutes),
         incall_rate: numberOrNull(s.incall),
         outcall_rate: numberOrNull(s.outcall),
+        publish: s.publish,
       })),
     /*
-     * The public site renders `incall_price`, `outcall_price` and
-     * `starting_price`, not `pricing_sessions` — the therapist card shows
-     * "from $X" and the profile page shows an Incall/Outcall pair, neither
-     * labelled with a duration. They are floors, so each is the lowest rate in
-     * its column and `starting_price` is the lowest of both. Leaving them
-     * unwritten would blank the price on every listing this editor touches.
+     * The public site renders `incall_price` and `outcall_price`, not
+     * `pricing_sessions`, so leaving them unwritten would blank the price on
+     * every listing this editor touches. Both come from the session the
+     * therapist marked — their rate, chosen by them, not the cheapest row
+     * inferred on their behalf.
+     *
+     * `starting_price` is the exception and stays a floor: it is the number
+     * search sorts and filters on, where "starting" has to mean the least a
+     * client could pay or the sort lies.
      */
-    incall_price: lowestRate(input.sessions, "incall"),
-    outcall_price: lowestRate(input.sessions, "outcall"),
+    incall_price: publishedRate(input.sessions, "incall"),
+    outcall_price: publishedRate(input.sessions, "outcall"),
     starting_price: lowestRate(input.sessions, "incall", "outcall"),
     rate_disclaimers: input.rate_disclaimers,
     regular_discounts: input.regular_discounts,
@@ -579,6 +619,7 @@ export function fromProfile(row: ListingRow): ListingInput {
           minutes: num(session.minutes),
           incall: num(session.incall_rate),
           outcall: num(session.outcall_rate),
+          publish: session.publish === true,
         };
       })
     : [];
