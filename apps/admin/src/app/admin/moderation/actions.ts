@@ -180,22 +180,30 @@ export async function moderateProfile(_prev: StepState, formData: FormData): Pro
         ? "Profile changes requested"
         : "Profile suspended";
   const body = action === "approve" ? "Your MasseurMatch profile was approved." : reason;
-  const { error: notificationError } = await createServiceClient()
-    .from("notifications")
-    .insert({
-      user_id: profile.user_id ?? profile.id,
-      title,
-      body,
-      message: body,
-      type: "profile_moderation",
-      data: { profile_id: profileId, action },
-      is_read: false,
-    });
 
-  if (notificationError) {
+  try {
+    const { error: notificationError } = await createServiceClient()
+      .from("notifications")
+      .insert({
+        user_id: profile.user_id ?? profile.id,
+        title,
+        body,
+        message: body,
+        type: "profile_moderation",
+        data: { profile_id: profileId, action },
+        is_read: false,
+      });
+
+    if (notificationError) {
+      console.error("[admin] profile moderation notification failed", {
+        profileId,
+        message: notificationError.message,
+      });
+    }
+  } catch (notificationError) {
     console.error("[admin] profile moderation notification failed", {
       profileId,
-      message: notificationError.message,
+      message: notificationError instanceof Error ? notificationError.message : "Unknown error",
     });
   }
 
