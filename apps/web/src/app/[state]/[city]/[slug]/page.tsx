@@ -79,7 +79,9 @@ function mergeLegacyFilters(first: DirectoryFilters, second: DirectoryFilters): 
   };
 }
 
-async function resolveLegacyLanding(params: ProfileParams["params"]): Promise<LegacyLanding | null> {
+async function resolveLegacyLanding(
+  params: ProfileParams["params"],
+): Promise<LegacyLanding | null> {
   const legacyCity = await getLegacyCity(params.state);
   if (!legacyCity) return null;
 
@@ -131,7 +133,10 @@ function customFaqItems(value: unknown): ProfileFaqItem[] {
     .filter((item): item is ProfileFaqItem => Boolean(item));
 }
 
-function buildProfileFaq(profile: ProfileDetail, supplement: PublicProfileSupplement): ProfileFaqItem[] {
+function buildProfileFaq(
+  profile: ProfileDetail,
+  supplement: PublicProfileSupplement,
+): ProfileFaqItem[] {
   const name = therapistName(profile).split(/\s+/)[0] || therapistName(profile);
   const custom = customFaqItems(supplement.custom_faq);
   const standard: ProfileFaqItem[] = [
@@ -157,7 +162,8 @@ function buildProfileFaq(profile: ProfileDetail, supplement: PublicProfileSupple
     },
   ];
   return [...custom, ...standard].filter(
-    (item, index, array) => array.findIndex((candidate) => candidate.question === item.question) === index,
+    (item, index, array) =>
+      array.findIndex((candidate) => candidate.question === item.question) === index,
   );
 }
 
@@ -280,9 +286,18 @@ export default async function ProfilePage({ params }: ProfileParams) {
   return (
     <>
       <ViewBeacon profileId={profile.id} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(therapistJsonLd(profile)) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(breadcrumbJsonLd) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(faqJsonLd) }} />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLdScript(therapistJsonLd(profile)) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLdScript(breadcrumbJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLdScript(faqJsonLd) }}
+      />
       <PublicProfilePage
         profile={profile}
         supplement={supplement}

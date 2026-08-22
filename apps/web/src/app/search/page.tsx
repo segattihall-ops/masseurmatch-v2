@@ -259,9 +259,18 @@ export default async function SearchPage({ searchParams }: SearchParams) {
 
   return (
     <main className="mx-auto w-full max-w-6xl px-4 pb-20 pt-10 sm:px-6 sm:pt-14">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(breadcrumbJsonLd) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(collectionJsonLd) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(faqJsonLd) }} />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLdScript(breadcrumbJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLdScript(collectionJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLdScript(faqJsonLd) }}
+      />
 
       <header className="grid gap-4 lg:grid-cols-[1fr_440px] lg:items-end">
         <div>
@@ -269,12 +278,15 @@ export default async function SearchPage({ searchParams }: SearchParams) {
             Find a therapist
           </p>
           <h1 className="mt-3 font-display text-ds-40 font-bold tracking-tight text-text-primary sm:text-5xl">
-            {selectedCity ? `Massage therapists in ${selectedCity.name}` : "Browse massage therapists"}
+            {selectedCity
+              ? `Massage therapists in ${selectedCity.name}`
+              : "Browse massage therapists"}
           </h1>
         </div>
         <p className="text-sm leading-7 text-text-secondary">
           Search public profiles by location, service, goal, availability, session format, price,
-          experience, trust signals and physical profile terms. Contact independent providers directly.
+          experience, trust signals and physical profile terms. Contact independent providers
+          directly.
         </p>
       </header>
 
@@ -304,7 +316,11 @@ export default async function SearchPage({ searchParams }: SearchParams) {
           <strong className="font-semibold text-text-primary">{search.total}</strong>{" "}
           {search.total === 1 ? "therapist" : "therapists"} found
         </p>
-        {search.total > 0 ? <p>Page {Math.min(search.page, pageCount)} of {pageCount}</p> : null}
+        {search.total > 0 ? (
+          <p>
+            Page {Math.min(search.page, pageCount)} of {pageCount}
+          </p>
+        ) : null}
       </div>
 
       <StaggerList
@@ -320,13 +336,20 @@ export default async function SearchPage({ searchParams }: SearchParams) {
 
       {results.length === 0 ? (
         <FadeIn className="mt-8 rounded-3xl border border-border bg-bg-surface p-8 text-center shadow-ds-sm">
-          <h2 className="font-display text-xl font-semibold text-text-primary">No profiles matched this search.</h2>
+          <h2 className="font-display text-xl font-semibold text-text-primary">
+            No profiles matched this search.
+          </h2>
           <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-text-secondary">
-            Try a nearby city, a broader service term, or clear one of the trust, price or availability filters.
+            Try a nearby city, a broader service term, or clear one of the trust, price or
+            availability filters.
           </p>
           <div className="mt-5 flex flex-wrap justify-center gap-3">
-            <Link href="/search" className={buttonVariants({ variant: "secondary" })}>Clear all filters</Link>
-            <Link href="/cities" className={buttonVariants()}>Browse cities</Link>
+            <Link href="/search" className={buttonVariants({ variant: "secondary" })}>
+              Clear all filters
+            </Link>
+            <Link href="/cities" className={buttonVariants()}>
+              Browse cities
+            </Link>
           </div>
         </FadeIn>
       ) : null}
@@ -334,12 +357,20 @@ export default async function SearchPage({ searchParams }: SearchParams) {
       {pageCount > 1 ? (
         <nav aria-label="Search result pages" className="mt-10 flex items-center justify-between">
           {search.page > 1 ? (
-            <Link href={pageHref(searchParams, search.page - 1)} className={buttonVariants({ variant: "secondary" })}>
+            <Link
+              href={pageHref(searchParams, search.page - 1)}
+              className={buttonVariants({ variant: "secondary" })}
+            >
               Previous
             </Link>
-          ) : <span />}
+          ) : (
+            <span />
+          )}
           {search.page < pageCount ? (
-            <Link href={pageHref(searchParams, search.page + 1)} className={buttonVariants({ variant: "secondary" })}>
+            <Link
+              href={pageHref(searchParams, search.page + 1)}
+              className={buttonVariants({ variant: "secondary" })}
+            >
               Next
             </Link>
           ) : null}
@@ -362,20 +393,35 @@ export default async function SearchPage({ searchParams }: SearchParams) {
 
       <section className="mt-14 grid gap-6 rounded-3xl border border-border bg-bg-surface p-6 shadow-ds-sm lg:grid-cols-2 lg:p-8">
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-brand-secondary">Directory help</p>
-          <h2 className="mt-3 font-display text-2xl font-semibold text-text-primary">Helpful detail without blocking discovery.</h2>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-brand-secondary">
+            Directory help
+          </p>
+          <h2 className="mt-3 font-display text-2xl font-semibold text-text-primary">
+            Helpful detail without blocking discovery.
+          </h2>
           <p className="mt-3 text-sm leading-7 text-text-secondary">
-            MasseurMatch is a directory, not the provider of the massage service. Review public profile information, then confirm exact location, timing, rates and service details directly with the therapist.
+            MasseurMatch is a directory, not the provider of the massage service. Review public
+            profile information, then confirm exact location, timing, rates and service details
+            directly with the therapist.
           </p>
           <div className="mt-5 flex flex-wrap gap-4 text-sm font-semibold">
-            <Link href="/how-it-works" className="text-brand-secondary hover:underline">How it works</Link>
-            <Link href="/trust" className="text-brand-secondary hover:underline">Trust &amp; safety</Link>
+            <Link href="/how-it-works" className="text-brand-secondary hover:underline">
+              How it works
+            </Link>
+            <Link href="/trust" className="text-brand-secondary hover:underline">
+              Trust &amp; safety
+            </Link>
           </div>
         </div>
         <div className="space-y-3">
           {SEARCH_FAQS.map((faq) => (
-            <details key={faq.question} className="rounded-2xl border border-border bg-bg-subtle p-4">
-              <summary className="cursor-pointer font-semibold text-text-primary">{faq.question}</summary>
+            <details
+              key={faq.question}
+              className="rounded-2xl border border-border bg-bg-subtle p-4"
+            >
+              <summary className="cursor-pointer font-semibold text-text-primary">
+                {faq.question}
+              </summary>
               <p className="mt-3 text-sm leading-6 text-text-secondary">{faq.answer}</p>
             </details>
           ))}
@@ -383,7 +429,11 @@ export default async function SearchPage({ searchParams }: SearchParams) {
       </section>
 
       <p className="mt-8 text-xs leading-5 text-text-muted">
-        Tier labels: {Object.entries(TIER_LABELS).map(([tier, label]) => `${tier}: ${label}`).join(" · ")}.
+        Tier labels:{" "}
+        {Object.entries(TIER_LABELS)
+          .map(([tier, label]) => `${tier}: ${label}`)
+          .join(" · ")}
+        .
       </p>
     </main>
   );

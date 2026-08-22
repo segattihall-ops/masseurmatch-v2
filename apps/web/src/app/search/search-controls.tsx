@@ -68,7 +68,10 @@ function sendSearchAnalytics(values: SearchValues) {
 
   try {
     if (navigator.sendBeacon) {
-      navigator.sendBeacon("/api/analytics/legacy", new Blob([payload], { type: "application/json" }));
+      navigator.sendBeacon(
+        "/api/analytics/legacy",
+        new Blob([payload], { type: "application/json" }),
+      );
       return;
     }
     void fetch("/api/analytics/legacy", {
@@ -100,14 +103,14 @@ export function SearchControls({
   const [expanded, setExpanded] = useState(
     Boolean(
       values.goal ||
-        values.session ||
-        values.tier ||
-        values.min ||
-        values.max ||
-        values.available ||
-        values.verified ||
-        values.lgbtq ||
-        values.master,
+      values.session ||
+      values.tier ||
+      values.min ||
+      values.max ||
+      values.available ||
+      values.verified ||
+      values.lgbtq ||
+      values.master,
     ),
   );
   const [locating, setLocating] = useState(false);
@@ -162,7 +165,7 @@ export function SearchControls({
     }, delay);
   }
 
-  async function useApproximateLocation() {
+  async function resolveApproximateLocation() {
     try {
       const response = await fetch("/api/location", { cache: "no-store" });
       const data = (await response.json()) as {
@@ -183,14 +186,15 @@ export function SearchControls({
     }
   }
 
-  async function useMyLocation() {
+  async function locateUser() {
     if (locating) return;
     setLocating(true);
     setLocationMessage(null);
 
     if (!navigator.geolocation) {
-      const resolved = await useApproximateLocation();
-      if (!resolved) setLocationMessage("Location is not available in this browser. Choose a city instead.");
+      const resolved = await resolveApproximateLocation();
+      if (!resolved)
+        setLocationMessage("Location is not available in this browser. Choose a city instead.");
       setLocating(false);
       return;
     }
@@ -218,14 +222,15 @@ export function SearchControls({
           setLocationMessage(`Location set to ${data.city ?? data.slug}.`);
           navigate();
         } catch {
-          const resolved = await useApproximateLocation();
-          if (!resolved) setLocationMessage("We could not resolve your city. Choose one from the list.");
+          const resolved = await resolveApproximateLocation();
+          if (!resolved)
+            setLocationMessage("We could not resolve your city. Choose one from the list.");
         } finally {
           setLocating(false);
         }
       },
       async (error) => {
-        const resolved = await useApproximateLocation();
+        const resolved = await resolveApproximateLocation();
         if (!resolved) {
           setLocationMessage(
             error.code === error.PERMISSION_DENIED
@@ -285,10 +290,19 @@ export function SearchControls({
           <label htmlFor="city" className="mb-1.5 block text-sm font-semibold text-text-primary">
             City
           </label>
-          <select id="city" name="city" defaultValue={values.city} className={fieldClass()} onChange={() => navigate()}>
+          <select
+            id="city"
+            name="city"
+            defaultValue={values.city}
+            className={fieldClass()}
+            onChange={() => navigate()}
+          >
             <option value="">All cities</option>
             {cities.map((city) => (
-              <option key={`${city.stateSlug}/${city.citySlug}`} value={`${city.stateSlug}/${city.citySlug}`}>
+              <option
+                key={`${city.stateSlug}/${city.citySlug}`}
+                value={`${city.stateSlug}/${city.citySlug}`}
+              >
                 {city.name}, {city.state}
               </option>
             ))}
@@ -299,10 +313,18 @@ export function SearchControls({
           <label htmlFor="service" className="mb-1.5 block text-sm font-semibold text-text-primary">
             Service or technique
           </label>
-          <select id="service" name="service" defaultValue={values.service} className={fieldClass()} onChange={() => navigate()}>
+          <select
+            id="service"
+            name="service"
+            defaultValue={values.service}
+            className={fieldClass()}
+            onChange={() => navigate()}
+          >
             <option value="">All services</option>
             {services.map((service) => (
-              <option key={service} value={service}>{service}</option>
+              <option key={service} value={service}>
+                {service}
+              </option>
             ))}
           </select>
         </div>
@@ -320,31 +342,54 @@ export function SearchControls({
       <div className="mt-4 flex flex-wrap items-center gap-3">
         <button
           type="button"
-          onClick={() => void useMyLocation()}
+          onClick={() => void locateUser()}
           disabled={locating}
           className="rounded-full border border-border bg-bg-subtle px-4 py-2 text-xs font-semibold text-text-primary transition hover:bg-brand-soft disabled:opacity-50"
         >
           {locating ? "Finding your city…" : "Use my location"}
         </button>
         <span className="text-xs text-text-secondary" aria-live="polite">
-          {locationMessage ?? `${resultCount} ${resultCount === 1 ? "profile" : "profiles"} match these filters`}
+          {locationMessage ??
+            `${resultCount} ${resultCount === 1 ? "profile" : "profiles"} match these filters`}
         </span>
-        {isPending ? <span className="text-xs font-semibold text-brand-secondary">Updating…</span> : null}
+        {isPending ? (
+          <span className="text-xs font-semibold text-brand-secondary">Updating…</span>
+        ) : null}
       </div>
 
       {expanded ? (
         <div className="mt-6 border-t border-border pt-6">
           <fieldset>
-            <legend className="text-sm font-semibold text-text-primary">What are you looking for?</legend>
+            <legend className="text-sm font-semibold text-text-primary">
+              What are you looking for?
+            </legend>
             <div className="mt-3 flex flex-wrap gap-2">
               <label className="cursor-pointer">
-                <input className="peer sr-only" type="radio" name="goal" value="" defaultChecked={!values.goal} onChange={() => navigate()} />
-                <span className="inline-flex rounded-full border border-border px-4 py-2 text-sm text-text-secondary peer-checked:border-brand-secondary peer-checked:bg-brand-soft peer-checked:text-brand-secondary">All</span>
+                <input
+                  className="peer sr-only"
+                  type="radio"
+                  name="goal"
+                  value=""
+                  defaultChecked={!values.goal}
+                  onChange={() => navigate()}
+                />
+                <span className="inline-flex rounded-full border border-border px-4 py-2 text-sm text-text-secondary peer-checked:border-brand-secondary peer-checked:bg-brand-soft peer-checked:text-brand-secondary">
+                  All
+                </span>
               </label>
               {DIRECTORY_OBJECTIVES.map((objective) => (
                 <label key={objective.id} className="cursor-pointer">
-                  <input className="peer sr-only" type="radio" name="goal" value={objective.id} defaultChecked={values.goal === objective.id} onChange={() => navigate()} />
-                  <span className="inline-flex rounded-full border border-border px-4 py-2 text-sm text-text-secondary peer-checked:border-brand-secondary peer-checked:bg-brand-soft peer-checked:text-brand-secondary">{objective.label}</span>
+                  <input
+                    className="peer sr-only"
+                    type="radio"
+                    name="goal"
+                    value={objective.id}
+                    defaultChecked={values.goal === objective.id}
+                    onChange={() => navigate()}
+                  />
+                  <span className="inline-flex rounded-full border border-border px-4 py-2 text-sm text-text-secondary peer-checked:border-brand-secondary peer-checked:bg-brand-soft peer-checked:text-brand-secondary">
+                    {objective.label}
+                  </span>
                 </label>
               ))}
             </div>
@@ -352,32 +397,91 @@ export function SearchControls({
 
           <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
             <div>
-              <label htmlFor="session" className="mb-1.5 block text-sm font-medium text-text-primary">Session</label>
-              <select id="session" name="session" defaultValue={values.session} className={fieldClass()} onChange={() => navigate()}>
+              <label
+                htmlFor="session"
+                className="mb-1.5 block text-sm font-medium text-text-primary"
+              >
+                Session
+              </label>
+              <select
+                id="session"
+                name="session"
+                defaultValue={values.session}
+                className={fieldClass()}
+                onChange={() => navigate()}
+              >
                 <option value="">Any format</option>
                 <option value="incall">Studio / incall</option>
                 <option value="outcall">Outcall / home visit</option>
               </select>
             </div>
             <div>
-              <label htmlFor="tier" className="mb-1.5 block text-sm font-medium text-text-primary">Profile tier</label>
-              <select id="tier" name="tier" defaultValue={values.tier} className={fieldClass()} onChange={() => navigate()}>
+              <label htmlFor="tier" className="mb-1.5 block text-sm font-medium text-text-primary">
+                Profile tier
+              </label>
+              <select
+                id="tier"
+                name="tier"
+                defaultValue={values.tier}
+                className={fieldClass()}
+                onChange={() => navigate()}
+              >
                 <option value="">All tiers</option>
-                {DIRECTORY_TIERS.map((tier) => <option key={tier} value={tier}>{TIER_LABELS[tier]}</option>)}
+                {DIRECTORY_TIERS.map((tier) => (
+                  <option key={tier} value={tier}>
+                    {TIER_LABELS[tier]}
+                  </option>
+                ))}
               </select>
             </div>
             <div>
-              <label htmlFor="min" className="mb-1.5 block text-sm font-medium text-text-primary">Minimum rate</label>
-              <input id="min" name="min" type="number" min={0} step={10} defaultValue={values.min} placeholder="Any" className={fieldClass()} onInput={() => navigate(300)} />
+              <label htmlFor="min" className="mb-1.5 block text-sm font-medium text-text-primary">
+                Minimum rate
+              </label>
+              <input
+                id="min"
+                name="min"
+                type="number"
+                min={0}
+                step={10}
+                defaultValue={values.min}
+                placeholder="Any"
+                className={fieldClass()}
+                onInput={() => navigate(300)}
+              />
             </div>
             <div>
-              <label htmlFor="max" className="mb-1.5 block text-sm font-medium text-text-primary">Maximum rate</label>
-              <input id="max" name="max" type="number" min={0} step={10} defaultValue={values.max} placeholder="Any" className={fieldClass()} onInput={() => navigate(300)} />
+              <label htmlFor="max" className="mb-1.5 block text-sm font-medium text-text-primary">
+                Maximum rate
+              </label>
+              <input
+                id="max"
+                name="max"
+                type="number"
+                min={0}
+                step={10}
+                defaultValue={values.max}
+                placeholder="Any"
+                className={fieldClass()}
+                onInput={() => navigate(300)}
+              />
             </div>
             <div>
-              <label htmlFor="sort" className="mb-1.5 block text-sm font-medium text-text-primary">Sort by</label>
-              <select id="sort" name="sort" defaultValue={values.sort} className={fieldClass()} onChange={() => navigate()}>
-                {SORTS.map((sort) => <option key={sort.value} value={sort.value}>{sort.label}</option>)}
+              <label htmlFor="sort" className="mb-1.5 block text-sm font-medium text-text-primary">
+                Sort by
+              </label>
+              <select
+                id="sort"
+                name="sort"
+                defaultValue={values.sort}
+                className={fieldClass()}
+                onChange={() => navigate()}
+              >
+                {SORTS.map((sort) => (
+                  <option key={sort.value} value={sort.value}>
+                    {sort.label}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
@@ -390,7 +494,10 @@ export function SearchControls({
               ["lgbtq", "LGBTQ+ affirming", values.lgbtq],
               ["master", "10+ years experience", values.master],
             ].map(([name, label, checked]) => (
-              <label key={String(name)} className="flex cursor-pointer items-center gap-3 rounded-xl border border-border bg-bg-subtle px-4 py-3 text-sm font-medium text-text-primary">
+              <label
+                key={String(name)}
+                className="flex cursor-pointer items-center gap-3 rounded-xl border border-border bg-bg-subtle px-4 py-3 text-sm font-medium text-text-primary"
+              >
                 <input
                   type="checkbox"
                   name={String(name)}
@@ -407,7 +514,10 @@ export function SearchControls({
       ) : null}
 
       <div className="mt-5 flex flex-wrap gap-3">
-        <button type="submit" className="rounded-full bg-brand-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-90">
+        <button
+          type="submit"
+          className="rounded-full bg-brand-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
+        >
           Apply filters
         </button>
         <button
