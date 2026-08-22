@@ -1,8 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { FadeIn, Input, StaggerItem, StaggerList, buttonVariants } from "@masseurmatch/ui";
+import { FadeIn, StaggerItem, StaggerList, buttonVariants } from "@masseurmatch/ui";
 import {
   DIRECTORY_TIERS,
+  cityPath,
+  isDirectoryObjective,
+  profilePath,
+  therapistName,
   type CityListing,
   type DirectoryFilters,
   type DirectorySort,
@@ -15,25 +19,43 @@ import {
 } from "@masseurmatch/db/actions/directory";
 
 import { TherapistCard } from "@/components/therapist-card";
+import { jsonLdScript } from "@/lib/jsonld";
 import { absoluteUrl, SITE_NAME } from "@/lib/site";
 import { withApprovedProfilePhotos } from "@/lib/therapist-photos";
+import { SearchControls } from "./search-controls";
 
 /** Filters live in the URL, so results are server-rendered and shareable. */
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = {
-  title: "Find a Massage Therapist",
-  description: `Search verified male massage therapists by city, service, session type, price and availability on ${SITE_NAME}.`,
-  alternates: { canonical: absoluteUrl("/search") },
-  // Filter permutations are not useful in an index; the city pages are.
-  robots: { index: false, follow: true },
-};
+const SEARCH_FAQS = [
+  {
+    question: "How do I find a therapist near me?",
+    answer:
+      "Use your location or the city filter to narrow results to your area. Then compare specialties, public profile details, availability, and pricing before contacting a therapist directly.",
+  },
+  {
+    question: "Does MasseurMatch handle booking or payments?",
+    answer:
+      "No. MasseurMatch is a discovery directory. You review public profiles and contact independent therapists directly to confirm availability, rates, and location.",
+  },
+  {
+    question: "What does the verified badge mean?",
+    answer:
+      "A verification badge reflects the specific profile or identity checks described by MasseurMatch. It is not a professional-license guarantee or endorsement of a service.",
+  },
+  {
+    question: "Can I filter by specialty or session type?",
+    answer:
+      "Yes. Search by service or technique, objective, incall or outcall, price range, availability, experience, tier, verification, and LGBTQ+ affirming status.",
+  },
+] as const;
 
 interface SearchParams {
   searchParams: {
     city?: string;
     service?: string;
     q?: string;
+    goal?: string;
     session?: string;
     available?: string;
     verified?: string;
@@ -47,15 +69,9 @@ interface SearchParams {
   };
 }
 
-const SORTS: { value: DirectorySort; label: string }[] = [
-  { value: "recommended", label: "Recommended" },
-  { value: "price", label: "Lowest price" },
-  { value: "rating", label: "Highest rated" },
-];
-
 const TIER_LABELS: Record<DirectoryTier, string> = {
-  free: "Free",
-  standard: "Standard",
+  free: "Access",
+  standard: "Active",
   pro: "Pro",
   elite: "Elite",
 };
@@ -87,7 +103,7 @@ function resolveCity(raw: string | undefined, cities: CityListing[]): CityListin
     );
   }
 
-  // Backwards compatibility with OLD/V2 links such as `?city=dallas`.
+  // Backwards compatibility with current links such as `?city=dallas`.
   return cities.find((city) => city.citySlug === citySlug) ?? null;
 }
 
@@ -97,6 +113,7 @@ function pageHref(searchParams: SearchParams["searchParams"], page: number): str
     "city",
     "service",
     "q",
+    "goal",
     "session",
     "available",
     "verified",
@@ -113,9 +130,53 @@ function pageHref(searchParams: SearchParams["searchParams"], page: number): str
     if (value) params.set(key, value);
   }
   if (page > 1) params.set("page", String(page));
-
   const query = params.toString();
   return query ? `/search?${query}` : "/search";
+}
+
+function hasIndexChangingFilters(searchParams: SearchParams["searchParams"]): boolean {
+  return [
+    searchParams.city,
+    searchParams.service,
+    searchParams.q,
+    searchParams.goal,
+    searchParams.session,
+    searchParams.available,
+    searchParams.verified,
+    searchParams.lgbtq,
+    searchParams.min,
+    searchParams.max,
+    searchParams.tier,
+    searchParams.master,
+    searchParams.sort,
+  ].some((value) => Boolean(value?.trim()));
+}
+
+export async function generateMetadata({ searchParams }: SearchParams): Promise<Metadata> {
+  const cities = await getCities();
+  const selectedCity = resolveCity(searchParams.city, cities);
+  const title = selectedCity
+    ? `${selectedCity.name} Massage Therapists — Directory Search`
+    : "Search Massage Therapists";
+  const description = selectedCity
+    ? `Search massage therapists in ${selectedCity.name}, ${selectedCity.state}. Compare services, availability, public profile details and pricing, then contact providers directly.`
+    : `Search the ${SITE_NAME} directory by city, service, session format, price, availability and trust signals.`;
+
+  return {
+    title,
+    description,
+    alternates: { canonical: absoluteUrl("/search") },
+    robots: hasIndexChangingFilters(searchParams)
+      ? { index: false, follow: true }
+      : { index: true, follow: true },
+    openGraph: {
+      type: "website",
+      siteName: SITE_NAME,
+      url: absoluteUrl("/search"),
+      title,
+      description,
+    },
+  };
 }
 
 export default async function SearchPage({ searchParams }: SearchParams) {
@@ -124,12 +185,18 @@ export default async function SearchPage({ searchParams }: SearchParams) {
   const minPrice = positiveNumber(searchParams.min);
   const maxPrice = positiveNumber(searchParams.max);
   const page = positivePage(searchParams.page);
+  const goal = isDirectoryObjective(searchParams.goal) ? searchParams.goal : undefined;
+  const sort: DirectorySort =
+    searchParams.sort === "price" || searchParams.sort === "rating"
+      ? searchParams.sort
+      : "recommended";
 
   const filters: DirectoryFilters = {
     city: (selectedCity?.citySlug ?? searchParams.city?.trim()) || undefined,
     state: selectedCity?.stateSlug,
     service: searchParams.service?.trim() || undefined,
     query: searchParams.q?.trim() || undefined,
+    goal,
     session:
       searchParams.session === "incall" || searchParams.session === "outcall"
         ? searchParams.session
@@ -141,10 +208,7 @@ export default async function SearchPage({ searchParams }: SearchParams) {
     maxPrice,
     tier: isDirectoryTier(searchParams.tier) ? searchParams.tier : undefined,
     minExperienceYears: searchParams.master === "1" ? 10 : undefined,
-    sort:
-      searchParams.sort === "price" || searchParams.sort === "rating"
-        ? searchParams.sort
-        : undefined,
+    sort,
     page,
     pageSize: 24,
   };
@@ -155,218 +219,92 @@ export default async function SearchPage({ searchParams }: SearchParams) {
   const selectedCityValue = selectedCity
     ? `${selectedCity.stateSlug}/${selectedCity.citySlug}`
     : (searchParams.city?.trim() ?? "");
+  const quickCities = cities.slice(0, 12);
+
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: absoluteUrl("/") },
+      { "@type": "ListItem", position: 2, name: "Search", item: absoluteUrl("/search") },
+    ],
+  };
+  const collectionJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: "Search massage therapists",
+    description:
+      "Search public massage therapist listings by city, service, session format, price and profile details.",
+    url: absoluteUrl("/search"),
+    mainEntity: {
+      "@type": "ItemList",
+      numberOfItems: search.total,
+      itemListElement: results.map((therapist, index) => ({
+        "@type": "ListItem",
+        position: (search.page - 1) * search.pageSize + index + 1,
+        name: therapistName(therapist),
+        url: profilePath(therapist) ? absoluteUrl(profilePath(therapist)!) : undefined,
+      })),
+    },
+  };
+  const faqJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: SEARCH_FAQS.map((faq) => ({
+      "@type": "Question",
+      name: faq.question,
+      acceptedAnswer: { "@type": "Answer", text: faq.answer },
+    })),
+  };
 
   return (
-    <main className="mx-auto w-full max-w-6xl px-6 pb-16 pt-16">
-      <h1 className="font-display text-ds-40 font-bold tracking-tight text-text-primary">
-        Find a therapist
-      </h1>
-      <p className="mt-3 max-w-2xl text-text-secondary">
-        Search by city, specialty, session format, price, experience and trust signals. City results
-        also include therapists visiting there within the next 14 days.
-      </p>
+    <main className="mx-auto w-full max-w-6xl px-4 pb-20 pt-10 sm:px-6 sm:pt-14">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(breadcrumbJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(collectionJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(faqJsonLd) }} />
 
-      <form method="get" className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-4">
-        <div className="sm:col-span-2">
-          <label htmlFor="q" className="mb-1.5 block text-sm font-medium text-text-primary">
-            Search
-          </label>
-          <Input
-            id="q"
-            name="q"
-            type="search"
-            placeholder="Name, specialty, neighborhood or technique"
-            defaultValue={filters.query ?? ""}
-          />
-        </div>
-
+      <header className="grid gap-4 lg:grid-cols-[1fr_440px] lg:items-end">
         <div>
-          <label htmlFor="city" className="mb-1.5 block text-sm font-medium text-text-primary">
-            City
-          </label>
-          <select
-            id="city"
-            name="city"
-            defaultValue={selectedCityValue}
-            className="motion-premium h-12 w-full rounded-xl border border-border/90 bg-white/92 px-4 text-sm text-foreground focus-visible:border-brand-secondary/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/25 focus-visible:ring-offset-2"
-          >
-            <option value="">All cities</option>
-            {cities.map((city) => (
-              <option
-                key={`${city.stateSlug}/${city.citySlug}`}
-                value={`${city.stateSlug}/${city.citySlug}`}
-              >
-                {city.name}, {city.state}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label htmlFor="service" className="mb-1.5 block text-sm font-medium text-text-primary">
-            Service
-          </label>
-          <select
-            id="service"
-            name="service"
-            defaultValue={filters.service ?? ""}
-            className="motion-premium h-12 w-full rounded-xl border border-border/90 bg-white/92 px-4 text-sm text-foreground focus-visible:border-brand-secondary/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/25 focus-visible:ring-offset-2"
-          >
-            <option value="">All services</option>
-            {services.map((service) => (
-              <option key={service} value={service}>
-                {service}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label htmlFor="session" className="mb-1.5 block text-sm font-medium text-text-primary">
-            Session type
-          </label>
-          <select
-            id="session"
-            name="session"
-            defaultValue={filters.session ?? ""}
-            className="motion-premium h-12 w-full rounded-xl border border-border/90 bg-white/92 px-4 text-sm text-foreground focus-visible:border-brand-secondary/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/25 focus-visible:ring-offset-2"
-          >
-            <option value="">Studio or outcall</option>
-            <option value="incall">Studio (incall)</option>
-            <option value="outcall">Outcall (they travel to you)</option>
-          </select>
-        </div>
-
-        <div>
-          <label htmlFor="tier" className="mb-1.5 block text-sm font-medium text-text-primary">
-            Profile tier
-          </label>
-          <select
-            id="tier"
-            name="tier"
-            defaultValue={filters.tier ?? ""}
-            className="motion-premium h-12 w-full rounded-xl border border-border/90 bg-white/92 px-4 text-sm text-foreground focus-visible:border-brand-secondary/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/25 focus-visible:ring-offset-2"
-          >
-            <option value="">All tiers</option>
-            {DIRECTORY_TIERS.map((tier) => (
-              <option key={tier} value={tier}>
-                {TIER_LABELS[tier]}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label htmlFor="min" className="mb-1.5 block text-sm font-medium text-text-primary">
-            Min price / hour
-          </label>
-          <Input
-            id="min"
-            name="min"
-            type="number"
-            min={0}
-            step={10}
-            placeholder="Any"
-            defaultValue={filters.minPrice ?? ""}
-          />
-        </div>
-
-        <div>
-          <label htmlFor="max" className="mb-1.5 block text-sm font-medium text-text-primary">
-            Max price / hour
-          </label>
-          <Input
-            id="max"
-            name="max"
-            type="number"
-            min={0}
-            step={10}
-            placeholder="Any"
-            defaultValue={filters.maxPrice ?? ""}
-          />
-        </div>
-
-        <div>
-          <label htmlFor="sort" className="mb-1.5 block text-sm font-medium text-text-primary">
-            Sort by
-          </label>
-          <select
-            id="sort"
-            name="sort"
-            defaultValue={filters.sort ?? "recommended"}
-            className="motion-premium h-12 w-full rounded-xl border border-border/90 bg-white/92 px-4 text-sm text-foreground focus-visible:border-brand-secondary/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/25 focus-visible:ring-offset-2"
-          >
-            {SORTS.map((sort) => (
-              <option key={sort.value} value={sort.value}>
-                {sort.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <fieldset className="flex flex-wrap items-center gap-x-6 gap-y-3 sm:col-span-4">
-          <legend className="sr-only">More filters</legend>
-          <label className="flex items-center gap-2 text-sm text-text-primary">
-            <input
-              type="checkbox"
-              name="available"
-              value="1"
-              defaultChecked={filters.availableNow}
-              className="h-4 w-4 rounded border-border accent-brand-primary"
-            />
-            Available now
-          </label>
-          <label className="flex items-center gap-2 text-sm text-text-primary">
-            <input
-              type="checkbox"
-              name="verified"
-              value="1"
-              defaultChecked={filters.verified}
-              className="h-4 w-4 rounded border-border accent-brand-primary"
-            />
-            Verified only
-          </label>
-          <label className="flex items-center gap-2 text-sm text-text-primary">
-            <input
-              type="checkbox"
-              name="lgbtq"
-              value="1"
-              defaultChecked={filters.lgbtq}
-              className="h-4 w-4 rounded border-border accent-brand-primary"
-            />
-            LGBTQ+ affirming
-          </label>
-          <label className="flex items-center gap-2 text-sm text-text-primary">
-            <input
-              type="checkbox"
-              name="master"
-              value="1"
-              defaultChecked={filters.minExperienceYears === 10}
-              className="h-4 w-4 rounded border-border accent-brand-primary"
-            />
-            10+ years experience
-          </label>
-        </fieldset>
-
-        <div className="flex flex-wrap gap-3 sm:col-span-4">
-          <button type="submit" className={buttonVariants({ size: "lg" })}>
-            Apply filters
-          </button>
-          <Link href="/search" className={buttonVariants({ variant: "secondary", size: "lg" })}>
-            Clear
-          </Link>
-        </div>
-      </form>
-
-      <div className="mt-10 flex flex-wrap items-center justify-between gap-3 text-sm text-text-secondary">
-        <p>
-          {search.total} {search.total === 1 ? "therapist" : "therapists"} found
-        </p>
-        {search.total > 0 ? (
-          <p>
-            Page {Math.min(search.page, pageCount)} of {pageCount}
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-brand-secondary">
+            Find a therapist
           </p>
-        ) : null}
+          <h1 className="mt-3 font-display text-ds-40 font-bold tracking-tight text-text-primary sm:text-5xl">
+            {selectedCity ? `Massage therapists in ${selectedCity.name}` : "Browse massage therapists"}
+          </h1>
+        </div>
+        <p className="text-sm leading-7 text-text-secondary">
+          Search public profiles by location, service, goal, availability, session format, price,
+          experience, trust signals and physical profile terms. Contact independent providers directly.
+        </p>
+      </header>
+
+      <SearchControls
+        cities={cities}
+        services={services}
+        resultCount={search.total}
+        values={{
+          q: filters.query ?? "",
+          city: selectedCityValue,
+          service: filters.service ?? "",
+          goal: filters.goal ?? "",
+          session: filters.session ?? "",
+          tier: filters.tier ?? "",
+          min: typeof filters.minPrice === "number" ? String(filters.minPrice) : "",
+          max: typeof filters.maxPrice === "number" ? String(filters.maxPrice) : "",
+          sort,
+          available: Boolean(filters.availableNow),
+          verified: Boolean(filters.verified),
+          lgbtq: Boolean(filters.lgbtq),
+          master: filters.minExperienceYears === 10,
+        }}
+      />
+
+      <div className="mt-8 flex flex-wrap items-center justify-between gap-3 text-sm text-text-secondary">
+        <p>
+          <strong className="font-semibold text-text-primary">{search.total}</strong>{" "}
+          {search.total === 1 ? "therapist" : "therapists"} found
+        </p>
+        {search.total > 0 ? <p>Page {Math.min(search.page, pageCount)} of {pageCount}</p> : null}
       </div>
 
       <StaggerList
@@ -381,35 +319,72 @@ export default async function SearchPage({ searchParams }: SearchParams) {
       </StaggerList>
 
       {results.length === 0 ? (
-        <FadeIn className="mt-10">
-          <p className="text-text-secondary">
-            Nothing matched those filters. Try widening your search.
+        <FadeIn className="mt-8 rounded-3xl border border-border bg-bg-surface p-8 text-center shadow-ds-sm">
+          <h2 className="font-display text-xl font-semibold text-text-primary">No profiles matched this search.</h2>
+          <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-text-secondary">
+            Try a nearby city, a broader service term, or clear one of the trust, price or availability filters.
           </p>
+          <div className="mt-5 flex flex-wrap justify-center gap-3">
+            <Link href="/search" className={buttonVariants({ variant: "secondary" })}>Clear all filters</Link>
+            <Link href="/cities" className={buttonVariants()}>Browse cities</Link>
+          </div>
         </FadeIn>
       ) : null}
 
       {pageCount > 1 ? (
         <nav aria-label="Search result pages" className="mt-10 flex items-center justify-between">
           {search.page > 1 ? (
-            <Link
-              href={pageHref(searchParams, search.page - 1)}
-              className={buttonVariants({ variant: "secondary" })}
-            >
+            <Link href={pageHref(searchParams, search.page - 1)} className={buttonVariants({ variant: "secondary" })}>
               Previous
             </Link>
-          ) : (
-            <span />
-          )}
+          ) : <span />}
           {search.page < pageCount ? (
-            <Link
-              href={pageHref(searchParams, search.page + 1)}
-              className={buttonVariants({ variant: "secondary" })}
-            >
+            <Link href={pageHref(searchParams, search.page + 1)} className={buttonVariants({ variant: "secondary" })}>
               Next
             </Link>
           ) : null}
         </nav>
       ) : null}
+
+      {quickCities.length > 0 ? (
+        <nav aria-label="Popular cities" className="mt-10 flex flex-wrap gap-2">
+          {quickCities.map((city) => (
+            <Link
+              key={`${city.stateSlug}/${city.citySlug}`}
+              href={cityPath(city)}
+              className="rounded-full border border-border bg-bg-surface px-3 py-2 text-xs font-semibold text-text-secondary transition hover:border-brand-secondary/30 hover:text-text-primary"
+            >
+              {city.name}, {city.state}
+            </Link>
+          ))}
+        </nav>
+      ) : null}
+
+      <section className="mt-14 grid gap-6 rounded-3xl border border-border bg-bg-surface p-6 shadow-ds-sm lg:grid-cols-2 lg:p-8">
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-brand-secondary">Directory help</p>
+          <h2 className="mt-3 font-display text-2xl font-semibold text-text-primary">Helpful detail without blocking discovery.</h2>
+          <p className="mt-3 text-sm leading-7 text-text-secondary">
+            MasseurMatch is a directory, not the provider of the massage service. Review public profile information, then confirm exact location, timing, rates and service details directly with the therapist.
+          </p>
+          <div className="mt-5 flex flex-wrap gap-4 text-sm font-semibold">
+            <Link href="/how-it-works" className="text-brand-secondary hover:underline">How it works</Link>
+            <Link href="/trust" className="text-brand-secondary hover:underline">Trust &amp; safety</Link>
+          </div>
+        </div>
+        <div className="space-y-3">
+          {SEARCH_FAQS.map((faq) => (
+            <details key={faq.question} className="rounded-2xl border border-border bg-bg-subtle p-4">
+              <summary className="cursor-pointer font-semibold text-text-primary">{faq.question}</summary>
+              <p className="mt-3 text-sm leading-6 text-text-secondary">{faq.answer}</p>
+            </details>
+          ))}
+        </div>
+      </section>
+
+      <p className="mt-8 text-xs leading-5 text-text-muted">
+        Tier labels: {Object.entries(TIER_LABELS).map(([tier, label]) => `${tier}: ${label}`).join(" · ")}.
+      </p>
     </main>
   );
 }

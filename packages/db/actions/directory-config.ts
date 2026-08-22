@@ -52,6 +52,11 @@ export interface TherapistListing {
   /** Raw `jsonb`. Read it through `parseTravelSchedule` — never index it directly. */
   travel_schedule: unknown;
   years_experience: number | null;
+  /** Physical profile fields are public and searchable on the current site. */
+  height_inches: number | null;
+  weight_lb: number | null;
+  body_type: string | null;
+  start_year: number | null;
   updated_at: string | null;
 }
 
@@ -93,6 +98,31 @@ export const DIRECTORY_SORTS: DirectorySort[] = ["recommended", "price", "rating
 export type DirectoryTier = "free" | "standard" | "pro" | "elite";
 export const DIRECTORY_TIERS: DirectoryTier[] = ["free", "standard", "pro", "elite"];
 
+export type DirectoryObjectiveId =
+  | "deep-recovery"
+  | "sports-clinical"
+  | "stress-relief"
+  | "pre-natal";
+
+export const DIRECTORY_OBJECTIVES: ReadonlyArray<{
+  id: DirectoryObjectiveId;
+  label: string;
+  searchValue: string;
+}> = [
+  { id: "deep-recovery", label: "Deep Recovery", searchValue: "deep tissue" },
+  { id: "sports-clinical", label: "Sports Clinical", searchValue: "sports" },
+  { id: "stress-relief", label: "Stress Relief", searchValue: "swedish" },
+  { id: "pre-natal", label: "Pre-Natal", searchValue: "prenatal" },
+] as const;
+
+export function isDirectoryObjective(value: string | undefined): value is DirectoryObjectiveId {
+  return Boolean(value && DIRECTORY_OBJECTIVES.some((objective) => objective.id === value));
+}
+
+export function directoryObjectiveSearchValue(value: DirectoryObjectiveId | undefined): string | undefined {
+  return DIRECTORY_OBJECTIVES.find((objective) => objective.id === value)?.searchValue;
+}
+
 /** Filters accepted by the search page, parsed from searchParams. */
 export interface DirectoryFilters {
   /** URL-safe city slug. */
@@ -101,6 +131,8 @@ export interface DirectoryFilters {
   state?: string;
   service?: string;
   query?: string;
+  /** Current-site intent shortcut; applied in addition to free text. */
+  goal?: DirectoryObjectiveId;
   /** Where the session happens. Omitted means either. */
   session?: "incall" | "outcall";
   /** Only therapists whose Available Now badge is on and unexpired. */
@@ -114,7 +146,7 @@ export interface DirectoryFilters {
   maxPrice?: number;
   /** Effective tier, after paid-status/courtesy-grant expiry is resolved. */
   tier?: DirectoryTier;
-  /** Experience threshold; the OLD "Master" filter maps to 10. */
+  /** Experience threshold; the current site's "Master" filter maps to 10. */
   minExperienceYears?: number;
   sort?: DirectorySort;
   page?: number;
@@ -148,7 +180,7 @@ export function citySlug(name: string): string {
   return name
     .toLowerCase()
     .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
+    .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
 }
@@ -185,9 +217,6 @@ function tierWeight(listing: TierGrantFields): number {
 export function compareByRank(a: TherapistListing, b: TherapistListing): number {
   return (
     tierWeight(b) - tierWeight(a) ||
-    // A running Spike lifts a listing above its peers, but never above a
-    // higher tier: someone paying $129 should not be overtaken by a $39
-    // listing spending a credit. Spikes buy position within your band.
     Number(spikeIsActive(b)) - Number(spikeIsActive(a)) ||
     Number(b.is_featured ?? false) - Number(a.is_featured ?? false) ||
     (b.boost_score ?? 0) - (a.boost_score ?? 0) ||
