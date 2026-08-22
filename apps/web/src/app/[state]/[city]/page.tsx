@@ -9,7 +9,6 @@ import {
   searchTherapistsPage,
 } from "@masseurmatch/db/actions/directory";
 import {
-  DIRECTORY_REVALIDATE_SECONDS,
   citySlug,
   type CityListing,
   type TherapistListing,
@@ -22,7 +21,18 @@ import { cityItemListJsonLd, jsonLdScript } from "@/lib/jsonld";
 import { absoluteUrl, SITE_NAME } from "@/lib/site";
 import { withApprovedProfilePhotos } from "@/lib/therapist-photos";
 
-export const revalidate = DIRECTORY_REVALIDATE_SECONDS;
+/**
+ * Do not put the city route itself in Next's Full Route Cache.
+ *
+ * A city can become valid the moment an admin approves the first profile in
+ * that location. Admin and Public are separate Vercel projects, so the Admin
+ * deployment cannot invalidate a 404 already cached by the Public deployment.
+ * Keeping this route dynamic lets the fresh Postgres fallback below run on the
+ * very next request. The established-directory reads remain cached internally,
+ * so this fixes stale 404s without turning every directory query into a cold
+ * database read.
+ */
+export const revalidate = 0;
 
 /**
  * Canonical v2 cities are pre-rendered below, while valid legacy
