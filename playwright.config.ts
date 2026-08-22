@@ -36,7 +36,9 @@ export default defineConfig({
     trace: "retain-on-failure",
     // The pre-installed browser. Never download one — the environment sets
     // PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD for the same reason.
-    launchOptions: { executablePath: "/opt/pw-browsers/chromium-1194/chrome-linux/chrome" },
+    launchOptions: {
+      executablePath: "/opt/pw-browsers/chromium-1194/chrome-linux/chrome",
+    },
   },
 
   projects: [
