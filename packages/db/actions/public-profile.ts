@@ -93,84 +93,24 @@ export type PublicImportedReview = {
 };
 
 const EMPTY_SUPPLEMENT: PublicProfileSupplement = {
-  phone: null,
-  phone_number: null,
-  whatsapp_number: null,
-  whatsapp: null,
-  email_address: null,
-  show_email: null,
-  show_phone: null,
-  website: null,
-  booking_platform: null,
-  booking_url: null,
-  booking_link: null,
-  starting_price: null,
-  starting_rate: null,
-  price_min: null,
-  price_max: null,
-  session_lengths: null,
-  rates: null,
-  height_inches: null,
-  weight_lb: null,
-  body_type: null,
-  start_year: null,
-  created_at: null,
-  last_active_at: null,
-  verification_status: null,
-  is_verified_photos: null,
-  is_verified_phone: null,
-  is_verified_email: null,
-  is_demo: null,
-  country: null,
-  gender: null,
-  neighborhood_name: null,
-  primary_area: null,
-  areas_served: null,
-  outcall_radius_miles: null,
-  service_radius_miles: null,
-  location_type: null,
-  business_hours: null,
-  studio_hours: null,
-  mobile_hours: null,
-  current_status: null,
-  availability_note: null,
-  incall_details: null,
-  outcall_details: null,
-  pricing_sessions: null,
-  custom_faq: null,
-  travel_schedule: null,
-  business_trips: null,
-  promotions: null,
-  add_ons: null,
-  training: null,
-  education: null,
-  certifications: null,
-  education_entries: null,
-  massage_setup: null,
-  mobile_extras: null,
-  additional_services: null,
-  studio_amenities: null,
-  incall_amenities: null,
-  products_used: null,
-  products_sold: null,
-  payment_methods: null,
-  affiliations: null,
-  rate_disclaimers: null,
-  regular_discounts: null,
-  day_of_week_discount: null,
-  weekly_special: null,
-  accessibility_features: null,
-  accepts_all_genders: null,
-  map_enabled: null,
-  street_reference: null,
-  seo_keywords: null,
-  presentation_video_url: null,
-  social_media: null,
-  modality: null,
-  modalities: null,
-  specialty: null,
-  traveling: null,
-  visiting: null,
+  phone: null, phone_number: null, whatsapp_number: null, whatsapp: null, email_address: null,
+  show_email: null, show_phone: null, website: null, booking_platform: null, booking_url: null,
+  booking_link: null, starting_price: null, starting_rate: null, price_min: null, price_max: null,
+  session_lengths: null, rates: null, height_inches: null, weight_lb: null, body_type: null, start_year: null,
+  created_at: null, last_active_at: null, verification_status: null, is_verified_photos: null,
+  is_verified_phone: null, is_verified_email: null, is_demo: null, country: null, gender: null,
+  neighborhood_name: null, primary_area: null, areas_served: null, outcall_radius_miles: null,
+  service_radius_miles: null, location_type: null, business_hours: null, studio_hours: null,
+  mobile_hours: null, current_status: null, availability_note: null, incall_details: null,
+  outcall_details: null, pricing_sessions: null, custom_faq: null, travel_schedule: null,
+  business_trips: null, promotions: null, add_ons: null, training: null, education: null,
+  certifications: null, education_entries: null, massage_setup: null, mobile_extras: null,
+  additional_services: null, studio_amenities: null, incall_amenities: null, products_used: null,
+  products_sold: null, payment_methods: null, affiliations: null, rate_disclaimers: null,
+  regular_discounts: null, day_of_week_discount: null, weekly_special: null, accessibility_features: null,
+  accepts_all_genders: null, map_enabled: null, street_reference: null, seo_keywords: null,
+  presentation_video_url: null, social_media: null, modality: null, modalities: null, specialty: null,
+  traveling: null, visiting: null,
 };
 
 const SUPPLEMENT_COLUMNS = [
@@ -200,7 +140,20 @@ export async function getPublicProfileSupplement(profileId: string): Promise<Pub
     .maybeSingle();
 
   if (error || !data) return EMPTY_SUPPLEMENT;
-  return { ...EMPTY_SUPPLEMENT, ...(data as unknown as PublicProfileSupplement) };
+  const result = { ...EMPTY_SUPPLEMENT, ...(data as unknown as PublicProfileSupplement) };
+
+  // Do not serialize hidden contact values into the client component. Even
+  // though the row is public under the current profiles RLS, the UI contract
+  // should honor the provider's explicit visibility choices.
+  if (result.show_phone === false) {
+    result.phone = null;
+    result.phone_number = null;
+    result.whatsapp_number = null;
+    result.whatsapp = null;
+  }
+  if (result.show_email === false) result.email_address = null;
+
+  return result;
 }
 
 export async function getPublicImportedReviews(
@@ -213,16 +166,16 @@ export async function getPublicImportedReviews(
   try {
     client = createServiceClient();
   } catch {
-    // imported_reviews is intentionally blocked to anon by RLS. A preview that
-    // has no service key still renders the profile; it simply omits reviews.
     return [];
   }
 
+  // Use the production-safe projection restored by the current application.
+  // It enforces is_public + reviewed_at, hides source URLs/private migration
+  // metadata, and nulls raw reviewer names when reviewer_anonymized is true.
   const { data, error } = await client
-    .from("imported_reviews")
+    .from("public_imported_reviews")
     .select("id,review_text,rating,reviewer_name,review_date,public_label")
     .eq("profile_id", profileId)
-    .eq("is_public", true)
     .order("review_date", { ascending: false, nullsFirst: false })
     .limit(Math.min(100, Math.max(1, limit)));
 
