@@ -42,8 +42,8 @@ export default function Page() {
           period unless otherwise stated or required by law.
         </li>
         <li>
-          Cancellations for annual plans take effect at the end of the current annual billing
-          period unless otherwise stated or required by law.
+          Cancellations for annual plans take effect at the end of the current annual billing period
+          unless otherwise stated or required by law.
         </li>
         <li>
           You retain access to paid plan features through the end of the period for which you have
@@ -157,8 +157,8 @@ export default function Page() {
         <li>The transaction date and amount.</li>
         <li>The reason for your refund request.</li>
         <li>
-          The PayPal transaction or subscription identifier, if available, without sending
-          passwords or full payment credentials.
+          The PayPal transaction or subscription identifier, if available, without sending passwords
+          or full payment credentials.
         </li>
         <li>Any supporting documentation, such as a screenshot of a billing error.</li>
       </ul>
