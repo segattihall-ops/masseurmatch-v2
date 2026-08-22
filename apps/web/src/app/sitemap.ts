@@ -27,6 +27,7 @@ const MARKETING = [
   "/for-therapists",
   "/pricing",
   "/near-me",
+  "/gay-massage",
   "/advertise",
   "/contact",
   "/how-ranking-works",
@@ -93,7 +94,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       url: absoluteUrl(path),
       lastModified: now,
       changeFrequency: "monthly" as const,
-      priority: 0.5,
+      priority: path === "/near-me" || path === "/gay-massage" ? 0.8 : 0.5,
     })),
     ...LEGAL.map((path) => ({
       url: absoluteUrl(path),
@@ -140,7 +141,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     return [
       {
         url: absoluteUrl(path),
-        // Real per-profile lastmod, so crawlers only re-fetch what changed.
         lastModified: therapist.updated_at ? new Date(therapist.updated_at) : now,
         changeFrequency: "weekly" as const,
         priority: 0.7,
