@@ -1,6 +1,8 @@
 "use server";
 
 import { createSessionClient, getViewer } from "@masseurmatch/db/auth";
+import { createServiceClient } from "@masseurmatch/db/client";
+import { isReviewableModerationState } from "@masseurmatch/db/review-lifecycle";
 import { HIDDEN, PUBLIC, SUSPENDED } from "@masseurmatch/db/visibility";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -9,28 +11,6 @@ import { FOSTA_CHECKS, MODERATION_ACTIONS, type ModerationAction } from "@/lib/m
 
 import type { StepState } from "../../onboarding/form-state";
 
-/**
- * Moderation.
- *
- * Every decision writes to `audit_log` **before** it is applied. That ordering
- * is the whole design:
- *
- *   log then act  — a failure between the two leaves a logged decision that did
- *                   not take effect. Visible, reconcilable, harmless.
- *   act then log  — a failure leaves a profile approved or suspended with no
- *                   record of who did it or why. That is precisely the case an
- *                   immutable audit log exists to prevent.
- *
- * Supabase's JS client cannot open a transaction, so the statements are not
- * atomic. `supabase/migrations/20260816030000_audit_log_and_moderation.sql`
- * defines `public.moderate_profile()`, a `security definer` function for the
- * profile decision. Once that RPC also owns photo decisions, this path can be
- * collapsed into one database transaction. Until then, approval is deliberately
- * ordered audit -> reviewed photos -> profile. A failure can leave checked
- * photos approved while the profile remains non-public; it cannot publish a
- * profile whose pending photos were never approved by the reviewer.
- */
-
 async function requireAdminId(): Promise<string> {
   const viewer = await getViewer();
   if (!viewer) redirect("/sign-in?next=%2Fadmin%2Fmoderation");
@@ -38,8 +18,7 @@ async function requireAdminId(): Promise<string> {
   return viewer.user.id;
 }
 
-/** What each decision does to the profile row. */
-const OUTCOMES: Record<ModerationAction, Record<string, unknown>> = {
+const OUTCOMES = {
   approve: {
     profile_status: "approved",
     visibility_status: PUBLIC,
@@ -52,16 +31,13 @@ const OUTCOMES: Record<ModerationAction, Record<string, unknown>> = {
   },
   suspend: {
     profile_status: "suspended",
-    // The schema has a dedicated value for this. Using it keeps an admin
-    // removal distinguishable from an ordinary unlisting.
     visibility_status: SUSPENDED,
     moderation_status: "suspended",
   },
-};
+} as const;
 
 export async function moderateProfile(_prev: StepState, formData: FormData): Promise<StepState> {
   const adminId = await requireAdminId();
-
   const profileId = String(formData.get("profile_id") ?? "").trim();
   const action = String(formData.get("action") ?? "") as ModerationAction;
   const reason = String(formData.get("reason") ?? "").trim();
@@ -69,32 +45,48 @@ export async function moderateProfile(_prev: StepState, formData: FormData): Pro
 
   if (!profileId) return { error: "No profile selected." };
   if (!MODERATION_ACTIONS.includes(action)) return { error: "Unknown action." };
-
-  // Mandatory reason, enforced server-side. The textarea is `required`, but a
-  // required attribute is a hint to a browser, not a rule.
   if (reason.length < 10) {
-    return {
-      error: "Give a reason of at least 10 characters — it goes in the audit log.",
-    };
+    return { error: "Give a reason of at least 10 characters — it goes in the audit log." };
   }
 
-  // The FOSTA-SESTA checklist gates approval only. Rejecting or suspending
-  // something you have not fully reviewed must stay possible: requiring the
-  // checklist to remove harmful content would be exactly backwards.
   if (action === "approve") {
     const missing = FOSTA_CHECKS.filter((check) => !checked.includes(check.id));
     if (missing.length > 0) {
       return {
         error: `Confirm every check before approving. Outstanding: ${missing
-          .map((c) => c.label)
+          .map((check) => check.label)
           .join(", ")}.`,
       };
     }
   }
 
   const supabase = createSessionClient();
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("id,user_id,profile_status,moderation_status,is_suspended,is_banned")
+    .eq("id", profileId)
+    .maybeSingle();
 
-  // 1. Log first.
+  if (profileError) return { error: `Could not load the profile: ${profileError.message}` };
+  if (!profile) return { error: "Profile not found." };
+
+  if (
+    action !== "suspend" &&
+    !isReviewableModerationState({
+      profileStatus: profile.profile_status,
+      moderationStatus: profile.moderation_status,
+      isSuspended: profile.is_suspended,
+      isBanned: profile.is_banned,
+    })
+  ) {
+    return {
+      error:
+        profile.is_suspended || profile.is_banned
+          ? "This profile is under enforcement and cannot be approved or returned through the review queue."
+          : "This profile is no longer waiting for review. Refresh the queue before taking action.",
+    };
+  }
+
   const { error: logError } = await supabase.from("audit_log").insert({
     admin_id: adminId,
     admin_user_id: adminId,
@@ -103,27 +95,27 @@ export async function moderateProfile(_prev: StepState, formData: FormData): Pro
     target_id: profileId,
     target_profile_id: profileId,
     reason,
-    details: { fosta_checked: action === "approve" ? checked : [] },
+    details: {
+      fosta_checked: action === "approve" ? checked : [],
+      previous_profile_status: profile.profile_status,
+      previous_moderation_status: profile.moderation_status,
+    },
   });
 
   if (logError) {
-    // Refusing to act is correct here: an unlogged moderation decision is worse
-    // than a decision deferred.
     return {
       error: `Could not write the audit entry, so nothing was changed: ${logError.message}`,
     };
   }
 
-  // 2. Approval includes the photos the reviewer just affirmed in the required
-  // checklist. Only pending photos are touched; an older rejected photo is not
-  // resurrected by approving a later profile edit.
+  const now = new Date().toISOString();
   if (action === "approve") {
     const { error: photoError } = await supabase
       .from("profile_photos")
       .update({
         moderation_status: "approved",
         moderation_reason: reason,
-        updated_at: new Date().toISOString(),
+        updated_at: now,
       })
       .eq("profile_id", profileId)
       .eq("moderation_status", "pending");
@@ -135,24 +127,84 @@ export async function moderateProfile(_prev: StepState, formData: FormData): Pro
     }
   }
 
-  // 3. Then publish or otherwise resolve the profile decision.
+  const canonicalFields =
+    action === "approve"
+      ? {
+          approved_at: now,
+          approved_by: adminId,
+          rejection_reason: null,
+          rejected_at: null,
+          rejected_by: null,
+        }
+      : action === "reject"
+        ? {
+            rejection_reason: reason,
+            rejected_at: now,
+            rejected_by: adminId,
+            approved_at: null,
+            approved_by: null,
+          }
+        : {
+            is_suspended: true,
+            suspension_reason: reason,
+            approved_at: null,
+            approved_by: null,
+          };
+
   const { data, error } = await supabase
     .from("profiles")
     .update({
       ...OUTCOMES[action],
+      ...canonicalFields,
       moderation_notes: reason,
-      reviewed_at: new Date().toISOString(),
+      reviewed_at: now,
       reviewed_by: adminId,
-      updated_at: new Date().toISOString(),
+      updated_at: now,
     })
     .eq("id", profileId)
+    .eq("profile_status", profile.profile_status)
     .select("id");
 
   if (error) return { error: `Logged, but the change failed: ${error.message}` };
   if ((data ?? []).length === 0) {
     return {
-      error: "Logged, but no profile was updated — it may have been changed already.",
+      error:
+        "Logged, but no profile was updated — its review state changed while you were deciding.",
     };
+  }
+
+  const title =
+    action === "approve"
+      ? "Profile approved"
+      : action === "reject"
+        ? "Profile changes requested"
+        : "Profile suspended";
+  const body = action === "approve" ? "Your MasseurMatch profile was approved." : reason;
+
+  try {
+    const { error: notificationError } = await createServiceClient()
+      .from("notifications")
+      .insert({
+        user_id: profile.user_id ?? profile.id,
+        title,
+        body,
+        message: body,
+        type: "profile_moderation",
+        data: { profile_id: profileId, action },
+        is_read: false,
+      });
+
+    if (notificationError) {
+      console.error("[admin] profile moderation notification failed", {
+        profileId,
+        message: notificationError.message,
+      });
+    }
+  } catch (notificationError) {
+    console.error("[admin] profile moderation notification failed", {
+      profileId,
+      message: notificationError instanceof Error ? notificationError.message : "Unknown error",
+    });
   }
 
   revalidatePath("/admin/moderation");

@@ -33,6 +33,7 @@ function allow(key: string): boolean {
 
 export async function POST(request: NextRequest) {
   if (!allow(callerKey(request))) return NextResponse.json({ ok: false }, { status: 429 });
+
   const body = (await request.json().catch(() => null)) as {
     profileId?: unknown;
     action?: unknown;
@@ -50,8 +51,23 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: true, recorded: false }, { status: 202 });
   }
 
-  // Contact clicks feed the provider growth dashboard. The RPC is
-  // SECURITY DEFINER in production and only increments this one counter.
+  const { data: profile, error: profileError } = await client
+    .from("profiles")
+    .select("id,profile_status,visibility_status,is_suspended,is_banned")
+    .eq("id", profileId)
+    .maybeSingle();
+
+  if (
+    profileError ||
+    !profile ||
+    profile.profile_status !== "approved" ||
+    profile.visibility_status !== "public" ||
+    profile.is_suspended === true ||
+    profile.is_banned === true
+  ) {
+    return NextResponse.json({ ok: false, recorded: false }, { status: 404 });
+  }
+
   await client.rpc("increment_profile_contact_clicks", { p_profile_id: profileId });
 
   const inquiryType =

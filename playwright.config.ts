@@ -36,7 +36,9 @@ export default defineConfig({
     trace: "retain-on-failure",
     // The pre-installed browser. Never download one — the environment sets
     // PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD for the same reason.
-    launchOptions: { executablePath: "/opt/pw-browsers/chromium-1194/chrome-linux/chrome" },
+    launchOptions: {
+      executablePath: "/opt/pw-browsers/chromium-1194/chrome-linux/chrome",
+    },
   },
 
   projects: [
@@ -45,6 +47,11 @@ export default defineConfig({
       name: "dashboard",
       testMatch: /dashboard\.spec\.ts/,
       use: { baseURL: `http://localhost:${DASHBOARD}` },
+    },
+    {
+      name: "launch-critical",
+      testMatch: /launch-critical\.spec\.ts/,
+      use: { baseURL: `http://localhost:${WEB}` },
     },
   ],
 
