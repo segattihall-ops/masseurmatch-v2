@@ -80,6 +80,24 @@ export interface PaymentProvider {
   updatePlan(subscriptionId: string, newPlan: PlanId): Promise<SubscriptionRef>;
 
   /**
+   * Read a subscription's current state from the provider.
+   *
+   * Webhooks are the normal way a subscription advances, and they are enough
+   * right up until one does not arrive: a wrong `PAYPAL_WEBHOOK_ID` fails
+   * signature verification, a deploy can take the endpoint down mid-retry, and
+   * a webhook registered for the wrong events never fires at all. In every one
+   * of those cases the payer has been charged and the therapist is not
+   * entitled, with nothing in the product able to correct it.
+   *
+   * This is the read that closes that hole. It is the provider's own record,
+   * so it settles the disagreement rather than guessing at it.
+   *
+   * Returns `null` when the provider has no such subscription — a deleted or
+   * mistyped id is an ordinary answer, not an error.
+   */
+  fetchSubscription(subscriptionId: string): Promise<SubscriptionRef | null>;
+
+  /**
    * Verify and normalise an incoming webhook.
    *
    * Returns a discriminated result rather than throwing, because "the signature

@@ -201,6 +201,72 @@ describe("updatePlan", () => {
   });
 });
 
+describe("fetchSubscription", () => {
+  /** Like `stubFetch`, but lets a call answer with a non-200. */
+  function stubFetchStatus(responder: (url: string) => { status: number; body: unknown }) {
+    vi.stubGlobal("fetch", async (url: string, init: RequestInit = {}) => {
+      calls.push({ url, init });
+      const { status, body } = responder(url);
+      return {
+        ok: status >= 200 && status < 300,
+        status,
+        json: async () => body,
+        text: async () => JSON.stringify(body),
+      };
+    });
+  }
+
+  it("reports what PayPal says, so a missed webhook can be recovered from", async () => {
+    stubFetch((url) =>
+      url.includes("/oauth2/token")
+        ? TOKEN
+        : { ...SUBSCRIPTION, status: "ACTIVE", billing_info: { next_billing_time: "2026-09-01" } },
+    );
+
+    const ref = await payPalProvider.fetchSubscription("I-ABC123");
+
+    expect(ref?.status).toBe("active");
+    expect(ref?.planId).toBe("pro");
+    expect(ref?.nextChargeOn).toBe("2026-09-01");
+    // Echoed back rather than taken from the body, so the caller can always key
+    // its own row on the id it asked about.
+    expect(ref?.id).toBe("I-ABC123");
+  });
+
+  it("returns null when PayPal has no such subscription", async () => {
+    stubFetchStatus((url) =>
+      url.includes("/oauth2/token")
+        ? { status: 200, body: TOKEN }
+        : { status: 404, body: { name: "RESOURCE_NOT_FOUND" } },
+    );
+
+    await expect(payPalProvider.fetchSubscription("I-GONE")).resolves.toBeNull();
+  });
+
+  it("still throws on a real failure, rather than reading it as 'no subscription'", async () => {
+    stubFetchStatus((url) =>
+      url.includes("/oauth2/token")
+        ? { status: 200, body: TOKEN }
+        : { status: 500, body: { name: "INTERNAL" } },
+    );
+
+    await expect(payPalProvider.fetchSubscription("I-ABC123")).rejects.toThrow(/failed \(500\)/);
+  });
+
+  it("does not promote an unrecognised plan", async () => {
+    // A plan id this deployment has no PAYPAL_PLAN_* mapping for. Falling back
+    // to a paid tier here would hand out entitlements nobody sold.
+    stubFetch((url) =>
+      url.includes("/oauth2/token")
+        ? TOKEN
+        : { ...SUBSCRIPTION, status: "ACTIVE", plan_id: "P-SOMETHING-ELSE" },
+    );
+
+    const ref = await payPalProvider.fetchSubscription("I-ABC123");
+    expect(ref?.planId).toBe("free");
+  });
+});
+
 describe("the access token", () => {
   it("is fetched once and reused across calls", async () => {
     stubFetch((url) => (url.includes("/oauth2/token") ? TOKEN : SUBSCRIPTION));

@@ -3,7 +3,12 @@
 import { Button, Card } from "@masseurmatch/ui";
 import { useFormState, useFormStatus } from "react-dom";
 
-import { cancelSubscription, changePlan, startSubscription } from "./actions";
+import {
+  cancelSubscription,
+  changePlan,
+  refreshSubscriptionStatus,
+  startSubscription,
+} from "./actions";
 import { EMPTY_BILLING_STATE, type BillingState } from "./billing-state";
 
 /**
@@ -120,6 +125,35 @@ export function PlanPicker({
 }
 
 /* -------------------------------------------------------------------------- */
+
+/**
+ * The way out of a missed webhook.
+ *
+ * Shown when we hold a provider subscription id but the subscription is not
+ * entitling anything. That is the exact shape of "approved at PayPal, webhook
+ * never arrived": the therapist has paid and the page says otherwise, and
+ * without this the only fix is a support ticket and a hand-edited row.
+ */
+export function RefreshStatusForm() {
+  const [state, action] = useFormState(refreshSubscriptionStatus, EMPTY_BILLING_STATE);
+
+  return (
+    <form action={action} className="mt-6 rounded-lg border border-ink/15 bg-ink/[0.02] p-4">
+      <p className="text-sm font-medium text-ink">Already paid at PayPal?</p>
+      <p className="mt-1 mb-3 text-sm text-ink/60">
+        Payment confirmations usually land within a minute. If you have completed checkout and this
+        page still does not show it, check again here.
+      </p>
+      <SubmitButton variant="outline">Check payment status</SubmitButton>
+      {state.ok ? (
+        <p className="mt-2 text-sm text-ink/60">
+          Checked with PayPal — the status above is current.
+        </p>
+      ) : null}
+      <Err state={state} />
+    </form>
+  );
+}
 
 export function CancelForm({ cancelAtPeriodEnd }: { cancelAtPeriodEnd: boolean }) {
   const [state, action] = useFormState(cancelSubscription, EMPTY_BILLING_STATE);
