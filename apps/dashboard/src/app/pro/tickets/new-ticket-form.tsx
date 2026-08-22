@@ -92,7 +92,9 @@ export function NewTicketForm() {
       {/* Announced rather than only painted: the form stays put on success. */}
       <p aria-live="polite" className="text-sm">
         {state.ok ? (
-          <span className="text-foreground">Opened. It is in the list below.</span>
+          <span className={state.warning ? "text-destructive" : "text-foreground"}>
+            {state.warning ?? "Opened. It is in the list below."}
+          </span>
         ) : state.error ? (
           <span className="text-destructive">{state.error}</span>
         ) : null}

@@ -48,7 +48,7 @@ export async function openTicket(
 
   revalidatePath("/pro/tickets");
   revalidatePath("/pro/dashboard");
-  return { ok: true };
+  return { ok: true, warning: result.warning };
 }
 
 /** Add a reply to a thread the caller owns. Ownership is re-checked server-side. */
