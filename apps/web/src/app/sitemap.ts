@@ -18,16 +18,7 @@ import { absoluteUrl } from "@/lib/site";
  * `/search` remains declared for legacy sitemap continuity, while the route
  * itself is noindex so faceted permutations do not become duplicate index entries.
  */
-const HUBS = [
-  "/",
-  "/search",
-  "/therapists",
-  "/cities",
-  "/states",
-  "/guides",
-  "/compare",
-  "/blog",
-];
+const HUBS = ["/", "/search", "/therapists", "/cities", "/states", "/guides", "/compare", "/blog"];
 
 const MARKETING = [
   "/about",
