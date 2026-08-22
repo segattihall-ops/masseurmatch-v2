@@ -146,17 +146,11 @@ jobs:
       - name: Upload corrected files
         uses: actions/upload-artifact@v4
         with:
-          name: pr33-corrected-files
+          name: pr33-corrected-files-full
           if-no-files-found: error
           retention-days: 1
           path: |
-            apps/web/src/app/[state]/[city]/[slug]/page.tsx
-            apps/web/src/app/api/analytics/legacy/route.ts
-            apps/web/src/app/api/profile-actions/route.ts
-            apps/web/src/app/api/profile-reports/route.ts
-            apps/web/src/app/api/reverse-geocode/route.ts
-            apps/web/src/app/search/page.tsx
-            apps/web/src/app/search/search-controls.tsx
+            apps/web/src/app
             apps/web/src/components/public-profile-page.tsx
             packages/db/actions/directory-config.ts
             packages/db/actions/public-profile.ts
