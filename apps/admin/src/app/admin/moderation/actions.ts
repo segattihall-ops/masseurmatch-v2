@@ -168,7 +168,8 @@ export async function moderateProfile(_prev: StepState, formData: FormData): Pro
   if (error) return { error: `Logged, but the change failed: ${error.message}` };
   if ((data ?? []).length === 0) {
     return {
-      error: "Logged, but no profile was updated — its review state changed while you were deciding.",
+      error:
+        "Logged, but no profile was updated — its review state changed while you were deciding.",
     };
   }
 
@@ -179,15 +180,17 @@ export async function moderateProfile(_prev: StepState, formData: FormData): Pro
         ? "Profile changes requested"
         : "Profile suspended";
   const body = action === "approve" ? "Your MasseurMatch profile was approved." : reason;
-  const { error: notificationError } = await createServiceClient().from("notifications").insert({
-    user_id: profile.user_id ?? profile.id,
-    title,
-    body,
-    message: body,
-    type: "profile_moderation",
-    data: { profile_id: profileId, action },
-    is_read: false,
-  });
+  const { error: notificationError } = await createServiceClient()
+    .from("notifications")
+    .insert({
+      user_id: profile.user_id ?? profile.id,
+      title,
+      body,
+      message: body,
+      type: "profile_moderation",
+      data: { profile_id: profileId, action },
+      is_read: false,
+    });
 
   if (notificationError) {
     console.error("[admin] profile moderation notification failed", {

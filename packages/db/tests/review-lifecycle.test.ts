@@ -31,9 +31,9 @@ describe("review lifecycle", () => {
   it("allows ordinary rejections to be resubmitted but never enforcement states", () => {
     expect(canProviderResubmit({ ...base, profileStatus: "rejected" })).toBe(true);
     expect(canProviderResubmit({ ...base, profileStatus: "changes_requested" })).toBe(true);
-    expect(
-      canProviderResubmit({ ...base, profileStatus: "rejected", isSuspended: true }),
-    ).toBe(false);
+    expect(canProviderResubmit({ ...base, profileStatus: "rejected", isSuspended: true })).toBe(
+      false,
+    );
     expect(canProviderResubmit({ ...base, profileStatus: "rejected", isBanned: true })).toBe(false);
     expect(canProviderResubmit({ ...base, profileStatus: "suspended" })).toBe(false);
   });

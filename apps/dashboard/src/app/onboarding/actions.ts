@@ -122,7 +122,8 @@ export async function submitForReview(_prev: StepState): Promise<StepState> {
     })
   ) {
     return {
-      error: "This profile is under enforcement and cannot be resubmitted. Open a support ticket for review.",
+      error:
+        "This profile is under enforcement and cannot be resubmitted. Open a support ticket for review.",
     };
   }
 

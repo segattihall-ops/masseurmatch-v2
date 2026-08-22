@@ -13,7 +13,8 @@ const MAX_PER_WINDOW = 40;
 const seen = new Map<string, { count: number; resetAt: number }>();
 
 function callerKey(request: NextRequest): string {
-  const ip = (request.headers.get("x-forwarded-for") ?? "unknown").split(",")[0]?.trim() ?? "unknown";
+  const ip =
+    (request.headers.get("x-forwarded-for") ?? "unknown").split(",")[0]?.trim() ?? "unknown";
   let hash = 0;
   for (let i = 0; i < ip.length; i += 1) hash = (hash * 31 + ip.charCodeAt(i)) | 0;
   return String(hash);
@@ -33,9 +34,10 @@ function allow(key: string): boolean {
 export async function POST(request: NextRequest) {
   if (!allow(callerKey(request))) return NextResponse.json({ ok: false }, { status: 429 });
 
-  const body = (await request.json().catch(() => null)) as
-    | { profileId?: unknown; action?: unknown }
-    | null;
+  const body = (await request.json().catch(() => null)) as {
+    profileId?: unknown;
+    action?: unknown;
+  } | null;
   const profileId = typeof body?.profileId === "string" ? body.profileId.trim() : "";
   const action = typeof body?.action === "string" ? body.action.trim() : "";
   if (!UUID.test(profileId) || !ACTIONS.includes(action as Action)) {

@@ -106,7 +106,9 @@ export async function POST(request: NextRequest) {
 
   const { data: profile, error: profileError } = await client
     .from("profiles")
-    .select("id,slug,display_name,full_name,profile_status,visibility_status,is_suspended,is_banned")
+    .select(
+      "id,slug,display_name,full_name,profile_status,visibility_status,is_suspended,is_banned",
+    )
     .eq("id", profileId)
     .maybeSingle();
 
