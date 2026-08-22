@@ -11,7 +11,8 @@ const MAX_PER_WINDOW = 5;
 const seen = new Map<string, { count: number; resetAt: number }>();
 
 function callerKey(request: NextRequest): string {
-  const ip = (request.headers.get("x-forwarded-for") ?? "unknown").split(",")[0]?.trim() ?? "unknown";
+  const ip =
+    (request.headers.get("x-forwarded-for") ?? "unknown").split(",")[0]?.trim() ?? "unknown";
   let hash = 0;
   for (let i = 0; i < ip.length; i += 1) hash = (hash * 31 + ip.charCodeAt(i)) | 0;
   return String(hash);
@@ -36,7 +37,10 @@ function clean(value: unknown, max: number): string | null {
 
 export async function POST(request: NextRequest) {
   if (!allow(callerKey(request))) {
-    return NextResponse.json({ ok: false, message: "Too many reports. Try again later." }, { status: 429 });
+    return NextResponse.json(
+      { ok: false, message: "Too many reports. Try again later." },
+      { status: 429 },
+    );
   }
 
   const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
@@ -59,18 +63,27 @@ export async function POST(request: NextRequest) {
     !reason ||
     reason.length < 10
   ) {
-    return NextResponse.json({ ok: false, message: "Please include a clear reason for the report." }, { status: 400 });
+    return NextResponse.json(
+      { ok: false, message: "Please include a clear reason for the report." },
+      { status: 400 },
+    );
   }
 
   if (reporterEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(reporterEmail)) {
-    return NextResponse.json({ ok: false, message: "Enter a valid email or leave it blank." }, { status: 400 });
+    return NextResponse.json(
+      { ok: false, message: "Enter a valid email or leave it blank." },
+      { status: 400 },
+    );
   }
 
   let client;
   try {
     client = createServiceClient();
   } catch {
-    return NextResponse.json({ ok: false, message: "Reporting is temporarily unavailable." }, { status: 503 });
+    return NextResponse.json(
+      { ok: false, message: "Reporting is temporarily unavailable." },
+      { status: 503 },
+    );
   }
 
   const { error } = await client.from("profile_reports").insert({
@@ -84,6 +97,10 @@ export async function POST(request: NextRequest) {
     ip_hash: null,
   });
 
-  if (error) return NextResponse.json({ ok: false, message: "We could not submit the report." }, { status: 500 });
+  if (error)
+    return NextResponse.json(
+      { ok: false, message: "We could not submit the report." },
+      { status: 500 },
+    );
   return NextResponse.json({ ok: true });
 }

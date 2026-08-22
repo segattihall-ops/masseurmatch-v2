@@ -99,10 +99,7 @@ export type DirectoryTier = "free" | "standard" | "pro" | "elite";
 export const DIRECTORY_TIERS: DirectoryTier[] = ["free", "standard", "pro", "elite"];
 
 export type DirectoryObjectiveId =
-  | "deep-recovery"
-  | "sports-clinical"
-  | "stress-relief"
-  | "pre-natal";
+  "deep-recovery" | "sports-clinical" | "stress-relief" | "pre-natal";
 
 export const DIRECTORY_OBJECTIVES: ReadonlyArray<{
   id: DirectoryObjectiveId;
@@ -119,7 +116,9 @@ export function isDirectoryObjective(value: string | undefined): value is Direct
   return Boolean(value && DIRECTORY_OBJECTIVES.some((objective) => objective.id === value));
 }
 
-export function directoryObjectiveSearchValue(value: DirectoryObjectiveId | undefined): string | undefined {
+export function directoryObjectiveSearchValue(
+  value: DirectoryObjectiveId | undefined,
+): string | undefined {
   return DIRECTORY_OBJECTIVES.find((objective) => objective.id === value)?.searchValue;
 }
 
