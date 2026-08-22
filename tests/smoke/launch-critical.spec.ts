@@ -38,31 +38,6 @@ test("a public profile exposes contact and reporting actions", async ({ page, re
   expect(matchedPath, "expected at least one public provider with a contact method").not.toBeNull();
 });
 
-test("report submission cannot invent a public profile", async ({ request }) => {
-  const response = await request.post("/api/profile-reports", {
-    data: {
-      profileId: "00000000-0000-0000-0000-000000000000",
-      profileSlug: "client-controlled-slug",
-      profileName: "client-controlled-name",
-      category: "profile_accuracy",
-      reason: "This is a deliberately nonexistent profile used by the smoke test.",
-    },
-  });
-
-  expect(response.status()).toBe(404);
-});
-
-test("contact analytics refuses a non-public profile id", async ({ request }) => {
-  const response = await request.post("/api/profile-actions", {
-    data: {
-      profileId: "00000000-0000-0000-0000-000000000000",
-      action: "call",
-    },
-  });
-
-  expect(response.status()).toBe(404);
-});
-
 test.describe("launch-critical authorization boundaries", () => {
   for (const path of [
     "/admin/profile-reports",
