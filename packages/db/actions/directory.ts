@@ -3,7 +3,7 @@ import "server-only";
 import { unstable_cache } from "next/cache";
 
 import { isAvailableNow } from "../available-now";
-import { createAnonClient, hasSupabaseCredentials } from "../client";
+import { createAnonClient, createServiceClient, hasSupabaseCredentials } from "../client";
 import { resolveTier } from "../tier-grants";
 import { travelVisit } from "../travel";
 import {
@@ -23,10 +23,11 @@ import {
 /**
  * Public directory data access.
  *
- * Everything here reads through the **anon** client, so Postgres RLS is the
- * access control: a logged-out visitor and this code see exactly the same
- * rows. The explicit `profile_status`/`visibility_status` filters mirror the
- * live policy rather than replacing it.
+ * Public profile rows and photos read through the **anon** client, so Postgres
+ * RLS remains the visibility boundary. The only service-role lookup in this
+ * module reads non-sensitive city centroid metadata because `cities` is not
+ * granted to anon; those coordinates are used only for approximate service-area
+ * maps and distance ordering, never to reveal a provider address.
  */
 
 const OPTIONAL_COLUMNS = ["subscription_status", "tier_granted_until", "spike_until"];
@@ -188,7 +189,7 @@ async function hydrateCityCoordinates<T extends CoordinateCarrier>(rows: T[]): P
     return rows;
   }
 
-  const client = createAnonClient();
+  const client = createServiceClient();
   const { data, error } = await client
     .from("cities")
     .select("slug,state,state_code,latitude,longitude");
@@ -422,7 +423,7 @@ function hasOfferValue(value: unknown): boolean {
 
 async function searchOrigin(filters: DirectoryFilters): Promise<SearchOrigin | null> {
   if (!filters.city) return null;
-  const client = createAnonClient();
+  const client = createServiceClient();
   const { data, error } = await client
     .from("cities")
     .select("slug,state,state_code,latitude,longitude")
