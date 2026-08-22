@@ -11,6 +11,7 @@
     "./auth": "./auth.ts",
     "./profile-status": "./profile-status.ts",
     "./visibility": "./visibility.ts",
+    "./current-status": "./current-status.ts",
     "./middleware": "./middleware.ts",
     "./actions/ranking-config": "./actions/ranking-config.ts",
     "./actions/directory": "./actions/directory.ts",
