@@ -42,7 +42,11 @@ export default async function AdminPeoplePage({
         Every profile in the database — {total} match{total === 1 ? "" : "es"}.
       </p>
 
-      <form method="get" action="/people" className="mt-6 grid gap-3 sm:flex sm:flex-wrap sm:items-center">
+      <form
+        method="get"
+        action="/people"
+        className="mt-6 grid gap-3 sm:flex sm:flex-wrap sm:items-center"
+      >
         <input
           type="search"
           name="q"

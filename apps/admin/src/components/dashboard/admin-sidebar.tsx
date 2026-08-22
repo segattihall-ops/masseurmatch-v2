@@ -53,7 +53,11 @@ export function AdminSidebar() {
           onClick={() => setMobileOpen((value) => !value)}
           className="inline-flex h-11 w-11 items-center justify-center rounded-lg border border-border text-text-primary hover:bg-surface-hover"
         >
-          {mobileOpen ? <X className="h-5 w-5" aria-hidden="true" /> : <Menu className="h-5 w-5" aria-hidden="true" />}
+          {mobileOpen ? (
+            <X className="h-5 w-5" aria-hidden="true" />
+          ) : (
+            <Menu className="h-5 w-5" aria-hidden="true" />
+          )}
         </button>
       </div>
 

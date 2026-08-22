@@ -44,7 +44,9 @@ export async function decideVerification(_prev: StepState, formData: FormData): 
     return { error: "That document has already been decided." };
   }
 
-  const identityDocument = Boolean(document.document_type && isDocumentKind(document.document_type));
+  const identityDocument = Boolean(
+    document.document_type && isDocumentKind(document.document_type),
+  );
   const auditPrefix = identityDocument ? "identity_document" : "credential_document";
 
   const { error: logError } = await createSessionClient()

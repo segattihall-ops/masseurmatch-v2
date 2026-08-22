@@ -136,7 +136,13 @@ function QueueCard({ row, onResolved }: { row: VerificationRow; onResolved: () =
           ) : null}
 
           <div className="grid gap-2 sm:flex sm:flex-wrap">
-            <Button type="submit" name="action" value="approve" disabled={pending} className="w-full sm:w-auto">
+            <Button
+              type="submit"
+              name="action"
+              value="approve"
+              disabled={pending}
+              className="w-full sm:w-auto"
+            >
               {pending ? "Saving…" : "Approve document"}
             </Button>
             <Button

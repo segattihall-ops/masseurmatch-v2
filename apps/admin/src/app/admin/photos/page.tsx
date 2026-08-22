@@ -101,7 +101,9 @@ export default async function AdminPhotosPage({
                   <p className="text-sm capitalize text-ink/70">
                     Status: <strong className="font-medium text-ink">{photo.status}</strong>
                   </p>
-                  {photo.reason ? <p className="text-sm leading-6 text-ink/60">{photo.reason}</p> : null}
+                  {photo.reason ? (
+                    <p className="text-sm leading-6 text-ink/60">{photo.reason}</p>
+                  ) : null}
 
                   {photo.status === "pending" ? (
                     <form action={moderatePhoto} className="space-y-3 border-t border-ink/10 pt-3">

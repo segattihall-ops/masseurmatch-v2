@@ -37,24 +37,26 @@ export default async function VerificationsPage() {
 
   const service = createServiceClient();
 
-  const [{ data, error }, { count: manualPending }, { count: providerPending }] = await Promise.all([
-    service
-      .from("profile_documents")
-      .select("id,profile_id,document_type,type,status,created_at,storage_path,url")
-      .eq("status", "pending")
-      .order("created_at", { ascending: true })
-      .limit(100),
-    service
-      .from("identity_verifications")
-      .select("id", { count: "exact", head: true })
-      .eq("provider", "manual")
-      .eq("status", "pending"),
-    service
-      .from("identity_verifications")
-      .select("id", { count: "exact", head: true })
-      .neq("provider", "manual")
-      .eq("status", "pending"),
-  ]);
+  const [{ data, error }, { count: manualPending }, { count: providerPending }] = await Promise.all(
+    [
+      service
+        .from("profile_documents")
+        .select("id,profile_id,document_type,type,status,created_at,storage_path,url")
+        .eq("status", "pending")
+        .order("created_at", { ascending: true })
+        .limit(100),
+      service
+        .from("identity_verifications")
+        .select("id", { count: "exact", head: true })
+        .eq("provider", "manual")
+        .eq("status", "pending"),
+      service
+        .from("identity_verifications")
+        .select("id", { count: "exact", head: true })
+        .neq("provider", "manual")
+        .eq("status", "pending"),
+    ],
+  );
 
   if (error) {
     return (
@@ -147,9 +149,14 @@ export default async function VerificationsPage() {
       <section>
         <div className="mb-3">
           <h2 className="text-lg font-semibold text-ink">Current identity document queue</h2>
-          <p className="mt-1 text-sm text-ink/55">Government ID and selfie documents from the V2 flow.</p>
+          <p className="mt-1 text-sm text-ink/55">
+            Government ID and selfie documents from the V2 flow.
+          </p>
         </div>
-        <VerificationQueue rows={identityRows} emptyMessage="No V2 identity documents are waiting for review." />
+        <VerificationQueue
+          rows={identityRows}
+          emptyMessage="No V2 identity documents are waiting for review."
+        />
       </section>
 
       <section className="mt-10">
@@ -160,7 +167,10 @@ export default async function VerificationsPage() {
             an identity badge.
           </p>
         </div>
-        <VerificationQueue rows={credentialRows} emptyMessage="No legacy credential documents are waiting for review." />
+        <VerificationQueue
+          rows={credentialRows}
+          emptyMessage="No legacy credential documents are waiting for review."
+        />
       </section>
     </main>
   );
