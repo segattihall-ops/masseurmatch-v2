@@ -137,6 +137,11 @@ export function TherapistCard({
             isHome ? "mt-auto pt-5 text-sm" : "text-xs"
           } flex flex-wrap items-center gap-x-4 gap-y-2 text-text-secondary`}
         >
+          {typeof therapist.distance_miles === "number" ? (
+            <span className="font-semibold text-text-primary">
+              {therapist.distance_miles} mi away
+            </span>
+          ) : null}
           {therapist.is_verified_identity ? (
             <span className="font-semibold text-badge-verified">ID verified</span>
           ) : null}

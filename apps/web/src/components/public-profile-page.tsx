@@ -405,6 +405,7 @@ export function PublicProfilePage({
   const name = therapistName(profile);
   const firstName = name.split(/\s+/)[0] || name;
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
+  const [showAllReviews, setShowAllReviews] = useState(false);
 
   const photos = useMemo(
     () =>
@@ -962,32 +963,57 @@ export function PublicProfilePage({
               links are not exposed on the public page.
             </p>
             <div className="grid gap-4 md:grid-cols-2">
-              {reviews.map((review) => (
-                <article
+              {reviews.slice(0, showAllReviews ? reviews.length : 2).map((review) => (
+                <details
                   key={review.id}
-                  className="rounded-2xl border border-border bg-bg-surface p-5"
+                  className="group rounded-2xl border border-border bg-bg-surface p-5"
                 >
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="font-semibold text-text-primary">
-                      {review.public_label ?? review.reviewer_name ?? "Client review"}
+                  <summary className="cursor-pointer list-none">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="font-semibold text-text-primary">
+                          {review.public_label ?? review.reviewer_name ?? "Client review"}
+                        </p>
+                        {review.review_date ? (
+                          <p className="mt-1 text-xs text-text-secondary">
+                            {formatDate(review.review_date)}
+                          </p>
+                        ) : null}
+                      </div>
+                      <div className="flex items-center gap-3">
+                        {review.rating ? (
+                          <span className="text-sm font-semibold text-text-primary">
+                            {Number(review.rating).toFixed(1)} / 5
+                          </span>
+                        ) : null}
+                        <span
+                          aria-hidden="true"
+                          className="text-lg text-text-secondary transition group-open:rotate-45"
+                        >
+                          +
+                        </span>
+                      </div>
+                    </div>
+                    <p className="mt-2 text-xs font-medium text-brand-secondary group-open:hidden">
+                      Read review
                     </p>
-                    {review.rating ? (
-                      <span className="text-sm font-semibold text-text-primary">
-                        {Number(review.rating).toFixed(1)} / 5
-                      </span>
-                    ) : null}
-                  </div>
-                  <p className="mt-3 whitespace-pre-line text-sm leading-6 text-text-secondary">
+                  </summary>
+                  <p className="mt-4 whitespace-pre-line border-t border-border pt-4 text-sm leading-6 text-text-secondary">
                     {review.review_text}
                   </p>
-                  {review.review_date ? (
-                    <p className="mt-3 text-xs text-text-secondary">
-                      {formatDate(review.review_date)}
-                    </p>
-                  ) : null}
-                </article>
+                </details>
               ))}
             </div>
+            {reviews.length > 2 ? (
+              <button
+                type="button"
+                onClick={() => setShowAllReviews((current) => !current)}
+                className="mt-5 rounded-full border border-border bg-bg-surface px-5 py-2.5 text-sm font-semibold text-text-primary transition hover:bg-bg-subtle"
+                aria-expanded={showAllReviews}
+              >
+                {showAllReviews ? "Show fewer reviews" : `Show all ${reviews.length} reviews`}
+              </button>
+            ) : null}
           </Section>
         ) : null}
 
@@ -1044,14 +1070,20 @@ export function PublicProfilePage({
           <Section id="links" eyebrow="More from provider" title="Video & public links">
             <div className="flex flex-wrap gap-3">
               {supplement.presentation_video_url ? (
-                <a
-                  href={safeUrl(supplement.presentation_video_url) ?? "#"}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="rounded-full border border-border px-4 py-2 text-sm font-semibold text-text-primary"
-                >
-                  Presentation video
-                </a>
+                <div className="w-full max-w-2xl overflow-hidden rounded-3xl border border-border bg-black">
+                  <video
+                    src={safeUrl(supplement.presentation_video_url) ?? undefined}
+                    controls
+                    playsInline
+                    preload="metadata"
+                    className="aspect-video w-full object-cover"
+                  >
+                    Your browser does not support this profile video.
+                  </video>
+                  <p className="bg-bg-surface px-4 py-3 text-xs text-text-secondary">
+                    Provider introduction · maximum 30 seconds
+                  </p>
+                </div>
               ) : null}
               {socialLinks.map(([platform, url]) => (
                 <a
@@ -1068,12 +1100,44 @@ export function PublicProfilePage({
           </Section>
         ) : null}
 
-        <Section id="assistant" eyebrow="MasseurMatch AI" title="Need help comparing profiles?">
-          <KnottyChat />
-        </Section>
+        <section className="my-10 overflow-hidden rounded-3xl bg-brand-primary px-6 py-8 text-white sm:px-8">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/60">
+            Ready when you are
+          </p>
+          <div className="mt-2 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h2 className="font-display text-2xl font-bold tracking-tight sm:text-3xl">
+                Want to contact {firstName}?
+              </h2>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-white/70">
+                Contact the provider directly to confirm availability, exact location, services and
+                final rates.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {callHref ? (
+                <ContactLink href={callHref} action="call" profileId={profile.id} primary>
+                  Call {firstName}
+                </ContactLink>
+              ) : null}
+              {smsHref ? (
+                <ContactLink href={smsHref} action="text" profileId={profile.id}>
+                  Text
+                </ContactLink>
+              ) : null}
+              {waHref ? (
+                <ContactLink href={waHref} action="whatsapp" profileId={profile.id}>
+                  WhatsApp
+                </ContactLink>
+              ) : null}
+            </div>
+          </div>
+        </section>
+
+        <KnottyChat profile={{ id: profile.id, name: firstName }} floating />
 
         {relatedProfiles.length > 0 ? (
-          <Section id="related" eyebrow="More nearby" title={`More therapists in ${profile.city}`}>
+          <Section id="related" eyebrow="More nearby" title={`Therapists near ${profile.city}`}>
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {relatedProfiles.map((therapist) => (
                 <TherapistCard key={therapist.id} therapist={therapist} headingLevel={3} />

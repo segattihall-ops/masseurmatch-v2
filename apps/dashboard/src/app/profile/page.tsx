@@ -10,6 +10,7 @@ import { getOrCreateMyProfile } from "@/lib/profile";
 import { publicProfileUrl } from "@/lib/public-site";
 
 import { ListingForm } from "./listing-form";
+import { ProfileVideoUploader } from "./profile-video-uploader";
 
 export const metadata: Metadata = {
   title: "Your profile",
@@ -33,11 +34,12 @@ export default async function ProfilePage() {
    */
   const { data: row } = await createServiceClient()
     .from("profiles")
-    .select(LISTING_COLUMNS.join(","))
+    .select([...LISTING_COLUMNS, "presentation_video_url"].join(","))
     .eq("id", viewer.user.id)
     .maybeSingle();
 
-  const initial = fromProfile((row ?? {}) as ListingRow);
+  const editorRow = (row ?? {}) as ListingRow & { presentation_video_url?: string | null };
+  const initial = fromProfile(editorRow);
 
   return (
     <main className="mx-auto w-full max-w-5xl px-6 py-12">
@@ -81,6 +83,7 @@ export default async function ProfilePage() {
       ) : null}
 
       <ListingForm initial={initial} />
+      <ProfileVideoUploader initialUrl={editorRow.presentation_video_url ?? null} />
     </main>
   );
 }

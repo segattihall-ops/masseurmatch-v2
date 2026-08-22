@@ -46,7 +46,7 @@ export const PRIMARY_NAV: NavItem[] = [
       { href: "/guides", label: "Guides" },
       { href: "/blog", label: "Blog" },
       { href: "/how-it-works", label: "How it works" },
-      { href: "/compare", label: "Compare" },
+      { href: "/compare", label: "Compare directories" },
       { href: "/faq", label: "FAQ" },
     ],
   },
