@@ -11,6 +11,7 @@ import {
   DIRECTORY_REVALIDATE_SECONDS,
   citySlug,
   compareByRank,
+  directoryObjectiveSearchValue,
   startingPrice,
   type CityListing,
   type DirectoryFilters,
@@ -25,16 +26,10 @@ import {
  * Everything here reads through the **anon** client, so Postgres RLS is the
  * access control: a logged-out visitor and this code see exactly the same
  * rows. The explicit `profile_status`/`visibility_status` filters mirror the
- * live policy rather than replacing it — belt and braces, and they let the
- * same queries run under a service-role client without widening what ships.
+ * live policy rather than replacing it.
  */
 
-/**
- * Columns that only exist once their migration has run
- * (`migrations/courtesy_tier_grants.sql`, `migrations/visibility_spikes.sql`).
- */
 const OPTIONAL_COLUMNS = ["subscription_status", "tier_granted_until", "spike_until"];
-
 const missingColumns = new Set<string>();
 
 function columnsFor(base: string[]): string {
@@ -86,6 +81,10 @@ const LISTING_COLUMNS = [
   "lgbtq_affirming",
   "travel_schedule",
   "years_experience",
+  "height_inches",
+  "weight_lb",
+  "body_type",
+  "start_year",
   "updated_at",
 ];
 
@@ -188,10 +187,6 @@ async function fetchVisibleCityRows(): Promise<CityRow[]> {
   );
 }
 
-/**
- * Cities derived from visible, routable therapists using only the three
- * columns required for this hub instead of loading the full directory payload.
- */
 export const getCities = unstable_cache(
   async (): Promise<CityListing[]> => {
     const rows = await fetchVisibleCityRows();
@@ -226,7 +221,6 @@ export const getCities = unstable_cache(
   { revalidate: DIRECTORY_REVALIDATE_SECONDS, tags: [DIRECTORY_CACHE_TAG] },
 );
 
-/** Therapists in one city, already ranked. */
 export async function getTherapistsByCity(
   stateSlug: string,
   city: string,
@@ -240,7 +234,6 @@ export async function getTherapistsByCity(
   );
 }
 
-/** One city's metadata, or null when nothing is listed there. */
 export async function getCity(stateSlug: string, city: string): Promise<CityListing | null> {
   const cities = await getCities();
   return (
@@ -256,7 +249,6 @@ export async function getProfileBySlug(slug: string): Promise<ProfileDetail | nu
   if (directoryUnavailable()) return null;
 
   const client = createAnonClient();
-
   const rows = await selectProfiles<ProfileDetail>(DETAIL_COLUMNS, (candidate, select) =>
     candidate
       .from("profiles")
@@ -289,6 +281,57 @@ export async function getProfileBySlug(slug: string): Promise<ProfileDetail | nu
   return profile;
 }
 
+function normalizeSearch(value: unknown): string {
+  return String(value ?? "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+const BODY_ALIASES: Record<string, string[]> = {
+  slim: ["slim", "lean", "slender", "thin", "magro"],
+  athletic: ["athletic", "fit", "toned", "atletico"],
+  average: ["average", "regular build", "medium build", "medio", "normal"],
+  muscular: ["muscular", "muscle", "buff", "built", "jacked", "musculoso", "forte"],
+  stocky: ["stocky", "solid", "thick", "encorpado"],
+  large: ["large", "big", "heavier", "heavyset", "bigger", "grande", "grandao", "maior"],
+};
+
+function physicalTerms(therapist: TherapistListing): string[] {
+  const body = normalizeSearch(therapist.body_type);
+  const bodyTerms = BODY_ALIASES[body] ?? (body ? [body] : []);
+  const height = therapist.height_inches;
+  const weight = therapist.weight_lb;
+  const feet = typeof height === "number" && height > 0 ? Math.floor(height / 12) : null;
+  const inches = typeof height === "number" && height > 0 ? Math.round(height) % 12 : null;
+
+  return [
+    ...bodyTerms,
+    typeof height === "number" && height > 0 ? `${Math.round(height)} in` : "",
+    feet !== null && inches !== null ? `${feet}'${inches}\"` : "",
+    typeof weight === "number" && weight > 0 ? `${Math.round(weight)} lb` : "",
+  ].filter(Boolean);
+}
+
+function searchableText(therapist: TherapistListing): string {
+  return normalizeSearch(
+    [
+      therapist.display_name,
+      therapist.full_name,
+      therapist.headline,
+      therapist.city,
+      therapist.neighborhood,
+      ...(therapist.specialties ?? []),
+      ...(therapist.massage_techniques ?? []),
+      ...(therapist.service_categories ?? []),
+      ...physicalTerms(therapist),
+    ]
+      .filter(Boolean)
+      .join(" "),
+  );
+}
+
 function cityMatches(therapist: TherapistListing, filters: DirectoryFilters): boolean {
   if (!filters.city) return true;
   const wantedCity = filters.city.toLowerCase();
@@ -312,30 +355,23 @@ function filterTherapistsInMemory(
   let therapists = source.filter((therapist) => cityMatches(therapist, filters));
 
   if (filters.service) {
-    const wanted = filters.service.toLowerCase();
+    const wanted = normalizeSearch(filters.service);
     therapists = therapists.filter((therapist) =>
       [...(therapist.service_categories ?? []), ...(therapist.massage_techniques ?? [])].some(
-        (entry) => entry.toLowerCase() === wanted,
+        (entry) => normalizeSearch(entry) === wanted,
       ),
     );
   }
 
   if (filters.query) {
-    const wanted = filters.query.toLowerCase();
-    therapists = therapists.filter((therapist) =>
-      [
-        therapist.display_name,
-        therapist.full_name,
-        therapist.headline,
-        therapist.city,
-        therapist.neighborhood,
-        ...(therapist.specialties ?? []),
-        ...(therapist.massage_techniques ?? []),
-        ...(therapist.service_categories ?? []),
-      ]
-        .filter(Boolean)
-        .some((field) => String(field).toLowerCase().includes(wanted)),
-    );
+    const wanted = normalizeSearch(filters.query);
+    therapists = therapists.filter((therapist) => searchableText(therapist).includes(wanted));
+  }
+
+  const goalSearch = directoryObjectiveSearchValue(filters.goal);
+  if (goalSearch) {
+    const wanted = normalizeSearch(goalSearch);
+    therapists = therapists.filter((therapist) => searchableText(therapist).includes(wanted));
   }
 
   if (filters.session === "incall") {
@@ -384,9 +420,13 @@ function filterTherapistsInMemory(
     typeof filters.minExperienceYears === "number" &&
     Number.isFinite(filters.minExperienceYears)
   ) {
-    therapists = therapists.filter(
-      (therapist) => (therapist.years_experience ?? 0) >= filters.minExperienceYears!,
-    );
+    const currentYear = new Date().getUTCFullYear();
+    therapists = therapists.filter((therapist) => {
+      const years =
+        therapist.years_experience ??
+        (therapist.start_year ? Math.max(0, currentYear - therapist.start_year) : 0);
+      return years >= filters.minExperienceYears!;
+    });
   }
 
   if (filters.sort === "price") {
@@ -410,17 +450,12 @@ function filterTherapistsInMemory(
   return therapists;
 }
 
-/**
- * Backwards-compatible unpaginated search used by SEO/service pages. The main
- * `/search` UI uses `searchTherapistsPage`, which filters and paginates in SQL.
- */
+/** Backwards-compatible unpaginated search used by SEO/service pages. */
 export async function searchTherapists(filters: DirectoryFilters): Promise<TherapistListing[]> {
   return filterTherapistsInMemory(await getVisibleTherapists(), filters);
 }
 
-type SearchRpcRow = Omit<TherapistListing, "years_experience"> & {
-  total_count: number | null;
-};
+type SearchRpcRow = TherapistListing & { total_count: number | null };
 
 type RpcClient = {
   rpc: (name: string, args: Record<string, unknown>) => PromiseLike<QueryResult>;
@@ -429,15 +464,15 @@ type RpcClient = {
 function isMissingSearchRpc(message: string): boolean {
   const normalized = message.toLowerCase();
   return (
-    normalized.includes("search_directory_profiles") ||
+    normalized.includes("search_directory_profiles_v2") ||
     (normalized.includes("schema cache") && normalized.includes("function"))
   );
 }
 
 /**
  * Production search path: filters, ranking, count and pagination happen in
- * Postgres. A narrowly-scoped fallback preserves deploy-order safety if the app
- * reaches production before the additive RPC migration does.
+ * Postgres. The v2 RPC is additive, so the current site's data path is not
+ * changed during cutover. A fallback keeps deploy order safe.
  */
 export async function searchTherapistsPage(
   filters: DirectoryFilters,
@@ -449,11 +484,12 @@ export async function searchTherapistsPage(
 
   const client = createAnonClient();
   const rpcClient = client as unknown as RpcClient;
-  const { data, error } = await rpcClient.rpc("search_directory_profiles", {
+  const { data, error } = await rpcClient.rpc("search_directory_profiles_v2", {
     p_city_slug: filters.city ?? null,
     p_state_slug: filters.state ?? null,
     p_service: filters.service ?? null,
     p_query: filters.query ?? null,
+    p_goal_search: directoryObjectiveSearchValue(filters.goal) ?? null,
     p_session: filters.session ?? null,
     p_available_now: filters.availableNow ?? false,
     p_verified: filters.verified ?? false,
@@ -470,10 +506,7 @@ export async function searchTherapistsPage(
   if (!error) {
     const rows = (data ?? []) as SearchRpcRow[];
     const total = Number(rows[0]?.total_count ?? 0);
-    const items = rows.map(({ total_count: _totalCount, ...row }) => ({
-      ...row,
-      years_experience: null,
-    }));
+    const items = rows.map(({ total_count: _totalCount, ...row }) => row);
     return { items, total, page, pageSize };
   }
 
@@ -484,7 +517,7 @@ export async function searchTherapistsPage(
   if (!warnedAboutSearchRpc) {
     warnedAboutSearchRpc = true;
     console.warn(
-      "[@masseurmatch/db] search_directory_profiles RPC is not available yet — " +
+      "[@masseurmatch/db] search_directory_profiles_v2 RPC is not available yet — " +
         "falling back to in-memory search until the additive migration is applied.",
     );
   }
@@ -499,15 +532,19 @@ export async function searchTherapistsPage(
   };
 }
 
-type ServiceRow = { slug: string | null; service_categories: string[] | null };
+type ServiceRow = {
+  slug: string | null;
+  service_categories: string[] | null;
+  massage_techniques: string[] | null;
+};
 
-/** Distinct service categories across visible therapists, for the filter UI. */
+/** Distinct services/techniques across visible therapists, for the filter UI. */
 export const getServiceCategories = unstable_cache(
   async (): Promise<string[]> => {
     if (directoryUnavailable()) return [];
 
     const rows = await selectProfiles<ServiceRow>(
-      ["slug", "service_categories"],
+      ["slug", "service_categories", "massage_techniques"],
       (client, select) =>
         client
           .from("profiles")
@@ -519,7 +556,7 @@ export const getServiceCategories = unstable_cache(
 
     for (const row of rows) {
       if (!isRoutable(row)) continue;
-      for (const entry of row.service_categories ?? []) {
+      for (const entry of [...(row.service_categories ?? []), ...(row.massage_techniques ?? [])]) {
         if (entry.trim()) seen.add(entry.trim());
       }
     }
