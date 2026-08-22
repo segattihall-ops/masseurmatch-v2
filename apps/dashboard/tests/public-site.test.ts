@@ -35,9 +35,31 @@ describe("publicProfileUrl", () => {
   it("uses the stable therapist URL that works before and after v2 cutover", () => {
     vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://www.masseurmatch.com");
 
-    expect(publicProfileUrl({ slug: "reggie-3ef08824" })).toBe(
-      "https://www.masseurmatch.com/therapists/reggie-3ef08824",
-    );
+    expect(
+      publicProfileUrl({
+        slug: "reggie-3ef08824",
+        profile_status: "approved",
+        visibility_status: "public",
+      }),
+    ).toBe("https://www.masseurmatch.com/therapists/reggie-3ef08824");
+  });
+
+  it("returns null for profiles that the public directory cannot serve", () => {
+    expect(
+      publicProfileUrl({
+        slug: "pending-profile",
+        profile_status: "pending",
+        visibility_status: "public",
+      }),
+    ).toBeNull();
+
+    expect(
+      publicProfileUrl({
+        slug: "hidden-profile",
+        profile_status: "approved",
+        visibility_status: "hidden",
+      }),
+    ).toBeNull();
   });
 
   it("returns null when no usable slug exists", () => {
