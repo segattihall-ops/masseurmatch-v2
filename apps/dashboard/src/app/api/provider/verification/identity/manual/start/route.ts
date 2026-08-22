@@ -104,6 +104,10 @@ export async function POST() {
         expiresAt,
         files: {},
         submittedAt: null,
+        // Written by admin review. Initialised here so the review UI reads a
+        // consistent shape whether or not a decision has been made yet.
+        reviewedAt: null,
+        documentsDeletedAt: null,
       },
     };
 
