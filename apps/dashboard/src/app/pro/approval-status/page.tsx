@@ -13,39 +13,19 @@ import { SubmitForReviewForm } from "./submit-form";
 export const metadata = { title: "Approval Status | MasseurMatch" };
 export const dynamic = "force-dynamic";
 
-/** What each state means, in the second person, without restating the label. */
 const EXPLANATION: Record<string, string> = {
   draft:
     "Your profile has not been sent for review yet. Finish the items below and submit it, and it will appear in the directory once a reviewer approves it.",
   pending:
-    "A reviewer has your profile. This usually takes a day or two. You can keep editing while you wait — changes are reviewed together.",
+    "A reviewer has your profile. You can keep editing while you wait — changes are reviewed together.",
   approved:
     "Your profile is approved and can appear in the directory. Whether it is actually showing is your own visibility switch, which is separate.",
   rejected:
-    "Your profile was not approved. Make the changes described below and it goes back into the queue automatically — you do not need to ask.",
+    "A reviewer requested changes. Update your listing, save the edits, then submit it again. Resubmitting returns it to review and does not publish it.",
   suspended:
-    "Your profile has been suspended by our team. Open a support ticket and we will tell you what is needed.",
+    "Your profile has been suspended by our team. It cannot be resubmitted from the dashboard; open a support ticket if you need the decision reviewed.",
 };
 
-/**
- * Where the listing stands with review.
- *
- * ---------------------------------------------------------------------------
- * What was here before
- * ---------------------------------------------------------------------------
- * A re-export of the legacy page. It had no auth guard — `return null` for a
- * signed-out visitor, which renders a blank screen rather than sending them to
- * sign in. It painted its cards with `bg-surface`, a class that does not exist
- * in this Tailwind preset, so they had no background at all. And its "Next
- * Steps" panel was two hard-coded lists: approved people were told to "monitor
- * your growth analytics", everyone else to "ensure all photos are professional"
- * — the same three lines whatever the profile actually looked like.
- *
- * Most importantly it never read `moderation_notes`. That column holds what the
- * reviewer wrote when they rejected a profile, which is the single thing this
- * page exists to deliver: a therapist looking at "Profile Needs Changes" with
- * no indication of which changes has been told nothing.
- */
 export default async function ProApprovalStatusPage() {
   const viewer = await requireTherapist("/pro/approval-status");
   const { profile, status, snapshot } = await getOrCreateMyProfile(viewer.user.id);
@@ -77,9 +57,6 @@ export default async function ProApprovalStatusPage() {
       <Section title={PROFILE_STATUS_LABELS[status]}>
         <p className="text-sm text-muted-foreground">{EXPLANATION[status]}</p>
 
-        {/* The reviewer's own words. Shown verbatim rather than summarised:
-            this is the only explanation a rejected profile ever gets, and
-            rewording it here is how it stops matching what was decided. */}
         {notes ? (
           <div className="mt-4 rounded-lg border border-border bg-muted p-4">
             <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
@@ -137,7 +114,7 @@ export default async function ProApprovalStatusPage() {
           ))}
         </ul>
 
-        {status === "approved" ? null : (
+        {status === "approved" || status === "suspended" ? null : (
           <div className="mt-4">
             {ready ? (
               <SubmitForReviewForm />
