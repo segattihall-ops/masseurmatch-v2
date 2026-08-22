@@ -166,7 +166,7 @@ nothing at all.
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY`     | yes        |                                                                                                                                                                                 |
 | `NEXT_PUBLIC_SITE_URL`              | at cutover | Leave unset until the domain moves; it falls back to the Vercel URL. Set it to `https://www.masseurmatch.com` when cutting over                                                 |
 | `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` | for images | Without it, profile photos do not render                                                                                                                                        |
-| `NEXT_PUBLIC_TURNSTILE_SITE_KEY`    | optional   |                                                                                                                                                                                 |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY`    | not read   | `apps/web` renders no form that takes a credential. Setting it here does nothing — the Turnstile keys belong on the dashboard and admin projects (step 4d)                      |
 | `NEXT_PUBLIC_SENTRY_DSN`            | optional   |                                                                                                                                                                                 |
 | `SUPABASE_SERVICE_ROLE_KEY`         | for views  | Server only. `/api/views` records profile views with it; without it the endpoint is inert and view counts stay flat                                                             |
 | `NEXT_PUBLIC_DASHBOARD_URL`         | for signup | `https://dashboard.masseurmatch.com`. Without it, `/for-therapists` shows no "Create your account" button — there is no fallback, because a guessed host would be a dead button |
@@ -506,6 +506,55 @@ The flow, and the two things about it that are policy rather than plumbing:
 
 ---
 
+## Step 4d — Turn on Turnstile
+
+Optional — the apps run with it off, by construction — but everything in the
+code is already there. Five forms render the widget and verify the token
+server-side: dashboard sign-in, sign-up, forgot-password and phone sign-in, and
+admin sign-in. Both apps' CSPs already name `challenges.cloudflare.com`. What
+is missing is a widget and two keys.
+
+1. Cloudflare dashboard → **Turnstile** → **Add widget**. Mode **Managed** is
+   the right default; the code does not depend on which you pick.
+2. **Hostnames.** List each host that actually renders a form:
+   - `dashboard.masseurmatch.com`
+   - `admin.masseurmatch.com`
+
+   A hostname missing here is the most likely mistake, and it used to be an
+   invisible one: the widget refused, the form looked normal, and the server
+   answered "we could not verify that you are human". The widget now surfaces
+   that refusal on the page.
+
+3. Set both keys, on **both** the dashboard and admin projects:
+
+   | Variable                         | Value                        |
+   | -------------------------------- | ---------------------------- |
+   | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | the widget's site key        |
+   | `TURNSTILE_SECRET_KEY`           | its secret key — server only |
+
+   **Production only.** Leave both unset on Preview: preview hostnames are
+   generated per deployment and cannot be pinned in the widget's list, and an
+   unconfigured deployment is a supported state rather than a broken one.
+
+4. Redeploy. The site key is inlined at build time, so a running deployment
+   does not pick it up.
+
+**Set both or neither.** With one key present and the other missing,
+`verifyTurnstile` returns `not_configured`, and every form treats that as
+"nothing to check" and proceeds. That is deliberate — the alternative is an
+outage when an optional vendor is half-configured — but it does mean a
+half-finished setup looks exactly like a working one from the outside. The way
+to tell is to look at a form: no widget means no check.
+
+Cloudflare publishes dummy site and secret keys that always pass and always
+fail. Wiring the always-fail pair into a preview first is the cheapest way to
+prove the server side actually refuses, rather than assuming it.
+
+`apps/web` reads neither variable — it renders no form that takes a credential,
+so setting them on `masseurmatch-v2` does nothing at all.
+
+---
+
 ## Step 5 — Cut over the domain
 
 Only after steps 1–4 verify. Follow `CUTOVER.md`; the short version:
@@ -520,7 +569,7 @@ Only after steps 1–4 verify. Follow `CUTOVER.md`; the short version:
 
 ## Optional, safe to defer
 
-- **Turnstile** — a Cloudflare site key and secret. Both or neither.
+- **Turnstile** — a Cloudflare site key and secret. Both or neither. Step 4d.
 - **Sentry** — a DSN. `reportError` logs until one exists.
 - **Shared rate-limit store** — Upstash or Vercel KV. The current limiter is
   per-lambda-instance, so it is a speed bump rather than a guarantee.
