@@ -2,23 +2,24 @@ import "server-only";
 
 import { createAnonClient, createServiceClient, hasSupabaseCredentials } from "../client";
 
-export type ProfileHoursEntry = {
-  day?: string;
-  enabled?: boolean;
-  start_time?: string;
-  end_time?: string;
-};
-
 export type PublicProfileSupplement = {
   phone: string | null;
+  phone_number: string | null;
   whatsapp_number: string | null;
+  whatsapp: string | null;
   email_address: string | null;
   show_email: boolean | null;
   show_phone: boolean | null;
   website: string | null;
+  booking_platform: string | null;
   booking_url: string | null;
   booking_link: string | null;
   starting_price: number | null;
+  starting_rate: number | null;
+  price_min: number | null;
+  price_max: number | null;
+  session_lengths: number[] | null;
+  rates: unknown;
   height_inches: number | null;
   weight_lb: number | null;
   body_type: string | null;
@@ -36,6 +37,8 @@ export type PublicProfileSupplement = {
   primary_area: string | null;
   areas_served: string[] | null;
   outcall_radius_miles: number | null;
+  service_radius_miles: number | null;
+  location_type: string | null;
   business_hours: unknown;
   studio_hours: unknown;
   mobile_hours: unknown;
@@ -46,10 +49,12 @@ export type PublicProfileSupplement = {
   pricing_sessions: unknown;
   custom_faq: unknown;
   travel_schedule: unknown;
+  business_trips: unknown;
   promotions: unknown;
   add_ons: unknown;
   training: string | null;
   education: string | null;
+  certifications: string | null;
   education_entries: unknown;
   massage_setup: string[] | null;
   mobile_extras: string[] | null;
@@ -63,6 +68,7 @@ export type PublicProfileSupplement = {
   rate_disclaimers: string[] | null;
   regular_discounts: unknown;
   day_of_week_discount: unknown;
+  weekly_special: unknown;
   accessibility_features: string[] | null;
   accepts_all_genders: boolean | null;
   map_enabled: boolean | null;
@@ -70,6 +76,11 @@ export type PublicProfileSupplement = {
   seo_keywords: string[] | null;
   presentation_video_url: string | null;
   social_media: unknown;
+  modality: string | null;
+  modalities: string[] | null;
+  specialty: string | null;
+  traveling: boolean | null;
+  visiting: boolean | null;
 };
 
 export type PublicImportedReview = {
@@ -83,14 +94,22 @@ export type PublicImportedReview = {
 
 const EMPTY_SUPPLEMENT: PublicProfileSupplement = {
   phone: null,
+  phone_number: null,
   whatsapp_number: null,
+  whatsapp: null,
   email_address: null,
   show_email: null,
   show_phone: null,
   website: null,
+  booking_platform: null,
   booking_url: null,
   booking_link: null,
   starting_price: null,
+  starting_rate: null,
+  price_min: null,
+  price_max: null,
+  session_lengths: null,
+  rates: null,
   height_inches: null,
   weight_lb: null,
   body_type: null,
@@ -108,6 +127,8 @@ const EMPTY_SUPPLEMENT: PublicProfileSupplement = {
   primary_area: null,
   areas_served: null,
   outcall_radius_miles: null,
+  service_radius_miles: null,
+  location_type: null,
   business_hours: null,
   studio_hours: null,
   mobile_hours: null,
@@ -118,10 +139,12 @@ const EMPTY_SUPPLEMENT: PublicProfileSupplement = {
   pricing_sessions: null,
   custom_faq: null,
   travel_schedule: null,
+  business_trips: null,
   promotions: null,
   add_ons: null,
   training: null,
   education: null,
+  certifications: null,
   education_entries: null,
   massage_setup: null,
   mobile_extras: null,
@@ -135,6 +158,7 @@ const EMPTY_SUPPLEMENT: PublicProfileSupplement = {
   rate_disclaimers: null,
   regular_discounts: null,
   day_of_week_discount: null,
+  weekly_special: null,
   accessibility_features: null,
   accepts_all_genders: null,
   map_enabled: null,
@@ -142,74 +166,28 @@ const EMPTY_SUPPLEMENT: PublicProfileSupplement = {
   seo_keywords: null,
   presentation_video_url: null,
   social_media: null,
+  modality: null,
+  modalities: null,
+  specialty: null,
+  traveling: null,
+  visiting: null,
 };
 
 const SUPPLEMENT_COLUMNS = [
-  "phone",
-  "whatsapp_number",
-  "email_address",
-  "show_email",
-  "show_phone",
-  "website",
-  "booking_url",
-  "booking_link",
-  "starting_price",
-  "height_inches",
-  "weight_lb",
-  "body_type",
-  "start_year",
-  "created_at",
-  "last_active_at",
-  "verification_status",
-  "is_verified_photos",
-  "is_verified_phone",
-  "is_verified_email",
-  "is_demo",
-  "country",
-  "gender",
-  "neighborhood_name",
-  "primary_area",
-  "areas_served",
-  "outcall_radius_miles",
-  "business_hours",
-  "studio_hours",
-  "mobile_hours",
-  "current_status",
-  "availability_note",
-  "incall_details",
-  "outcall_details",
-  "pricing_sessions",
-  "custom_faq",
-  "travel_schedule",
-  "promotions",
-  "add_ons",
-  "training",
-  "education",
-  "education_entries",
-  "massage_setup",
-  "mobile_extras",
-  "additional_services",
-  "studio_amenities",
-  "incall_amenities",
-  "products_used",
-  "products_sold",
-  "payment_methods",
-  "affiliations",
-  "rate_disclaimers",
-  "regular_discounts",
-  "day_of_week_discount",
-  "accessibility_features",
-  "accepts_all_genders",
-  "map_enabled",
-  "street_reference",
-  "seo_keywords",
-  "presentation_video_url",
-  "social_media",
+  "phone", "phone_number", "whatsapp_number", "whatsapp", "email_address", "show_email", "show_phone",
+  "website", "booking_platform", "booking_url", "booking_link", "starting_price", "starting_rate", "price_min",
+  "price_max", "session_lengths", "rates", "height_inches", "weight_lb", "body_type", "start_year", "created_at",
+  "last_active_at", "verification_status", "is_verified_photos", "is_verified_phone", "is_verified_email", "is_demo",
+  "country", "gender", "neighborhood_name", "primary_area", "areas_served", "outcall_radius_miles", "service_radius_miles",
+  "location_type", "business_hours", "studio_hours", "mobile_hours", "current_status", "availability_note", "incall_details",
+  "outcall_details", "pricing_sessions", "custom_faq", "travel_schedule", "business_trips", "promotions", "add_ons", "training",
+  "education", "certifications", "education_entries", "massage_setup", "mobile_extras", "additional_services", "studio_amenities",
+  "incall_amenities", "products_used", "products_sold", "payment_methods", "affiliations", "rate_disclaimers", "regular_discounts",
+  "day_of_week_discount", "weekly_special", "accessibility_features", "accepts_all_genders", "map_enabled", "street_reference",
+  "seo_keywords", "presentation_video_url", "social_media", "modality", "modalities", "specialty", "traveling", "visiting",
 ].join(",");
 
-export async function getPublicProfileSupplement(
-  profileId: string,
-): Promise<PublicProfileSupplement> {
+export async function getPublicProfileSupplement(profileId: string): Promise<PublicProfileSupplement> {
   if (!hasSupabaseCredentials()) return EMPTY_SUPPLEMENT;
 
   const client = createAnonClient();
