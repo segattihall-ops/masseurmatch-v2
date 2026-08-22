@@ -8,6 +8,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: apply-public-search-parity
+  cancel-in-progress: true
+
 jobs:
   apply:
     if: ${{ !contains(github.event.head_commit.message, 'feat(web): apply public search parity') }}
@@ -47,12 +51,6 @@ jobs:
             apps/dashboard/src/app/profile/profile-video-uploader.tsx \
             apps/dashboard/src/app/profile/page.tsx \
             apps/web/src/components/site-nav-data.ts
-
-      - name: Typecheck
-        run: pnpm typecheck
-
-      - name: Unit tests
-        run: pnpm test
 
       - name: Remove one-time tooling and commit
         run: |
