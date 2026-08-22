@@ -1,0 +1,33 @@
+name: Launch final format once
+
+on:
+  pull_request:
+    types: [synchronize]
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    if: github.head_ref == 'fix/launch-final-verification' && github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/launch-final-verification
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm prettier --write apps/web/src/app/sitemap.ts
+      - name: Commit formatting and remove one-time formatter
+        run: |
+          rm -f .github/workflows/launch-final-format-once.yml docs/.launch-format-trigger
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "style(web): format final launch sitemap"
+          git push origin HEAD:fix/launch-final-verification
