@@ -14,32 +14,23 @@ jobs:
     env:
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
       TEAM_ID: team_srSjjkFDYeFA6HpxgpvxPgox
-      MAIN_SHA: 82fde23aa6b529e6126c4a85b2232084dbd507ae
     steps:
-      - name: Inspect Vercel project, domains and deployments
+      - name: Locate current custom-domain ownership
         shell: bash
         run: |
           set -euo pipefail
 
-          project="$(curl -fsS -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v9/projects/masseurmatch-v2?teamId=$TEAM_ID")"
-          project_id="$(printf '%s' "$project" | jq -r '.id')"
-          echo "project_id=$project_id"
-          printf '%s' "$project" | jq '{name,id,rootDirectory,link:{type:.link.type,org:.link.org,repo:.link.repo,productionBranch:.link.productionBranch}}'
+          echo '=== all project domains for masseurmatch.com ==='
+          domain_data="$(curl -fsS -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v1/domains/masseurmatch.com/project-domains?teamId=$TEAM_ID&limit=100")"
+          printf '%s' "$domain_data" | jq '.projectDomains[] | {name,apexName,projectId,gitBranch,redirect,redirectStatusCode,verified}'
 
-          echo '=== project domains ==='
-          curl -fsS -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v9/projects/masseurmatch-v2/domains?teamId=$TEAM_ID&limit=100" \
-            | jq '.domains[] | {name,gitBranch,redirect,verified,projectId}'
+          echo '=== owning projects ==='
+          printf '%s' "$domain_data" | jq -r '.projectDomains[].projectId' | sort -u | while read -r project_id; do
+            [ -n "$project_id" ] || continue
+            curl -fsS -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v9/projects/$project_id?teamId=$TEAM_ID" \
+              | jq '{name,id,rootDirectory,link:{org:.link.org,repo:.link.repo,productionBranch:.link.productionBranch}}'
+          done
 
-          echo '=== recent deployments ==='
-          deployments="$(curl -fsS -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v6/deployments?projectId=$project_id&teamId=$TEAM_ID&limit=30")"
-          printf '%s' "$deployments" | jq '.deployments[] | {uid,url,state,target,created,ready,meta:{githubCommitSha:.meta.githubCommitSha,githubCommitRef:.meta.githubCommitRef,githubCommitMessage:.meta.githubCommitMessage}}'
-
-          echo '=== current main deployment ==='
-          printf '%s' "$deployments" | jq --arg sha "$MAIN_SHA" '.deployments[] | select(.meta.githubCommitSha == $sha) | {uid,url,state,target,created,ready,meta:{githubCommitSha:.meta.githubCommitSha,githubCommitRef:.meta.githubCommitRef}}'
-
-          echo '=== live domain token ==='
-          body="$(mktemp)"
-          headers="$(mktemp)"
-          curl -sS -L --connect-timeout 10 --max-time 45 -D "$headers" -o "$body" 'https://www.masseurmatch.com/'
-          grep -Ei '^(x-vercel-|server:|age:|cache-control:)' "$headers" || true
-          grep -Eo 'dpl_[A-Za-z0-9]+' "$body" | sort -u | head -10 || true
+          echo '=== target v2 project ==='
+          curl -fsS -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v9/projects/masseurmatch-v2?teamId=$TEAM_ID" \
+            | jq '{name,id,rootDirectory,link:{org:.link.org,repo:.link.repo,productionBranch:.link.productionBranch}}'
