@@ -107,7 +107,8 @@ export async function getMyTicket(
   };
 }
 
-export type TicketWriteResult = { ok: true; id: string } | { ok: false; error: string };
+export type TicketWriteResult =
+  { ok: true; id: string; warning?: string } | { ok: false; error: string };
 
 /**
  * Open a ticket, with its first message.
@@ -115,6 +116,12 @@ export type TicketWriteResult = { ok: true; id: string } | { ok: false; error: s
  * The message is written after the ticket and is not allowed to fail the
  * ticket: a support row with no body is still something a person can pick up
  * and ask about, whereas losing the ticket loses the report entirely.
+ *
+ * It is not allowed to fail *silently* either. Swallowing that error is what
+ * this whole change exists to stop: support would see a subject with no body
+ * and no reason to ask, and the therapist would be told their ticket was
+ * opened while the description they typed went nowhere. The ticket survives
+ * and the caller is told what to do about it.
  */
 export async function createMyTicket(
   userId: string,
@@ -148,12 +155,25 @@ export async function createMyTicket(
 
   const id = (data as { id: string }).id;
 
-  await supabase.from("support_ticket_messages").insert({
+  const message = await supabase.from("support_ticket_messages").insert({
     ticket_id: id,
     sender_id: userId,
     sender_role: "provider",
     body: input.message,
   });
+
+  if (message.error) {
+    console.error("support ticket message insert failed", {
+      ticketId: id,
+      error: message.error.message,
+    });
+    return {
+      ok: true,
+      id,
+      warning:
+        "Your ticket is open, but the description did not attach. Please post it as a reply on the ticket.",
+    };
+  }
 
   return { ok: true, id };
 }
