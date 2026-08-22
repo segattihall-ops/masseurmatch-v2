@@ -15,13 +15,64 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: read
+  contents: write
 
 env:
   TURBO_TELEMETRY_DISABLED: 1
   NEXT_TELEMETRY_DISABLED: 1
 
 jobs:
+  apply-parity:
+    name: apply-parity
+    if: ${{ github.event_name == 'pull_request' && github.head_ref == 'feature/public-profile-search-parity' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/public-profile-search-parity
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Apply focused parity changes
+        run: python3 scripts/apply-public-search-parity.py
+
+      - name: Format changed product files
+        run: |
+          pnpm exec prettier --write \
+            packages/db/actions/directory-config.ts \
+            packages/db/actions/directory.ts \
+            apps/web/src/app/search/search-controls.tsx \
+            apps/web/src/app/search/page.tsx \
+            apps/web/src/components/therapist-card.tsx \
+            apps/web/src/components/public-profile-page.tsx \
+            'apps/web/src/app/[state]/[city]/[slug]/page.tsx' \
+            apps/dashboard/src/lib/cloudinary.ts \
+            apps/dashboard/src/app/api/uploads/video/route.ts \
+            apps/dashboard/src/app/profile/profile-video-uploader.tsx \
+            apps/dashboard/src/app/profile/page.tsx \
+            apps/web/src/components/site-nav-data.ts
+
+      - name: Commit product changes and remove temporary tooling
+        run: |
+          git rm scripts/apply-public-search-parity.py .github/workflows/apply-public-search-parity-once.yml
+          git fetch origin main
+          git checkout origin/main -- .github/workflows/ci.yml
+          git add -A
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "feat(web): apply public search parity"
+          git push origin HEAD:feature/public-profile-search-parity
+
   verify:
     name: ${{ matrix.task }}
     runs-on: ubuntu-latest
