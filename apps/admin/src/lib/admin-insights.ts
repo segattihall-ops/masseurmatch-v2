@@ -43,7 +43,7 @@ export type AdminBillingOverview = {
     id: string;
     kind: string;
     provider: string | null;
-    occurredAt: string;
+    occurredAt: string | null;
     error: string | null;
   }>;
 };
