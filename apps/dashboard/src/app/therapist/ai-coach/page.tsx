@@ -1,23 +1,14 @@
-import { ProAiCoach } from "@/components/pro/ai-coach";
-import { requireTherapist } from "@/lib/guards";
-import { getProDashboard } from "@/lib/pro-dashboard";
-
-export const metadata = { title: "AI Profile Coach | MasseurMatch" };
-export const dynamic = "force-dynamic";
+import { redirect } from "next/navigation";
 
 /**
- * The Coach at its old address.
+ * Moved to `/pro/ai-coach`.
  *
- * Same component as `/pro/ai-coach`; the wrapper is the padding the legacy
- * shell does not supply. See the note in `therapist/demand-radar/page.tsx`.
+ * One implementation, in the shell that has a mobile navigation.
+ *
+ * A redirect rather than a re-export: `/pro` is the front door, and it is the
+ * only shell with a mobile navigation. Rendering the same page in the legacy
+ * shell would keep a second, non-responsive route to it alive for no gain.
  */
-export default async function TherapistAiCoachPage() {
-  const viewer = await requireTherapist("/therapist/ai-coach");
-  const data = await getProDashboard(viewer.user.id);
-
-  return (
-    <div className="mx-auto max-w-5xl space-y-6 p-4 sm:p-6 lg:p-8">
-      <ProAiCoach data={data} />
-    </div>
-  );
+export default function TherapistAiCoachPage() {
+  redirect("/pro/ai-coach");
 }
