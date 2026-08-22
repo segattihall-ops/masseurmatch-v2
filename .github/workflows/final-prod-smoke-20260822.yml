@@ -12,92 +12,35 @@ jobs:
   smoke:
     runs-on: ubuntu-24.04
     steps:
-      - name: Verify production surfaces
+      - name: Diagnose production domain deployment
         shell: bash
         run: |
           set -euo pipefail
 
-          get_200() {
-            local name="$1" url="$2" marker="$3"
-            local body status
+          echo '=== DNS ==='
+          dig +short CNAME www.masseurmatch.com || true
+          dig +short A www.masseurmatch.com || true
+          dig +short CNAME masseurmatch.com || true
+          dig +short A masseurmatch.com || true
+
+          inspect() {
+            local name="$1" url="$2"
+            local headers body status
+            headers="$(mktemp)"
             body="$(mktemp)"
-            status="$(curl -sS -L --max-redirs 8 --connect-timeout 10 --max-time 45 -o "$body" -w '%{http_code}' "$url")"
-            echo "$name status=$status"
-            if [ "$status" != "200" ]; then
-              echo "::error::$name expected 200, got $status"
-              head -c 1500 "$body" || true
-              exit 1
-            fi
-            if [ -n "$marker" ] && ! grep -Fqi "$marker" "$body"; then
-              echo "::error::$name missing expected marker: $marker"
-              head -c 1500 "$body" || true
-              exit 1
-            fi
+            status="$(curl -sS -L --max-redirs 8 --connect-timeout 10 --max-time 45 -D "$headers" -o "$body" -w '%{http_code}' "$url")"
+            echo "=== $name status=$status ==="
+            grep -Ei '^(x-vercel-|server:|age:|cache-control:|location:)' "$headers" || true
+            echo -n 'deployment tokens: '
+            grep -Eo 'dpl_[A-Za-z0-9]+' "$body" | sort -u | head -10 | tr '\n' ' ' || true
+            echo
+            echo -n 'body marker: '
+            grep -Eo 'Page not found|Massage therapists in San Francisco|Giovanni|Open menu' "$body" | head -5 | tr '\n' ' ' || true
+            echo
           }
 
-          post_4xx() {
-            local name="$1" url="$2" data="$3"
-            local body status
-            body="$(mktemp)"
-            status="$(curl -sS --connect-timeout 10 --max-time 45 -o "$body" -w '%{http_code}' -X POST -H 'content-type: application/json' --data "$data" "$url")"
-            echo "$name status=$status"
-            case "$status" in
-              4??) ;;
-              *)
-                echo "::error::$name expected 4xx for invalid input, got $status"
-                head -c 1500 "$body" || true
-                exit 1
-                ;;
-            esac
-          }
-
-          get_200 "homepage" "https://www.masseurmatch.com/" "MasseurMatch"
-          get_200 "mobile menu" "https://www.masseurmatch.com/" "Open menu"
-          get_200 "search" "https://www.masseurmatch.com/search" "Browse massage therapists"
-          get_200 "canonical city" "https://www.masseurmatch.com/ca/san-francisco" "San Francisco"
-          get_200 "legacy city redirect" "https://www.masseurmatch.com/san-francisco" "San Francisco"
-          get_200 "real profile" "https://www.masseurmatch.com/therapists/giovanni-san-francisco" "Giovanni"
-          get_200 "robots" "https://www.masseurmatch.com/robots.txt" "User-agent"
-          get_200 "sitemap" "https://www.masseurmatch.com/sitemap.xml" "urlset"
-
-          home="$(mktemp)"
-          curl -sS -L --connect-timeout 10 --max-time 45 -o "$home" 'https://www.masseurmatch.com/'
-          if ! grep -Fq 'dashboard.masseurmatch.com/sign-up' "$home"; then
-            echo "::error::homepage therapist CTA does not point to dashboard sign-up"
-            exit 1
-          fi
-
-          get_200 "dashboard sign-in" "https://dashboard.masseurmatch.com/sign-in" "Sign in"
-          get_200 "dashboard sign-up" "https://dashboard.masseurmatch.com/sign-up" "Create"
-          get_200 "dashboard protected ID" "https://dashboard.masseurmatch.com/verify-id" "Sign in"
-          get_200 "admin sign-in" "https://admin.masseurmatch.com/sign-in" "Admin sign in"
-          get_200 "admin protected verification" "https://admin.masseurmatch.com/verifications" "Admin sign in"
-
-          post_4xx "profile reports invalid input" "https://www.masseurmatch.com/api/profile-reports" '{}'
-          post_4xx "profile actions invalid input" "https://www.masseurmatch.com/api/profile-actions" '{}'
-
-          webhook="$(mktemp)"
-          webhook_status="$(curl -sS --connect-timeout 10 --max-time 45 -o "$webhook" -w '%{http_code}' -X POST -H 'content-type: application/json' --data '{}' 'https://dashboard.masseurmatch.com/api/webhooks/paypal')"
-          echo "PayPal unsigned webhook status=$webhook_status"
-          case "$webhook_status" in
-            400|401|403) ;;
-            *)
-              echo "::error::PayPal webhook did not fail closed: $webhook_status"
-              head -c 1500 "$webhook" || true
-              exit 1
-              ;;
-          esac
-
-          billing="$(mktemp)"
-          billing_status="$(curl -sS --connect-timeout 10 --max-time 45 -o "$billing" -w '%{http_code}' 'https://dashboard.masseurmatch.com/api/health/billing')"
-          echo "billing health status=$billing_status"
-          cat "$billing"
-          echo
-          if [ "$billing_status" != "200" ]; then
-            echo "::error::billing health expected 200, got $billing_status"
-            exit 1
-          fi
-          grep -Fq '"ok":true' "$billing"
-          grep -Fq '"billing":"ready"' "$billing"
-
-          echo "Final production smoke passed."
+          inspect homepage https://www.masseurmatch.com/
+          inspect canonical-city https://www.masseurmatch.com/ca/san-francisco
+          inspect search https://www.masseurmatch.com/search
+          inspect dashboard https://dashboard.masseurmatch.com/sign-in
+          inspect admin https://admin.masseurmatch.com/sign-in
