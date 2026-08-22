@@ -1,0 +1,56 @@
+name: One-shot Prettier autofix
+
+on:
+  push:
+    branches:
+      - feature/search-profile-parity
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    if: ${{ !contains(github.event.head_commit.message, '[format-fix]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/search-profile-parity
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Format only files flagged by CI
+        run: |
+          pnpm prettier --write \
+            'apps/web/src/app/[state]/[city]/[slug]/page.tsx' \
+            'apps/web/src/app/api/analytics/legacy/route.ts' \
+            'apps/web/src/app/api/profile-actions/route.ts' \
+            'apps/web/src/app/api/profile-reports/route.ts' \
+            'apps/web/src/app/api/reverse-geocode/route.ts' \
+            'apps/web/src/app/search/page.tsx' \
+            'apps/web/src/app/search/search-controls.tsx' \
+            'apps/web/src/components/public-profile-page.tsx' \
+            'packages/db/actions/directory-config.ts' \
+            'packages/db/actions/public-profile.ts'
+
+      - name: Remove temporary workflow and commit formatting
+        run: |
+          rm .github/workflows/format-fix-once.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'style: run Prettier on search/profile parity [format-fix]'
+          git push origin HEAD:feature/search-profile-parity
