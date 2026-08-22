@@ -43,7 +43,9 @@ export async function listAdminCityCoverage(): Promise<AdminCityCoverage[]> {
       } satisfies AdminCityCoverage);
 
     row.total += 1;
-    if (profile.visibility_status === "public") row.public += 1;
+    if (profile.visibility_status === "public" && profile.profile_status === "approved") {
+      row.public += 1;
+    }
     if (profile.profile_status === "approved") row.approved += 1;
     if (["pending", "pending_approval", "under_review"].includes(profile.profile_status ?? "")) {
       row.pending += 1;
