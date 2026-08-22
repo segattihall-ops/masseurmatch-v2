@@ -1,0 +1,54 @@
+name: Production smoke once
+
+on:
+  push:
+    branches:
+      - chore/launch-prod-smoke
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check public, dashboard, admin and PayPal webhook
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          check_200() {
+            local name="$1" url="$2" expected="$3"
+            local body status
+            body="$(mktemp)"
+            status="$(curl -sS -L --max-redirs 5 --connect-timeout 10 --max-time 30 -o "$body" -w '%{http_code}' "$url")"
+            echo "$name status=$status"
+            if [ "$status" != "200" ]; then
+              echo "::error::$name expected 200, got $status"
+              head -c 1000 "$body" || true
+              exit 1
+            fi
+            if ! grep -Fq "$expected" "$body"; then
+              echo "::error::$name did not contain expected marker: $expected"
+              head -c 1000 "$body" || true
+              exit 1
+            fi
+          }
+
+          check_200 "public search" "https://www.masseurmatch.com/search" "Browse massage therapists"
+          check_200 "dashboard sign-in" "https://dashboard.masseurmatch.com/sign-in" "Sign in"
+          check_200 "admin sign-in" "https://admin.masseurmatch.com/sign-in" "Admin sign in"
+
+          webhook_body="$(mktemp)"
+          webhook_status="$(curl -sS --connect-timeout 10 --max-time 30 -o "$webhook_body" -w '%{http_code}' -X POST -H 'content-type: application/json' --data '{}' 'https://dashboard.masseurmatch.com/api/webhooks/paypal')"
+          echo "paypal webhook unsigned status=$webhook_status"
+          case "$webhook_status" in
+            400|401|403) ;;
+            *)
+              echo "::error::PayPal webhook expected signature rejection (400/401/403), got $webhook_status"
+              head -c 1000 "$webhook_body" || true
+              exit 1
+              ;;
+          esac
+
+          echo "Production smoke passed."
