@@ -4,7 +4,13 @@ import { fileURLToPath } from "node:url";
 import { CURRENT_STATUSES } from "@masseurmatch/db/current-status";
 import { describe, expect, it } from "vitest";
 
-import { listingSchema, toProfilePatch } from "@/lib/listing";
+import {
+  fromProfile,
+  LISTING_COLUMNS,
+  listingSchema,
+  type ListingRow,
+  toProfilePatch,
+} from "@/lib/listing";
 import {
   formatRadius,
   LIMITS,
@@ -137,7 +143,7 @@ describe("the 60-minute proportional rule", () => {
     for (const incall of ["-50", "12.5", "twelve"]) {
       const result = listingSchema.safeParse({
         ...minimal,
-        sessions: [{ minutes: "60", incall, outcall: "" }],
+        sessions: [{ minutes: "60", incall, outcall: "", publish: false }],
       });
       expect(result.success).toBe(false);
     }
@@ -182,7 +188,7 @@ describe("derived columns", () => {
   });
 
   it("rejects a radius that is not on the ladder", () => {
-    expect(listingSchema.safeParse({ ...minimal, outcall_radius: "40" }).success).toBe(false);
+    expect(listingSchema.safeParse({ ...minimal, outcall_radius: "42" }).success).toBe(false);
     for (const miles of OUTCALL_RADII_MILES) {
       expect(listingSchema.safeParse({ ...minimal, outcall_radius: String(miles) }).success).toBe(
         true,
@@ -296,7 +302,7 @@ describe("every patch key is a real profiles column", () => {
 
 describe("limits", () => {
   it("caps the repeatable collections where the API does", () => {
-    const row = { minutes: "60", incall: "100", outcall: "" };
+    const row = { minutes: "60", incall: "100", outcall: "", publish: false };
     const tooMany = Array.from({ length: LIMITS.sessions + 1 }, () => row);
     expect(listingSchema.safeParse({ ...minimal, sessions: tooMany }).success).toBe(false);
   });
@@ -315,5 +321,210 @@ describe("limits", () => {
     expect(listingSchema.safeParse({ ...minimal, height_in: "80", weight_lb: "175" }).success).toBe(
       true,
     );
+  });
+});
+
+describe("the rate the listing publishes", () => {
+  /*
+   * `therapist-card.tsx` and the public profile page render `incall_price` and
+   * `outcall_price`, not `pricing_sessions`, so this editor has to write them
+   * or every listing it touches loses its price. Which rate they carry is the
+   * therapist's choice — a marked session — not the cheapest row inferred on
+   * their behalf.
+   */
+  const priced = (publishIndex: number) => ({
+    sessions: [
+      { minutes: "30", incall: "80", outcall: "", publish: publishIndex === 0 },
+      { minutes: "60", incall: "120", outcall: "160", publish: publishIndex === 1 },
+      { minutes: "90", incall: "170", outcall: "210", publish: publishIndex === 2 },
+    ],
+  });
+
+  it("publishes the rates from the session the therapist marked", () => {
+    const patch = patchFor(priced(1));
+    expect(patch.incall_price).toBe(120);
+    expect(patch.outcall_price).toBe(160);
+  });
+
+  it("follows the mark rather than the cheapest row", () => {
+    expect(patchFor(priced(2)).incall_price).toBe(170);
+    expect(patchFor(priced(0)).incall_price).toBe(80);
+  });
+
+  it("publishes nothing when no session is marked", () => {
+    const patch = patchFor(priced(-1));
+    expect(patch.incall_price).toBeNull();
+    expect(patch.outcall_price).toBeNull();
+  });
+
+  it("leaves a column null when the marked session has no rate in it", () => {
+    const patch = patchFor(priced(0));
+    expect(patch.incall_price).toBe(80);
+    expect(patch.outcall_price).toBeNull();
+  });
+
+  it("keeps starting_price a true floor, because search sorts on it", () => {
+    expect(patchFor(priced(1)).starting_price).toBe(80);
+    expect(patchFor(priced(2)).starting_price).toBe(80);
+  });
+
+  it("rejects marking more than one session", () => {
+    const result = listingSchema.safeParse({
+      ...minimal,
+      sessions: [
+        { minutes: "60", incall: "120", outcall: "", publish: true },
+        { minutes: "90", incall: "170", outcall: "", publish: true },
+      ],
+    });
+    expect(result.success).toBe(false);
+    if (result.success) return;
+    expect(result.error.issues.some((i) => i.path.join(".") === "sessions.0.publish")).toBe(true);
+  });
+
+  it("round-trips the mark", () => {
+    const patch = patchFor(priced(1));
+    expect(fromProfile(patch as ListingRow).sessions.map((s) => s.publish)).toEqual([
+      false,
+      true,
+      false,
+    ]);
+  });
+});
+
+describe("hydration", () => {
+  /*
+   * `fromProfile` is the inverse of `toProfilePatch`. The round trip is what
+   * proves it: anything the pair disagrees about is a field the therapist
+   * would silently lose the next time they pressed save.
+   */
+  const full = {
+    ...minimal,
+    headline: "Therapeutic Massage",
+    tagline: "Deep tissue and sports recovery",
+    bio: "Fourteen years on the table.",
+    height_in: "80",
+    weight_lb: "175",
+    body_type: "Athletic",
+    zip: "75219",
+    state: "TX",
+    neighborhood: "Oak Lawn",
+    street_1: "Cedar Springs Rd",
+    street_2: "Throckmorton St",
+    offers_incall: true,
+    offers_outcall: true,
+    map_enabled: true,
+    outcall_radius: "20",
+    whatsapp: "(555) 123-4567",
+    email: "bruno@example.com",
+    show_email: true,
+    website: "https://yoursite.com",
+    booking_url: "https://book.yoursite.com",
+    booking_platform: "Calendly",
+    techniques: ["Deep Tissue", "Swedish", "Reiki"],
+    massage_setup: ["On a table"],
+    mobile_extras: ["Hot Towels"],
+    additional_services: ["Cupping"],
+    studio_amenities: ["Shower", "Free Parking"],
+    products_used: ["Massage oil"],
+    products_sold: ["Biofreeze"],
+    sessions: [
+      { minutes: "60", incall: "120", outcall: "160", publish: true },
+      { minutes: "90", incall: "170", outcall: "210", publish: false },
+    ],
+    rate_disclaimers: ["Longer sessions available"],
+    regular_discounts: ["first-time clients"],
+    dow_discount_percent: "10% off",
+    dow_discount_day: "Tuesday",
+    payment_methods: ["Cash", "Visa"],
+    studio_hours: [
+      {
+        days: "Weekdays",
+        from_h: "9",
+        from_m: "00",
+        from_ap: "AM",
+        to_h: "11",
+        to_m: "30",
+        to_ap: "PM",
+      },
+    ],
+    mobile_hours_same: true,
+    mobile_hours: [],
+    available_now: true,
+    current_status: "available",
+    lgbtq_affirming: true,
+    career_start_month: "Jan",
+    career_start_year: "2010",
+    years_experience: "14",
+    education: [
+      {
+        degree: "Certified Massage Therapist",
+        institution: "Instituto Brasileiro",
+        location: "Rio de Janeiro",
+        start_month: "Feb",
+        start_year: "2009",
+        end_month: "Dec",
+        end_year: "2010",
+      },
+    ],
+    languages: ["English", "Portuguese"],
+    affiliations: ["American Massage Therapy Association"],
+  };
+
+  it("round-trips every field through the patch and back", () => {
+    const input = parse(full);
+    const rehydrated = fromProfile(toProfilePatch(input) as ListingRow);
+    expect(rehydrated).toEqual(input);
+  });
+
+  it("survives a completely empty row", () => {
+    const hydrated = fromProfile({});
+    expect(hydrated.display_name).toBe("");
+    expect(hydrated.techniques).toEqual([]);
+    expect(hydrated.sessions).toEqual([]);
+    expect(hydrated.studio_hours).toEqual([]);
+    expect(hydrated.mobile_hours_same).toBe(true);
+  });
+
+  it("drops options that are no longer offered rather than resurfacing them", () => {
+    const hydrated = fromProfile({
+      massage_techniques: ["Deep Tissue", "Percussive Wizardry"],
+      languages_spoken: ["English", "Klingon"],
+    });
+    expect(hydrated.techniques).toEqual(["Deep Tissue"]);
+    expect(hydrated.languages).toEqual(["English"]);
+  });
+
+  it("reads the radius from the column that names its unit", () => {
+    expect(fromProfile({ outcall_radius_miles: 20, outcall_radius: 999 }).outcall_radius).toBe(
+      "20",
+    );
+    expect(fromProfile({ outcall_radius: 30 }).outcall_radius).toBe("30");
+  });
+
+  it("treats a null mobile_hours as 'same as studio'", () => {
+    expect(fromProfile({ mobile_hours: null }).mobile_hours_same).toBe(true);
+    expect(fromProfile({ mobile_hours: [] }).mobile_hours_same).toBe(false);
+  });
+
+  it("selects every column it writes", () => {
+    /*
+     * A column written but not selected reads back empty, and the next save
+     * clears it. That is invisible until a therapist loses their answers.
+     */
+    const written = Object.keys(patchFor());
+    const derived = [
+      "full_name",
+      "phone_number",
+      "service_categories",
+      "specialties",
+      "outcall_radius",
+      "start_year",
+      "incall_price",
+      "outcall_price",
+      "starting_price",
+    ];
+    const mustSelect = written.filter((column) => !derived.includes(column));
+    const selected = new Set<string>(LISTING_COLUMNS);
+    expect(mustSelect.filter((column) => !selected.has(column))).toEqual([]);
   });
 });

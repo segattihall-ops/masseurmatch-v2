@@ -103,6 +103,13 @@ export const sessionSchema = z.object({
   ),
   incall: optionalMoney,
   outcall: optionalMoney,
+  /*
+   * The one session whose rates the listing shows. The therapist chooses it;
+   * nothing derives it. Falling back to the cheapest would publish a number
+   * they never picked — a half-hour rate advertised as though it were their
+   * price — which is the opposite of what a rate is for.
+   */
+  publish: z.boolean().default(false),
 });
 
 export const hoursRangeSchema = z.object({
@@ -235,6 +242,18 @@ export const listingSchema = z
      * proportional share of that hour. Checked per column, because in-call and
      * out-call are priced independently.
      */
+    const published = v.sessions.filter((s) => s.publish);
+    if (published.length > 1) {
+      v.sessions.forEach((session, index) => {
+        if (!session.publish) return;
+        ctx.addIssue({
+          code: "custom",
+          path: ["sessions", index, "publish"],
+          message: "Only one session can be the rate your listing shows.",
+        });
+      });
+    }
+
     const hour = v.sessions.find((s) => Number(s.minutes) === 60);
     if (!hour) return;
 
@@ -282,6 +301,36 @@ export function composeStreetReference(
 ): string | null {
   const parts = [input.street_1, input.street_2].map((s) => s.trim()).filter(Boolean);
   return parts.length ? parts.join(" + ") : null;
+}
+
+/**
+ * The rate the therapist chose to publish in one column.
+ *
+ * Only a marked session counts. An unmarked listing publishes no rate rather
+ * than a guessed one — "ask me" is a truthful answer, an invented number is
+ * not.
+ */
+function publishedRate(
+  sessions: ListingInput["sessions"],
+  column: "incall" | "outcall",
+): number | null {
+  const chosen = sessions.find((session) => session.publish);
+  if (!chosen) return null;
+  const rate = Number(chosen[column]);
+  return chosen[column] !== "" && Number.isFinite(rate) && rate > 0 ? rate : null;
+}
+
+/** The lowest rate across the given columns, or null when nothing is priced. */
+function lowestRate(
+  sessions: ListingInput["sessions"],
+  ...columns: ("incall" | "outcall")[]
+): number | null {
+  const rates = sessions
+    .flatMap((session) => columns.map((column) => session[column]))
+    .filter((raw) => raw !== "")
+    .map(Number)
+    .filter((n) => Number.isFinite(n) && n > 0);
+  return rates.length ? Math.min(...rates) : null;
 }
 
 const toClock = (h: string, m: string, ap: string) => `${h}:${m} ${ap}`;
@@ -386,7 +435,22 @@ export function toProfilePatch(input: ListingInput) {
         minutes: Number(s.minutes),
         incall_rate: numberOrNull(s.incall),
         outcall_rate: numberOrNull(s.outcall),
+        publish: s.publish,
       })),
+    /*
+     * The public site renders `incall_price` and `outcall_price`, not
+     * `pricing_sessions`, so leaving them unwritten would blank the price on
+     * every listing this editor touches. Both come from the session the
+     * therapist marked — their rate, chosen by them, not the cheapest row
+     * inferred on their behalf.
+     *
+     * `starting_price` is the exception and stays a floor: it is the number
+     * search sorts and filters on, where "starting" has to mean the least a
+     * client could pay or the sort lies.
+     */
+    incall_price: publishedRate(input.sessions, "incall"),
+    outcall_price: publishedRate(input.sessions, "outcall"),
+    starting_price: lowestRate(input.sessions, "incall", "outcall"),
     rate_disclaimers: input.rate_disclaimers,
     regular_discounts: input.regular_discounts,
     day_of_week_discount:
@@ -425,3 +489,213 @@ export function toProfilePatch(input: ListingInput) {
 }
 
 export type ProfilePatch = ReturnType<typeof toProfilePatch>;
+
+/* ------------------------------------------------------------------------- */
+/* Hydration                                                                  */
+/* ------------------------------------------------------------------------- */
+
+/**
+ * The columns the editor needs to load.
+ *
+ * Kept beside `toProfilePatch` on purpose: a column that is written but not
+ * selected reads back as empty, and the editor would then quietly clear it on
+ * the therapist's next save. That is the same class of bug as writing a column
+ * nobody reads, and it is invisible until someone loses their answers.
+ */
+export const LISTING_COLUMNS = [
+  "id",
+  "display_name",
+  "headline",
+  "tagline",
+  "bio",
+  "height_inches",
+  "weight_lb",
+  "body_type",
+  "zip_code",
+  "city",
+  "state",
+  "neighborhood",
+  "street_reference",
+  "offers_incall",
+  "offers_outcall",
+  "map_enabled",
+  "outcall_radius_miles",
+  "outcall_radius",
+  "phone",
+  "phone_number",
+  "whatsapp_number",
+  "email_address",
+  "show_email",
+  "website",
+  "booking_url",
+  "booking_platform",
+  "massage_techniques",
+  "massage_setup",
+  "mobile_extras",
+  "additional_services",
+  "studio_amenities",
+  "products_used",
+  "products_sold",
+  "pricing_sessions",
+  "rate_disclaimers",
+  "regular_discounts",
+  "day_of_week_discount",
+  "payment_methods",
+  "studio_hours",
+  "mobile_hours",
+  "available_now",
+  "current_status",
+  "lgbtq_affirming",
+  "start_date",
+  "years_experience",
+  "education_entries",
+  "languages_spoken",
+  "affiliations",
+] as const;
+
+/** A row shaped by `LISTING_COLUMNS`. Every column is nullable in the schema. */
+export type ListingRow = Partial<Record<(typeof LISTING_COLUMNS)[number], unknown>>;
+
+const str = (v: unknown): string => (v == null ? "" : String(v));
+const num = (v: unknown): string => (v == null || v === "" ? "" : String(v));
+const bool = (v: unknown): boolean => v === true;
+
+/** Keep only the values still on the list, so a retired option cannot resurface. */
+const kept = (v: unknown, allowed: readonly string[]): string[] =>
+  Array.isArray(v) ? v.map(String).filter((item) => allowed.includes(item)) : [];
+
+const one = (v: unknown, allowed: readonly string[]): string =>
+  allowed.includes(str(v)) ? str(v) : "";
+
+/** `"9:00 AM"` back into the three controls that produced it. */
+function splitClock(value: unknown): { h: string; m: string; ap: string } {
+  const [, hour, minute, meridiem] = /^(\d{1,2}):(\d{2})\s*(AM|PM)$/i.exec(str(value).trim()) ?? [];
+  if (!hour || !minute || !meridiem) return { h: "9", m: "00", ap: "AM" };
+  return { h: String(Number(hour)), m: minute, ap: meridiem.toUpperCase() };
+}
+
+function readHours(value: unknown): ListingInput["studio_hours"] {
+  if (!Array.isArray(value)) return [];
+  return value.slice(0, LIMITS.scheduleRanges).map((entry) => {
+    const row = (entry ?? {}) as Record<string, unknown>;
+    const from = splitClock(row.from);
+    const to = splitClock(row.to);
+    return {
+      days: one(row.days, SCHEDULE_DAYS),
+      from_h: from.h,
+      from_m: from.m,
+      from_ap: from.ap,
+      to_h: to.h,
+      to_m: to.m,
+      to_ap: to.ap,
+    };
+  });
+}
+
+/** Split `"Jan 2010"` into the month and year controls. */
+function splitMonthYear(value: unknown): { month: string; year: string } {
+  const match = /^([A-Za-z]{3})\s+(\d{4})$/.exec(str(value).trim());
+  if (!match) return { month: "", year: "" };
+  return { month: one(match[1], MONTHS), year: one(match[2], YEARS) };
+}
+
+/**
+ * A stored row back into the shape the form edits.
+ *
+ * The inverse of `toProfilePatch`, and deliberately forgiving: anything the
+ * row cannot supply becomes the empty value the schema treats as "not set",
+ * so a profile written before this editor existed still opens cleanly rather
+ * than throwing on the first unexpected shape.
+ */
+export function fromProfile(row: ListingRow): ListingInput {
+  const streets = str(row.street_reference).split("+");
+  const career = splitMonthYear(row.start_date);
+  const dow = (row.day_of_week_discount ?? null) as Record<string, unknown> | null;
+
+  const sessions = Array.isArray(row.pricing_sessions)
+    ? row.pricing_sessions.slice(0, LIMITS.sessions).map((entry) => {
+        const session = (entry ?? {}) as Record<string, unknown>;
+        return {
+          minutes: num(session.minutes),
+          incall: num(session.incall_rate),
+          outcall: num(session.outcall_rate),
+          publish: session.publish === true,
+        };
+      })
+    : [];
+
+  const education = Array.isArray(row.education_entries)
+    ? row.education_entries.slice(0, LIMITS.education).map((entry) => {
+        const record = (entry ?? {}) as Record<string, unknown>;
+        const start = splitMonthYear(record.start);
+        const end = splitMonthYear(record.end);
+        return {
+          degree: str(record.degree),
+          institution: str(record.institution),
+          location: str(record.location),
+          start_month: start.month,
+          start_year: start.year,
+          end_month: end.month,
+          end_year: end.year,
+        };
+      })
+    : [];
+
+  return {
+    display_name: str(row.display_name),
+    headline: one(row.headline, HEADLINES),
+    tagline: str(row.tagline).slice(0, LIMITS.taglineEditor),
+    bio: str(row.bio),
+    height_in: num(row.height_inches),
+    weight_lb: num(row.weight_lb),
+    body_type: one(row.body_type, BODY_TYPES),
+
+    zip: str(row.zip_code),
+    city: str(row.city),
+    state: str(row.state).toUpperCase(),
+    neighborhood: str(row.neighborhood),
+    street_1: str(streets[0] ?? "").trim(),
+    street_2: str(streets[1] ?? "").trim(),
+    offers_incall: bool(row.offers_incall),
+    offers_outcall: bool(row.offers_outcall),
+    map_enabled: bool(row.map_enabled),
+    /* Prefer the column that names its unit; fall back to the older twin. */
+    outcall_radius: num(row.outcall_radius_miles ?? row.outcall_radius),
+    phone: str(row.phone ?? row.phone_number),
+    whatsapp: str(row.whatsapp_number),
+    email: str(row.email_address),
+    show_email: bool(row.show_email),
+    website: str(row.website),
+    booking_url: str(row.booking_url),
+    booking_platform: str(row.booking_platform),
+
+    techniques: kept(row.massage_techniques, MASSAGE_TECHNIQUES),
+    massage_setup: kept(row.massage_setup, MASSAGE_SETUP),
+    mobile_extras: kept(row.mobile_extras, MOBILE_EXTRAS),
+    additional_services: kept(row.additional_services, ADDITIONAL_SERVICES),
+    studio_amenities: kept(row.studio_amenities, STUDIO_AMENITIES),
+    products_used: kept(row.products_used, PRODUCTS),
+    products_sold: kept(row.products_sold, PRODUCTS),
+
+    sessions,
+    rate_disclaimers: kept(row.rate_disclaimers, RATE_DISCLAIMERS),
+    regular_discounts: kept(row.regular_discounts, REGULAR_DISCOUNTS),
+    dow_discount_percent: one(dow?.percent, DISCOUNT_PERCENTAGES),
+    dow_discount_day: one(dow?.day, WEEKDAYS),
+    payment_methods: kept(row.payment_methods, PAYMENT_METHODS),
+
+    studio_hours: readHours(row.studio_hours),
+    mobile_hours_same: row.mobile_hours == null,
+    mobile_hours: readHours(row.mobile_hours),
+    available_now: bool(row.available_now),
+    current_status: one(row.current_status, CURRENT_STATUSES),
+    lgbtq_affirming: bool(row.lgbtq_affirming),
+
+    career_start_month: career.month,
+    career_start_year: career.year,
+    years_experience: num(row.years_experience),
+    education,
+    languages: kept(row.languages_spoken, LANGUAGES),
+    affiliations: kept(row.affiliations, AFFILIATIONS),
+  };
+}

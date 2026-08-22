@@ -1,14 +1,15 @@
+import { createServiceClient } from "@masseurmatch/db/client";
 import { PROFILE_STATUS_LABELS } from "@masseurmatch/db/profile-status";
 import { Card } from "@masseurmatch/ui";
 import type { Metadata } from "next";
 import Link from "next/link";
 
 import { requireTherapist } from "@/lib/guards";
+import { fromProfile, LISTING_COLUMNS, type ListingRow } from "@/lib/listing";
 import { getOrCreateMyProfile } from "@/lib/profile";
 import { publicProfileUrl } from "@/lib/public-site";
-import { SERVICE_OPTIONS } from "@/lib/services";
 
-import { EditProfileForm } from "./edit-form";
+import { ListingForm } from "./listing-form";
 
 export const metadata: Metadata = {
   title: "Your profile",
@@ -23,8 +24,23 @@ export default async function ProfilePage() {
   const publicUrl = publicProfileUrl(profile);
   const inReview = profile.moderation_status === "pending_review";
 
+  /*
+   * `getOrCreateMyProfile` selects the columns the dashboard shell needs; the
+   * editor needs a different, wider set, and reading it here keeps that list
+   * next to the mapping that writes it. A missing row cannot happen — the call
+   * above creates one — so an empty result hydrates to a blank listing rather
+   * than failing the page.
+   */
+  const { data: row } = await createServiceClient()
+    .from("profiles")
+    .select(LISTING_COLUMNS.join(","))
+    .eq("id", viewer.user.id)
+    .maybeSingle();
+
+  const initial = fromProfile((row ?? {}) as ListingRow);
+
   return (
-    <main className="mx-auto w-full max-w-2xl px-6 py-12">
+    <main className="mx-auto w-full max-w-5xl px-6 py-12">
       <header className="mb-8 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-3xl font-semibold text-ink">Your profile</h1>
@@ -64,24 +80,7 @@ export default async function ProfilePage() {
         </Card>
       ) : null}
 
-      <Card className="p-6">
-        <EditProfileForm
-          initial={{
-            display_name: profile.display_name,
-            full_name: profile.full_name,
-            headline: profile.headline,
-            bio: profile.bio,
-            city: profile.city,
-            state: profile.state,
-            phone: profile.phone,
-            email: profile.email,
-            service_categories: profile.service_categories,
-            incall_price: profile.incall_price,
-            outcall_price: profile.outcall_price,
-          }}
-          serviceOptions={[...SERVICE_OPTIONS]}
-        />
-      </Card>
+      <ListingForm initial={initial} />
     </main>
   );
 }

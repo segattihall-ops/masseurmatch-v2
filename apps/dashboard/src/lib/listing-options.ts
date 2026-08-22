@@ -102,8 +102,14 @@ export const BODY_TYPES = ["Slim", "Athletic", "Average", "Muscular", "Stocky", 
  * `profiles` carries both `outcall_radius` and `outcall_radius_miles`. Neither
  * is read anywhere in this repository, so the name is the only evidence of
  * intent — and it says miles.
+ *
+ * The ladder reaches 150 because the kilometre ladder it replaces reached
+ * 240 km. Stopping at 50 would have collapsed 80, 160 and 240 km onto one
+ * rung, so every therapist who had said "I travel a long way" would have come
+ * out of the backfill saying "50 miles". See
+ * `20260822024500_outcall_radius_km_to_miles.sql`.
  */
-export const OUTCALL_RADII_MILES = [5, 10, 15, 20, 30, 50] as const;
+export const OUTCALL_RADII_MILES = [5, 10, 15, 20, 30, 50, 100, 150] as const;
 
 /** How a radius is written for the therapist. */
 export function formatRadius(miles: number): string {
