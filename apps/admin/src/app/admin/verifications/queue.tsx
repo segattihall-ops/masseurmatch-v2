@@ -12,8 +12,14 @@ export type VerificationRow = {
   name: string;
   kindLabel: string;
   submittedAt: string | null;
-  /** Signed, expires in a minute — see `documentViewUrl`. */
   viewUrl: string | null;
+  holderName: string | null;
+  licenseType: string | null;
+  licenseNumber: string | null;
+  issuingAuthority: string | null;
+  jurisdiction: string | null;
+  issuedOn: string | null;
+  expiresOn: string | null;
 };
 
 export function VerificationQueue({
@@ -62,6 +68,16 @@ function QueueCard({ row, onResolved }: { row: VerificationRow; onResolved: () =
     });
   }
 
+  const details = [
+    ["Name on license", row.holderName],
+    ["License type", row.licenseType],
+    ["License number", row.licenseNumber],
+    ["Issuing authority", row.issuingAuthority],
+    ["Jurisdiction", row.jurisdiction],
+    ["Issued", row.issuedOn],
+    ["Expires", row.expiresOn],
+  ].filter(([, value]) => Boolean(value));
+
   return (
     <li>
       <Card className="p-4 sm:p-6">
@@ -70,7 +86,7 @@ function QueueCard({ row, onResolved }: { row: VerificationRow; onResolved: () =
             <div className="flex flex-wrap items-center gap-2">
               <h3 className="truncate text-lg font-semibold text-ink">{row.name}</h3>
               <span className="rounded-full bg-ink/5 px-2 py-0.5 text-[11px] font-medium text-ink/60">
-                Credential
+                Professional credential
               </span>
             </div>
             <p className="mt-1 text-sm text-ink/60">
@@ -85,37 +101,46 @@ function QueueCard({ row, onResolved }: { row: VerificationRow; onResolved: () =
               rel="noreferrer"
               className="inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-wine/20 px-3 py-2 text-sm font-medium text-wine hover:bg-wineSoft/30 sm:w-auto"
             >
-              Open credential ↗
+              Open license image ↗
             </a>
           ) : (
-            <span className="rounded-lg bg-ink/5 px-3 py-2 text-sm text-ink/50">File missing</span>
+            <span className="rounded-lg bg-ink/5 px-3 py-2 text-sm text-wine">File missing</span>
           )}
         </div>
 
+        {details.length ? (
+          <dl className="mb-5 grid gap-3 rounded-xl border border-ink/10 bg-ink/[0.025] p-4 sm:grid-cols-2">
+            {details.map(([label, value]) => (
+              <div key={String(label)}>
+                <dt className="text-[11px] font-medium uppercase tracking-wide text-ink/45">{label}</dt>
+                <dd className="mt-1 break-words text-sm font-medium text-ink">{value}</dd>
+              </div>
+            ))}
+          </dl>
+        ) : (
+          <p className="mb-5 rounded-lg bg-ink/5 px-3 py-2 text-sm text-ink/60">
+            Legacy credential: no structured license fields were submitted.
+          </p>
+        )}
+
         <p className="mb-4 rounded-lg bg-ink/5 px-3 py-2 text-xs leading-5 text-ink/60">
-          This is a legacy professional credential. Reviewing it never grants, removes, or changes
-          the identity verification badge.
+          Compare these provider-entered fields with the private image. Professional-license approval is separate from identity verification.
         </p>
 
         <form action={submit} className="space-y-4 border-t border-ink/10 pt-4">
           <input type="hidden" name="document_id" value={row.id} />
-
           <div className="space-y-1.5">
             <label htmlFor={`reason-${row.id}`} className="text-sm font-medium text-ink">
-              Review reason
+              Review note / rejection reason
             </label>
             <textarea
               id={`reason-${row.id}`}
               name="reason"
               rows={3}
-              required
-              minLength={10}
-              placeholder="What you checked, or what was wrong with it."
+              placeholder="Optional when approving. Required when rejecting."
               className="w-full rounded-lg border border-ink/15 bg-transparent p-3 text-base text-ink sm:text-sm"
             />
-            <p className="text-xs text-ink/50">
-              Goes in the audit log. Do not copy any document number into it.
-            </p>
+            <p className="text-xs text-ink/50">Do not copy the license number into this note.</p>
           </div>
 
           {state.error ? (
@@ -129,10 +154,10 @@ function QueueCard({ row, onResolved }: { row: VerificationRow; onResolved: () =
               type="submit"
               name="action"
               value="approve"
-              disabled={pending}
+              disabled={pending || !row.viewUrl}
               className="w-full sm:w-auto"
             >
-              {pending ? "Saving…" : "Approve credential"}
+              {pending ? "Saving…" : "Approve license"}
             </Button>
             <Button
               type="submit"
@@ -142,7 +167,7 @@ function QueueCard({ row, onResolved }: { row: VerificationRow; onResolved: () =
               disabled={pending}
               className="w-full sm:w-auto"
             >
-              Reject credential
+              Reject
             </Button>
           </div>
         </form>
