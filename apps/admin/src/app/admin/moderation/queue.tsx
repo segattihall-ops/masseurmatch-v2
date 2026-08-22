@@ -22,24 +22,13 @@ export type QueueRow = {
   publicUrl: string | null;
 };
 
-/**
- * The moderation queue.
- *
- * Resolved items animate out via `AnimatePresence`, which is not decoration
- * here: with a list that mutates under the reviewer, an item vanishing
- * instantly makes it genuinely unclear which one was just acted on. The exit
- * gives that feedback.
- *
- * Rows are removed optimistically once the server action reports success. The
- * server remains the authority — a failure puts the row back with its error.
- */
 export function ModerationQueue({ rows }: { rows: QueueRow[] }) {
   const [resolved, setResolved] = React.useState<Record<string, true>>({});
   const visible = rows.filter((row) => !resolved[row.id]);
 
   if (visible.length === 0) {
     return (
-      <Card className="p-8 text-center">
+      <Card className="p-6 text-center sm:p-8">
         <p className="text-sm text-ink/60">Nothing waiting for review.</p>
       </Card>
     );
@@ -52,7 +41,7 @@ export function ModerationQueue({ rows }: { rows: QueueRow[] }) {
           <PresenceItem key={row.id} itemKey={row.id}>
             <QueueCard
               row={row}
-              onResolved={() => setResolved((r) => ({ ...r, [row.id]: true }))}
+              onResolved={() => setResolved((current) => ({ ...current, [row.id]: true }))}
             />
           </PresenceItem>
         ))}
@@ -75,11 +64,11 @@ function QueueCard({ row, onResolved }: { row: QueueRow; onResolved: () => void 
 
   return (
     <li>
-      <Card className="p-6">
-        <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h3 className="text-lg font-semibold text-ink">{row.name}</h3>
-            <p className="text-sm text-ink/60">
+      <Card className="p-4 sm:p-6">
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
+            <h3 className="truncate text-lg font-semibold text-ink">{row.name}</h3>
+            <p className="mt-1 text-sm leading-6 text-ink/60">
               {[row.city, row.state].filter(Boolean).join(", ") || "No location"} ·{" "}
               {row.kind === "edited" ? "Edited since approval" : "New submission"}
             </p>
@@ -89,7 +78,7 @@ function QueueCard({ row, onResolved }: { row: QueueRow; onResolved: () => void 
               href={row.publicUrl}
               target="_blank"
               rel="noreferrer"
-              className="text-sm font-medium text-wine hover:underline"
+              className="inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-wine/20 px-3 py-2 text-sm font-medium text-wine hover:bg-wineSoft/30 sm:w-auto"
             >
               View public page ↗
             </a>
@@ -97,35 +86,37 @@ function QueueCard({ row, onResolved }: { row: QueueRow; onResolved: () => void 
         </div>
 
         {row.kind === "edited" && row.moderationNotes ? (
-          <p className="mb-4 rounded-md bg-wineSoft/50 px-3 py-2 text-sm text-wineDark">
+          <p className="mb-4 rounded-md bg-wineSoft/50 px-3 py-2 text-sm leading-6 text-wineDark">
             {row.moderationNotes}
           </p>
         ) : null}
 
-        <dl className="mb-4 space-y-2 text-sm">
+        <dl className="mb-4 space-y-3 text-sm">
           <div>
             <dt className="font-medium text-ink">Headline</dt>
-            <dd className="text-ink/70">{row.headline ?? "—"}</dd>
+            <dd className="mt-0.5 break-words text-ink/70">{row.headline ?? "—"}</dd>
           </div>
           <div>
             <dt className="font-medium text-ink">Services</dt>
-            <dd className="text-ink/70">{row.services.join(", ") || "—"}</dd>
+            <dd className="mt-0.5 break-words text-ink/70">{row.services.join(", ") || "—"}</dd>
           </div>
           <div>
             <dt className="font-medium text-ink">Bio</dt>
-            <dd className="whitespace-pre-wrap text-ink/70">{row.bio ?? "—"}</dd>
+            <dd className="mt-0.5 whitespace-pre-wrap break-words leading-6 text-ink/70">
+              {row.bio ?? "—"}
+            </dd>
           </div>
         </dl>
 
         {row.photos.length > 0 ? (
-          <ul className="mb-4 flex flex-wrap gap-2">
+          <ul className="mb-4 grid grid-cols-3 gap-2 sm:flex sm:flex-wrap">
             {row.photos.map((photo) => (
-              <li key={photo.id}>
+              <li key={photo.id} className="min-w-0">
                 {/* eslint-disable-next-line @next/next/no-img-element -- remote Cloudinary asset behind admin auth */}
                 <img
                   src={photo.url ?? ""}
                   alt=""
-                  className="h-24 w-24 rounded-md object-cover"
+                  className="aspect-square h-auto w-full rounded-md object-cover sm:h-24 sm:w-24"
                   loading="lazy"
                 />
               </li>
@@ -138,19 +129,19 @@ function QueueCard({ row, onResolved }: { row: QueueRow; onResolved: () => void 
         <form action={submit} className="space-y-4 border-t border-ink/10 pt-4">
           <input type="hidden" name="profile_id" value={row.id} />
 
-          <fieldset className="space-y-2">
+          <fieldset className="space-y-3">
             <legend className="text-sm font-medium text-ink">
               FOSTA-SESTA review — required to approve
             </legend>
             {FOSTA_CHECKS.map((check) => (
-              <label key={check.id} className="flex gap-2 text-sm text-ink">
+              <label key={check.id} className="flex min-h-11 gap-3 text-sm text-ink">
                 <input
                   type="checkbox"
                   name="fosta"
                   value={check.id}
-                  className="mt-1 h-4 w-4 accent-wine"
+                  className="mt-1 h-5 w-5 shrink-0 accent-wine"
                 />
-                <span>
+                <span className="leading-6">
                   <strong className="font-medium">{check.label}</strong>{" "}
                   <span className="text-ink/60">{check.detail}</span>
                 </span>
@@ -165,20 +156,20 @@ function QueueCard({ row, onResolved }: { row: QueueRow; onResolved: () => void 
             <textarea
               id={`reason-${row.id}`}
               name="reason"
-              rows={2}
+              rows={3}
               required
               minLength={10}
-              className="w-full rounded-md border border-ink/15 bg-white px-3 py-2 text-sm text-ink outline-none focus-visible:ring-2 focus-visible:ring-wine/40"
+              className="w-full rounded-md border border-ink/15 bg-white px-3 py-2 text-base text-ink outline-none focus-visible:ring-2 focus-visible:ring-wine/40 sm:text-sm"
             />
           </div>
 
           {state.error ? (
-            <p role="alert" className="text-sm text-wine">
+            <p role="alert" className="rounded-lg bg-wineSoft/40 px-3 py-2 text-sm text-wineDark">
               {state.error}
             </p>
           ) : null}
 
-          <div className="flex flex-wrap gap-2">
+          <div className="grid gap-2 sm:flex sm:flex-wrap">
             {MODERATION_ACTIONS.map((action) => (
               <Button
                 key={action}
@@ -186,6 +177,7 @@ function QueueCard({ row, onResolved }: { row: QueueRow; onResolved: () => void 
                 name="action"
                 value={action}
                 disabled={pending}
+                className="w-full sm:w-auto"
                 variant={
                   action === "approve" ? "primary" : action === "reject" ? "outline" : "danger"
                 }
