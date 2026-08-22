@@ -63,9 +63,9 @@ export default async function ManualVerificationPage({
           <h1 className="text-3xl font-semibold text-ink">Manual identity review</h1>
           <p className="mt-1 max-w-2xl text-sm text-ink/60">
             Identity verification is manual only. An authorized MasseurMatch admin reviews the
-            therapist&apos;s government ID and selfie, then approves or requires resubmission. Document
-            links are signed for one minute and stored files are deleted when the decision is
-            finalized.
+            therapist&apos;s government ID and selfie, then approves or requires resubmission.
+            Document links are signed for one minute and stored files are deleted when the decision
+            is finalized.
           </p>
         </div>
         <Link href="/admin/verifications" className="text-sm font-medium text-wine hover:underline">

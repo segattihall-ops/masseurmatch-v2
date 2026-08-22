@@ -7,13 +7,7 @@
  */
 
 export type IdentityStatus =
-  | "not_started"
-  | "pending"
-  | "processing"
-  | "requires_input"
-  | "failed"
-  | "canceled"
-  | "verified";
+  "not_started" | "pending" | "processing" | "requires_input" | "failed" | "canceled" | "verified";
 
 /**
  * Collapse any stored status onto the values the provider UI understands.
