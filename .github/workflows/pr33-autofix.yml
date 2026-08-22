@@ -1,0 +1,124 @@
+name: PR33 verified autofix
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    if: github.event.pull_request.number == 33 && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Apply targeted fixes
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('apps/web/src/app/search/search-controls.tsx')
+          text = path.read_text()
+          text = text.replace('useApproximateLocation', 'resolveApproximateLocation')
+          text = text.replace('useMyLocation', 'locateUser')
+          path.write_text(text)
+
+          path = Path('apps/web/src/app/api/analytics/legacy/route.ts')
+          text = path.read_text()
+          text = text.replace(
+              'function compactFilters(value: unknown): Record<string, unknown> | null {',
+              'function compactFilters(value: unknown): Record<string, string | boolean | number> | null {',
+          )
+          text = text.replace(
+              '  const out: Record<string, unknown> = {};',
+              '  const out: Record<string, string | boolean | number> = {};',
+          )
+          path.write_text(text)
+
+          path = Path('apps/web/src/components/public-profile-page.tsx')
+          text = path.read_text()
+          text = text.replace('  profilePath,\n', '')
+          old = '''  const socialLinks = asRecords(supplement.social_media).length
+    ? (Object.entries(asRecords(supplement.social_media)[0]).filter(
+        ([, value]) => typeof value === "string" && /^https?:\\/\\//.test(value),
+      ) as Array<[string, string]>)
+    : [];'''
+          old_unformatted = '''  const socialLinks = asRecords(supplement.social_media).length
+    ? Object.entries(asRecords(supplement.social_media)[0]).filter(([, value]) => typeof value === "string" && /^https?:\\/\\//.test(value)) as Array<[string, string]>
+    : [];'''
+          new = '''  const socialLinks = Object.entries(asRecords(supplement.social_media)[0] ?? {}).filter(
+    ([, value]) => typeof value === "string" && /^https?:\\/\\//.test(value),
+  ) as Array<[string, string]>;'''
+          if old in text:
+              text = text.replace(old, new)
+          elif old_unformatted in text:
+              text = text.replace(old_unformatted, new)
+          else:
+              raise SystemExit('public-profile socialLinks block not found')
+          path.write_text(text)
+
+          path = Path('packages/db/package.json')
+          text = path.read_text()
+          marker = '    "./actions/directory-config": "./actions/directory-config.ts",\n'
+          export = '    "./actions/public-profile": "./actions/public-profile.ts",\n'
+          if export not in text:
+              if marker not in text:
+                  raise SystemExit('db exports marker not found')
+              text = text.replace(marker, marker + export)
+          path.write_text(text)
+          PY
+
+      - name: Format affected files
+        run: |
+          pnpm prettier --write \
+            'apps/web/src/app/[state]/[city]/[slug]/page.tsx' \
+            'apps/web/src/app/api/analytics/legacy/route.ts' \
+            'apps/web/src/app/api/profile-actions/route.ts' \
+            'apps/web/src/app/api/profile-reports/route.ts' \
+            'apps/web/src/app/api/reverse-geocode/route.ts' \
+            'apps/web/src/app/search/page.tsx' \
+            'apps/web/src/app/search/search-controls.tsx' \
+            'apps/web/src/components/public-profile-page.tsx' \
+            'packages/db/actions/directory-config.ts' \
+            'packages/db/actions/public-profile.ts' \
+            'packages/db/package.json'
+
+      - name: Verify format
+        run: pnpm format:check
+
+      - name: Verify lint
+        run: pnpm lint
+
+      - name: Verify types
+        run: pnpm typecheck
+
+      - name: Verify tests
+        run: pnpm test
+
+      - name: Verify build
+        run: pnpm build
+
+      - name: Commit verified fixes
+        run: |
+          rm -f .github/workflows/pr33-autofix.yml .github/workflows/format-fix-once.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'fix: resolve PR33 CI blockers and format'
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
