@@ -171,10 +171,7 @@ export default function MasajesParaHombresPage() {
         />
       </InstitutionalSection>
 
-      <InstitutionalSection
-        eyebrow="Preguntas"
-        title="Masajes para hombres: preguntas frecuentes"
-      >
+      <InstitutionalSection eyebrow="Preguntas" title="Masajes para hombres: preguntas frecuentes">
         <div className="grid gap-8 md:grid-cols-2">
           {FAQS.map((faq) => (
             <div key={faq.question}>
