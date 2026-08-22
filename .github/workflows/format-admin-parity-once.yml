@@ -1,0 +1,71 @@
+name: Format Admin parity once
+
+on:
+  push:
+    branches:
+      - feat/admin-meaningful-parity
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/admin-meaningful-parity
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Remove dead Email Center symbols
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          path = Path('apps/admin/src/app/admin/emails/email-center.tsx')
+          text = path.read_text()
+          text = text.replace('  Users,\n', '')
+          text = re.sub(r'\nfunction localDateTime\(value: string\): string \{.*?\n\}\n', '\n', text, flags=re.S)
+          text = text.replace('\nvoid localDateTime;\n', '\n')
+          path.write_text(text)
+          PY
+      - name: Format Admin parity files
+        run: >-
+          pnpm exec prettier --write
+          apps/admin/next.config.mjs
+          apps/admin/src/app/admin/blog/actions.ts
+          apps/admin/src/app/admin/blog/page.tsx
+          apps/admin/src/app/admin/cities/page.tsx
+          apps/admin/src/app/admin/emails/email-center.tsx
+          apps/admin/src/app/admin/emails/page.tsx
+          apps/admin/src/app/admin/messaging/messaging-console.tsx
+          apps/admin/src/app/admin/messaging/page.tsx
+          apps/admin/src/app/admin/migrations/actions.ts
+          apps/admin/src/app/admin/migrations/page.tsx
+          apps/admin/src/app/admin/tools/page.tsx
+          apps/admin/src/app/api/admin/emails/route.ts
+          apps/admin/src/app/api/admin/messaging/route.ts
+          apps/admin/src/app/globals.css
+          apps/admin/src/components/dashboard/admin-sidebar.tsx
+          apps/admin/src/lib/admin-audit.ts
+          apps/admin/src/lib/admin-blog.ts
+          apps/admin/src/lib/admin-cities.ts
+          apps/admin/src/lib/admin-imports.ts
+          apps/admin/tests/meaningful-parity.test.ts
+      - name: Commit formatting
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apps/admin
+          git commit -m "style(admin): format meaningful parity"
+          git push origin HEAD:feat/admin-meaningful-parity
