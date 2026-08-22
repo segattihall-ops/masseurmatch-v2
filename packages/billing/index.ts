@@ -13,4 +13,5 @@ export * from "./plans";
 export * from "./features";
 export * from "./provider";
 export * from "./transitions";
+export * from "./paypal-plan-configuration";
 export { getProvider } from "./providers/registry";
