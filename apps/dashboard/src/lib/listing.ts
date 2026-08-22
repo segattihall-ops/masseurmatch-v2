@@ -16,7 +16,7 @@ import {
   MERIDIEM,
   MOBILE_EXTRAS,
   MONTHS,
-  OUTCALL_RADII_KM,
+  OUTCALL_RADII_MILES,
   PAYMENT_METHODS,
   PRODUCTS,
   RATE_DISCLAIMERS,
@@ -168,7 +168,7 @@ export const listingSchema = z
     outcall_radius: trimmed
       .default("")
       .refine(
-        (v) => v === "" || (OUTCALL_RADII_KM as readonly number[]).includes(Number(v)),
+        (v) => v === "" || (OUTCALL_RADII_MILES as readonly number[]).includes(Number(v)),
         "Choose a radius from the list.",
       ),
     phone: trimmed
@@ -347,7 +347,16 @@ export function toProfilePatch(input: ListingInput) {
     offers_incall: input.offers_incall,
     offers_outcall: input.offers_outcall,
     map_enabled: input.map_enabled,
+    /*
+     * Written to both radius columns, in miles. They are a legacy pair like
+     * `phone`/`phone_number`: neither is read in this repository, the older
+     * name carries no unit and the newer one does. Writing them together from
+     * one input is the only way they cannot disagree — and any existing row
+     * whose `outcall_radius` was populated in some other unit needs a backfill
+     * before it can be trusted.
+     */
     outcall_radius: input.offers_outcall ? numberOrNull(input.outcall_radius) : null,
+    outcall_radius_miles: input.offers_outcall ? numberOrNull(input.outcall_radius) : null,
 
     /* Contact */
     phone: input.phone,

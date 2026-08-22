@@ -92,22 +92,24 @@ export const HEADLINES = [
 export const BODY_TYPES = ["Slim", "Athletic", "Average", "Muscular", "Stocky", "Large"] as const;
 
 /**
- * `profiles.outcall_radius`. The column is numeric and the number is
- * kilometres — the miles twin is a separate column, `outcall_radius_miles`.
- * Stored as numbers so a comparison never has to parse a label.
+ * Out-call radius, in **miles**.
+ *
+ * Miles is the platform's distance unit, not a display preference: the ranking
+ * RPC takes `radius_miles` (see `packages/db/actions/ranking-config.ts`), and a
+ * radius stored in anything else silently mis-ranks every out-call search that
+ * uses it.
+ *
+ * `profiles` carries both `outcall_radius` and `outcall_radius_miles`. Neither
+ * is read anywhere in this repository, so the name is the only evidence of
+ * intent — and it says miles.
  */
-export const OUTCALL_RADII_KM = [10, 20, 40, 80, 160, 240] as const;
+export const OUTCALL_RADII_MILES = [5, 10, 15, 20, 30, 50] as const;
 
 /** How a radius is written for the therapist. */
-export function formatRadius(km: number): string {
-  return `${km} km`;
+export function formatRadius(miles: number): string {
+  return `${miles} ${miles === 1 ? "mile" : "miles"}`;
 }
 
-/**
- * The techniques a therapist practises. These also drive two derived columns —
- * `service_categories` takes all of them, `specialties` the first twelve —
- * neither of which has a control of its own.
- */
 export const MASSAGE_TECHNIQUES = [
   "Acupressure",
   "Alexander Technique",

@@ -5,7 +5,12 @@ import { CURRENT_STATUSES } from "@masseurmatch/db/current-status";
 import { describe, expect, it } from "vitest";
 
 import { listingSchema, toProfilePatch } from "@/lib/listing";
-import { LIMITS, MASSAGE_TECHNIQUES, OUTCALL_RADII_KM } from "@/lib/listing-options";
+import {
+  formatRadius,
+  LIMITS,
+  MASSAGE_TECHNIQUES,
+  OUTCALL_RADII_MILES,
+} from "@/lib/listing-options";
 
 /**
  * The listing editor's schema and column mapping.
@@ -163,14 +168,31 @@ describe("derived columns", () => {
     expect(patch.start_year).toBe(2010);
   });
 
-  it("writes outcall_radius as the number the column stores", () => {
-    const patch = patchFor({ offers_outcall: true, outcall_radius: "40" });
-    expect(patch.outcall_radius).toBe(40);
-    expect(OUTCALL_RADII_KM).toContain(patch.outcall_radius);
+  it("writes the radius in miles to both radius columns", () => {
+    const patch = patchFor({ offers_outcall: true, outcall_radius: "20" });
+    expect(patch.outcall_radius).toBe(20);
+    expect(patch.outcall_radius_miles).toBe(20);
+    expect(OUTCALL_RADII_MILES).toContain(patch.outcall_radius);
   });
 
-  it("clears the radius when out-call is off", () => {
-    expect(patchFor({ offers_outcall: false, outcall_radius: "40" }).outcall_radius).toBeNull();
+  it("clears both radius columns when out-call is off", () => {
+    const patch = patchFor({ offers_outcall: false, outcall_radius: "20" });
+    expect(patch.outcall_radius).toBeNull();
+    expect(patch.outcall_radius_miles).toBeNull();
+  });
+
+  it("rejects a radius that is not on the ladder", () => {
+    expect(listingSchema.safeParse({ ...minimal, outcall_radius: "40" }).success).toBe(false);
+    for (const miles of OUTCALL_RADII_MILES) {
+      expect(listingSchema.safeParse({ ...minimal, outcall_radius: String(miles) }).success).toBe(
+        true,
+      );
+    }
+  });
+
+  it("labels a radius in miles, singular and plural", () => {
+    expect(formatRadius(1)).toBe("1 mile");
+    expect(formatRadius(20)).toBe("20 miles");
   });
 });
 
