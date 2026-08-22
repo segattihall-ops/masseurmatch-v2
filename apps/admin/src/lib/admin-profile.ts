@@ -45,7 +45,8 @@ export async function getAdminProfileDetail(profileId: string): Promise<AdminPro
   ]);
 
   if (error) throw new Error(`Could not load profile: ${error.message}`);
-  if (photoResult.error) throw new Error(`Could not count profile photos: ${photoResult.error.message}`);
+  if (photoResult.error)
+    throw new Error(`Could not count profile photos: ${photoResult.error.message}`);
   if (!data) return null;
 
   return {

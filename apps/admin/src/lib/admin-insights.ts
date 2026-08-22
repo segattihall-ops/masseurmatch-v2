@@ -78,11 +78,13 @@ export async function getAdminBillingOverview(): Promise<AdminBillingOverview> {
         .not("error", "is", null),
     ]);
 
-  if (plansResult.error) throw new Error(`Could not load billing plans: ${plansResult.error.message}`);
+  if (plansResult.error)
+    throw new Error(`Could not load billing plans: ${plansResult.error.message}`);
   if (subscriptionsResult.error) {
     throw new Error(`Could not load subscriptions: ${subscriptionsResult.error.message}`);
   }
-  if (eventsResult.error) throw new Error(`Could not load billing events: ${eventsResult.error.message}`);
+  if (eventsResult.error)
+    throw new Error(`Could not load billing events: ${eventsResult.error.message}`);
   if (eventCountResult.error) {
     throw new Error(`Could not count billing events: ${eventCountResult.error.message}`);
   }
@@ -100,7 +102,9 @@ export async function getAdminBillingOverview(): Promise<AdminBillingOverview> {
 
   const rawSubscriptions = subscriptionsResult.data ?? [];
   const profileIds = [
-    ...new Set(rawSubscriptions.map((row) => row.profile_id).filter((id): id is string => Boolean(id))),
+    ...new Set(
+      rawSubscriptions.map((row) => row.profile_id).filter((id): id is string => Boolean(id)),
+    ),
   ];
 
   const profiles = new Map<string, { name: string; email: string | null }>();
@@ -139,7 +143,8 @@ export async function getAdminBillingOverview(): Promise<AdminBillingOverview> {
     };
   });
 
-  const countStatus = (status: string) => subscriptions.filter((row) => row.status === status).length;
+  const countStatus = (status: string) =>
+    subscriptions.filter((row) => row.status === status).length;
 
   return {
     active: countStatus("active"),
@@ -194,7 +199,10 @@ export async function getAdminAnalyticsOverview(): Promise<AdminAnalyticsOvervie
         .from("profile_view_analytics")
         .select("id", { count: "exact", head: true })
         .gte("created_at", since30),
-      db.from("contact_events").select("id", { count: "exact", head: true }).gte("created_at", since7),
+      db
+        .from("contact_events")
+        .select("id", { count: "exact", head: true })
+        .gte("created_at", since7),
       db
         .from("contact_events")
         .select("id", { count: "exact", head: true })
@@ -206,7 +214,9 @@ export async function getAdminAnalyticsOverview(): Promise<AdminAnalyticsOvervie
         .eq("profile_status", "approved"),
       db
         .from("profiles")
-        .select("id,display_name,full_name,email,city,state,profile_views,view_count,contact_clicks")
+        .select(
+          "id,display_name,full_name,email,city,state,profile_views,view_count,contact_clicks",
+        )
         .eq("profile_status", "approved")
         .order("profile_views", { ascending: false, nullsFirst: false })
         .limit(12),

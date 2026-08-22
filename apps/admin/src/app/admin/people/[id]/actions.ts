@@ -48,7 +48,9 @@ export async function updateProfileContent(formData: FormData): Promise<void> {
   });
 
   if (!parsed.success) {
-    redirect(`/people/${rawProfileId}?error=${encodeURIComponent("Check the fields and give an audit reason of at least 10 characters.")}`);
+    redirect(
+      `/people/${rawProfileId}?error=${encodeURIComponent("Check the fields and give an audit reason of at least 10 characters.")}`,
+    );
   }
 
   const input = parsed.data;
@@ -60,7 +62,9 @@ export async function updateProfileContent(formData: FormData): Promise<void> {
     .maybeSingle();
 
   if (readError || !previous) {
-    redirect(`/people/${input.profileId}?error=${encodeURIComponent("Profile could not be loaded.")}`);
+    redirect(
+      `/people/${input.profileId}?error=${encodeURIComponent("Profile could not be loaded.")}`,
+    );
   }
 
   const patch = {
@@ -87,24 +91,33 @@ export async function updateProfileContent(formData: FormData): Promise<void> {
     redirect(`/people/${input.profileId}?saved=unchanged`);
   }
 
-  const { error: auditError } = await createSessionClient().from("audit_log").insert({
-    admin_id: adminId,
-    admin_user_id: adminId,
-    action: "profile.content_update",
-    target_type: "profile",
-    target_id: input.profileId,
-    target_profile_id: input.profileId,
-    reason: input.reason,
-    details: { changed_fields: changed },
-  });
+  const { error: auditError } = await createSessionClient()
+    .from("audit_log")
+    .insert({
+      admin_id: adminId,
+      admin_user_id: adminId,
+      action: "profile.content_update",
+      target_type: "profile",
+      target_id: input.profileId,
+      target_profile_id: input.profileId,
+      reason: input.reason,
+      details: { changed_fields: changed },
+    });
 
   if (auditError) {
-    redirect(`/people/${input.profileId}?error=${encodeURIComponent("Audit log could not be written, so no profile data was changed.")}`);
+    redirect(
+      `/people/${input.profileId}?error=${encodeURIComponent("Audit log could not be written, so no profile data was changed.")}`,
+    );
   }
 
-  const { error: updateError } = await service.from("profiles").update(patch).eq("id", input.profileId);
+  const { error: updateError } = await service
+    .from("profiles")
+    .update(patch)
+    .eq("id", input.profileId);
   if (updateError) {
-    redirect(`/people/${input.profileId}?error=${encodeURIComponent("The edit was logged but the profile update failed. Review the audit log before retrying.")}`);
+    redirect(
+      `/people/${input.profileId}?error=${encodeURIComponent("The edit was logged but the profile update failed. Review the audit log before retrying.")}`,
+    );
   }
 
   revalidatePath("/admin/people");

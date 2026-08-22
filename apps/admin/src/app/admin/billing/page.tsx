@@ -38,8 +38,8 @@ export default async function BillingPage() {
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-wine">Operations</p>
           <h1 className="mt-2 text-3xl font-semibold text-ink">PayPal billing</h1>
           <p className="mt-2 max-w-3xl text-sm text-ink/60">
-            Live subscription state from Supabase. The product catalogue is the application source of
-            truth; PayPal checkout also verifies the remote plan price before money can move.
+            Live subscription state from Supabase. The product catalogue is the application source
+            of truth; PayPal checkout also verifies the remote plan price before money can move.
           </p>
         </div>
         <a
@@ -105,7 +105,10 @@ export default async function BillingPage() {
                   <tr key={row.id}>
                     <td className="px-4 py-3">
                       {row.profileId ? (
-                        <Link href={`/people/${row.profileId}`} className="font-medium text-wine hover:underline">
+                        <Link
+                          href={`/people/${row.profileId}`}
+                          className="font-medium text-wine hover:underline"
+                        >
                           {row.profileName}
                         </Link>
                       ) : (
@@ -137,7 +140,10 @@ export default async function BillingPage() {
           ) : (
             <ul className="divide-y divide-ink/10">
               {billing.recentEvents.map((event) => (
-                <li key={event.id} className="flex flex-wrap items-start justify-between gap-3 p-4 text-sm">
+                <li
+                  key={event.id}
+                  className="flex flex-wrap items-start justify-between gap-3 p-4 text-sm"
+                >
                   <div>
                     <p className="font-medium text-ink">{event.kind}</p>
                     <p className="mt-1 text-xs text-ink/50">

@@ -76,8 +76,13 @@ export default async function AdminPersonPage({
       </div>
 
       {searchParams.saved ? (
-        <p className="mt-6 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800" role="status">
-          {searchParams.saved === "unchanged" ? "No profile fields changed." : "Profile content saved."}
+        <p
+          className="mt-6 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800"
+          role="status"
+        >
+          {searchParams.saved === "unchanged"
+            ? "No profile fields changed."
+            : "Profile content saved."}
         </p>
       ) : null}
       {searchParams.error ? (
@@ -91,7 +96,10 @@ export default async function AdminPersonPage({
         <StatusCard label="Visibility" value={profile.visibilityStatus ?? "—"} />
         <StatusCard label="Plan" value={profile.subscriptionTier ?? "free"} />
         <StatusCard label="Photos" value={String(profile.photoCount)} />
-        <StatusCard label="Identity" value={profile.verifiedIdentity ? "Verified" : "Not verified"} />
+        <StatusCard
+          label="Identity"
+          value={profile.verifiedIdentity ? "Verified" : "Not verified"}
+        />
         <StatusCard label="Phone" value={profile.verifiedPhone ? "Verified" : "Not verified"} />
         <StatusCard label="Suspended" value={profile.suspended ? "Yes" : "No"} />
         <StatusCard label="Banned" value={profile.banned ? "Yes" : "No"} />
@@ -109,12 +117,28 @@ export default async function AdminPersonPage({
         <form action={updateProfileContent} className="mt-6 grid gap-5 sm:grid-cols-2">
           <input type="hidden" name="profile_id" value={profile.id} />
 
-          <Field label="Display name" name="display_name" defaultValue={text(profile.displayName)} maxLength={120} />
-          <Field label="Headline" name="headline" defaultValue={text(profile.headline)} maxLength={120} />
+          <Field
+            label="Display name"
+            name="display_name"
+            defaultValue={text(profile.displayName)}
+            maxLength={120}
+          />
+          <Field
+            label="Headline"
+            name="headline"
+            defaultValue={text(profile.headline)}
+            maxLength={120}
+          />
           <Field label="City" name="city" defaultValue={text(profile.city)} maxLength={120} />
           <Field label="State" name="state" defaultValue={text(profile.state)} maxLength={80} />
           <Field label="Phone" name="phone" defaultValue={text(profile.phone)} maxLength={40} />
-          <Field label="Email" name="email" type="email" defaultValue={text(profile.email)} maxLength={254} />
+          <Field
+            label="Email"
+            name="email"
+            type="email"
+            defaultValue={text(profile.email)}
+            maxLength={254}
+          />
           <Field
             label="Website"
             name="website"
@@ -149,7 +173,10 @@ export default async function AdminPersonPage({
           </label>
 
           <div className="sm:col-span-2 flex flex-wrap items-center gap-3 border-t border-ink/10 pt-5">
-            <button type="submit" className="rounded-lg bg-wine px-4 py-2.5 text-sm font-medium text-white">
+            <button
+              type="submit"
+              className="rounded-lg bg-wine px-4 py-2.5 text-sm font-medium text-white"
+            >
               Save profile content
             </button>
             <p className="text-xs text-ink/45">
@@ -166,7 +193,9 @@ function StatusCard({ label, value }: { label: string; value: string }) {
   return (
     <Card className="p-4">
       <p className="text-xs text-ink/50">{label}</p>
-      <p className="mt-1 break-words text-sm font-semibold capitalize text-ink">{value.replaceAll("_", " ")}</p>
+      <p className="mt-1 break-words text-sm font-semibold capitalize text-ink">
+        {value.replaceAll("_", " ")}
+      </p>
     </Card>
   );
 }

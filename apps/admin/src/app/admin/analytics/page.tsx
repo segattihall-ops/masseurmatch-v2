@@ -76,7 +76,10 @@ export default async function AnalyticsPage() {
                 {analytics.topProfiles.map((row) => (
                   <tr key={row.id}>
                     <td className="px-4 py-3">
-                      <Link href={`/people/${row.id}`} className="font-medium text-wine hover:underline">
+                      <Link
+                        href={`/people/${row.id}`}
+                        className="font-medium text-wine hover:underline"
+                      >
                         {row.name}
                       </Link>
                     </td>
