@@ -1,20 +1,21 @@
 name: Temporary Professional License Formatter
 
 on:
-  push:
+  pull_request:
     branches:
-      - feat/professional-license-verification
+      - main
 
 permissions:
   contents: write
 
 jobs:
   format:
+    if: github.head_ref == 'feat/professional-license-verification'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: feat/professional-license-verification
+          ref: ${{ github.head_ref }}
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
