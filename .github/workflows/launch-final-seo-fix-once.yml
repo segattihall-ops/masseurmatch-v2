@@ -3,13 +3,15 @@ name: Launch final SEO fix once
 on:
   push:
     branches: [fix/launch-final-verification]
+  pull_request:
+    types: [opened, synchronize, reopened]
 
 permissions:
   contents: write
 
 jobs:
   apply:
-    if: github.actor != 'github-actions[bot]'
+    if: github.head_ref == 'fix/launch-final-verification' || (github.ref == 'refs/heads/fix/launch-final-verification' && github.actor != 'github-actions[bot]')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -84,9 +86,9 @@ const HUBS = [
           PY
       - run: pnpm install --frozen-lockfile
       - run: pnpm prettier --write apps/web/src/app/search/page.tsx apps/web/src/app/sitemap.ts
-      - name: Commit final fix and remove one-time workflow
+      - name: Commit final fix and remove one-time files
         run: |
-          rm .github/workflows/launch-final-seo-fix-once.yml
+          rm -f .github/workflows/launch-final-seo-fix-once.yml docs/.launch-final-trigger
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
