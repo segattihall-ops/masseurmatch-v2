@@ -1,9 +1,9 @@
 name: Format Admin parity once
 
 on:
-  push:
+  pull_request:
     branches:
-      - feat/admin-launch-parity
+      - main
 
 permissions:
   contents: write
