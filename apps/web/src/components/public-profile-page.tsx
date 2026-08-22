@@ -4,7 +4,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import {
-  profilePath,
   therapistName,
   type ProfileDetail,
   type TherapistListing,
@@ -239,7 +238,6 @@ function ReportProfile({ profile }: { profile: ProfileDetail }) {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const name = therapistName(profile);
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -253,8 +251,6 @@ function ReportProfile({ profile }: { profile: ProfileDetail }) {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           profileId: profile.id,
-          profileSlug: profile.slug,
-          profileName: name,
           category: data.get("category"),
           reason: data.get("reason"),
           reporterEmail: data.get("email"),
@@ -405,9 +401,11 @@ export function PublicProfilePage({
     ...displayItems(supplement.business_trips),
   ]);
   const areasServed = asStrings(supplement.areas_served);
-  const socialLinks = asRecords(supplement.social_media).length
-    ? Object.entries(asRecords(supplement.social_media)[0]).filter(([, value]) => typeof value === "string" && /^https?:\/\//.test(value)) as Array<[string, string]>
-    : [];
+  const socialMedia = asRecords(supplement.social_media)[0] ?? {};
+  const socialLinks = Object.entries(socialMedia).filter(
+    (entry): entry is [string, string] =>
+      typeof entry[1] === "string" && /^https?:\/\//.test(entry[1]),
+  );
 
   const contactButtons = [callHref, smsHref, waHref, emailHref, websiteHref, bookingHref].filter(Boolean).length;
   const mapSrc =
