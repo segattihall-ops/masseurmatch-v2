@@ -204,8 +204,8 @@ export default function AboutPage() {
               <p className="mt-8 max-w-2xl text-base leading-8 text-white/70">
                 Born and educated in Cuba, Rene brings a technical perspective shaped by curiosity,
                 resourcefulness, and a strong foundation in web development. A graduate of the
-                University of Havana, he approaches digital products with an eye for both the systems
-                behind them and the people who ultimately use them.
+                University of Havana, he approaches digital products with an eye for both the
+                systems behind them and the people who ultimately use them.
               </p>
               <p className="mt-5 max-w-2xl text-base leading-8 text-white/70">
                 At MasseurMatch, that perspective supports our goal of creating a faster, clearer,
