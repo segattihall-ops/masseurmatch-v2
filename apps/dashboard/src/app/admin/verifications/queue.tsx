@@ -16,18 +16,6 @@ export type VerificationRow = {
   viewUrl: string | null;
 };
 
-/**
- * The identity queue.
- *
- * The document is deliberately **not** rendered inline. A government ID sitting
- * in an admin's page is one screen share or one shoulder away from being
- * disclosed, and it stays in the browser cache afterwards. Opening it is one
- * click, and that click is a decision the reviewer makes rather than a picture
- * that appears because the page loaded.
- *
- * The link is signed and lives for a minute, so a stale tab is not a lasting
- * key to someone's passport.
- */
 export function VerificationQueue({ rows }: { rows: VerificationRow[] }) {
   const [resolved, setResolved] = React.useState<Record<string, true>>({});
   const visible = rows.filter((row) => !resolved[row.id]);
@@ -35,7 +23,7 @@ export function VerificationQueue({ rows }: { rows: VerificationRow[] }) {
   if (visible.length === 0) {
     return (
       <Card className="p-8 text-center">
-        <p className="text-sm text-ink/60">Nothing waiting for review.</p>
+        <p className="text-sm text-ink/60">No legacy professional credentials are waiting.</p>
       </Card>
     );
   }
@@ -47,7 +35,7 @@ export function VerificationQueue({ rows }: { rows: VerificationRow[] }) {
           <PresenceItem key={row.id} itemKey={row.id}>
             <QueueCard
               row={row}
-              onResolved={() => setResolved((r) => ({ ...r, [row.id]: true }))}
+              onResolved={() => setResolved((current) => ({ ...current, [row.id]: true }))}
             />
           </PresenceItem>
         ))}
@@ -73,7 +61,12 @@ function QueueCard({ row, onResolved }: { row: VerificationRow; onResolved: () =
       <Card className="p-6">
         <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h3 className="text-lg font-semibold text-ink">{row.name}</h3>
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="text-lg font-semibold text-ink">{row.name}</h3>
+              <span className="rounded-full bg-ink/5 px-2 py-0.5 text-[11px] font-medium text-ink/60">
+                Credential
+              </span>
+            </div>
             <p className="text-sm text-ink/60">
               {row.kindLabel}
               {row.submittedAt ? ` · sent ${row.submittedAt}` : ""}
@@ -86,12 +79,17 @@ function QueueCard({ row, onResolved }: { row: VerificationRow; onResolved: () =
               rel="noreferrer"
               className="text-sm font-medium text-wine hover:underline"
             >
-              Open document ↗
+              Open credential ↗
             </a>
           ) : (
             <span className="text-sm text-ink/50">File missing</span>
           )}
         </div>
+
+        <p className="mb-4 rounded-lg bg-ink/5 px-3 py-2 text-xs leading-5 text-ink/60">
+          Professional credentials are separate from identity verification and can never grant an
+          identity badge.
+        </p>
 
         <form action={submit} className="space-y-4 border-t border-ink/10 pt-4">
           <input type="hidden" name="document_id" value={row.id} />
@@ -122,10 +120,10 @@ function QueueCard({ row, onResolved }: { row: VerificationRow; onResolved: () =
 
           <div className="flex flex-wrap gap-2">
             <Button type="submit" name="action" value="approve" disabled={pending}>
-              {pending ? "Saving…" : "Approve"}
+              {pending ? "Saving…" : "Approve credential"}
             </Button>
             <Button type="submit" name="action" value="reject" variant="outline" disabled={pending}>
-              Reject
+              Reject credential
             </Button>
           </div>
         </form>

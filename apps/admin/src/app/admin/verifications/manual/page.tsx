@@ -62,15 +62,17 @@ export default async function ManualVerificationPage({
         <div className="min-w-0">
           <h1 className="text-2xl font-semibold text-ink sm:text-3xl">Manual identity review</h1>
           <p className="mt-1 max-w-2xl text-sm leading-6 text-ink/60">
-            Manual identity submissions still active in production. Document links are signed for
-            one minute and the stored files are deleted when a decision is finalized.
+            This is the only identity-verification workflow. Therapists submit their government ID
+            and selfie from the dashboard; an authorized admin reviews the evidence and makes the
+            final decision. Document links expire after one minute, and stored files are deleted
+            after the decision is finalized.
           </p>
         </div>
         <Link
           href="/verifications"
           className="inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-wine/20 px-3 py-2 text-sm font-medium text-wine hover:bg-wineSoft/30 sm:w-auto"
         >
-          Current document queue →
+          Back to verification overview
         </Link>
       </div>
 

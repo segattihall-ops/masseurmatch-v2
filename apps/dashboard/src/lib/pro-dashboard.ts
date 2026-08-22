@@ -55,7 +55,7 @@ export type ProDashboardData = {
    */
   completion: number | null;
   photos: PhotoCounts;
-  /** Latest identity verification state, or null when none was ever started. */
+  /** Latest manual identity-review state, or null when none was ever started. */
   identity: string | null;
   openTickets: number;
   unreadNotifications: number;
@@ -124,7 +124,7 @@ async function photoCounts(profileId: string): Promise<PhotoCounts> {
   }, empty);
 }
 
-/** The most recent identity attempt. `canceled` and `pending` are both real answers. */
+/** The most recent manual identity attempt. Retired provider rows are ignored. */
 async function latestIdentityStatus(userId: string, profileId: string): Promise<string | null> {
   let supabase;
   try {
@@ -136,6 +136,7 @@ async function latestIdentityStatus(userId: string, profileId: string): Promise<
   const { data, error } = await supabase
     .from("identity_verifications")
     .select("status,created_at,user_id,profile_id")
+    .eq("provider", "manual")
     .or(`user_id.eq.${userId},profile_id.eq.${profileId}`)
     .order("created_at", { ascending: false })
     .limit(1);

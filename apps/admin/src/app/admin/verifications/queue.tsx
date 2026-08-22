@@ -14,7 +14,6 @@ export type VerificationRow = {
   submittedAt: string | null;
   /** Signed, expires in a minute — see `documentViewUrl`. */
   viewUrl: string | null;
-  isIdentity: boolean;
 };
 
 export function VerificationQueue({
@@ -70,12 +69,8 @@ function QueueCard({ row, onResolved }: { row: VerificationRow; onResolved: () =
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <h3 className="truncate text-lg font-semibold text-ink">{row.name}</h3>
-              <span
-                className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
-                  row.isIdentity ? "bg-wineSoft/60 text-wineDark" : "bg-ink/5 text-ink/60"
-                }`}
-              >
-                {row.isIdentity ? "Identity" : "Credential"}
+              <span className="rounded-full bg-ink/5 px-2 py-0.5 text-[11px] font-medium text-ink/60">
+                Credential
               </span>
             </div>
             <p className="mt-1 text-sm text-ink/60">
@@ -90,23 +85,17 @@ function QueueCard({ row, onResolved }: { row: VerificationRow; onResolved: () =
               rel="noreferrer"
               className="inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-wine/20 px-3 py-2 text-sm font-medium text-wine hover:bg-wineSoft/30 sm:w-auto"
             >
-              Open document ↗
+              Open credential ↗
             </a>
           ) : (
             <span className="rounded-lg bg-ink/5 px-3 py-2 text-sm text-ink/50">File missing</span>
           )}
         </div>
 
-        {row.isIdentity ? (
-          <p className="mb-4 rounded-lg bg-ink/5 px-3 py-2 text-xs leading-5 text-ink/60">
-            Approving this file does not verify the profile by itself. The identity badge is granted
-            only after the required ID front, ID back and selfie are all approved.
-          </p>
-        ) : (
-          <p className="mb-4 rounded-lg bg-ink/5 px-3 py-2 text-xs leading-5 text-ink/60">
-            This is a legacy credential document. Reviewing it never grants the identity badge.
-          </p>
-        )}
+        <p className="mb-4 rounded-lg bg-ink/5 px-3 py-2 text-xs leading-5 text-ink/60">
+          This is a legacy professional credential. Reviewing it never grants, removes, or changes
+          the identity verification badge.
+        </p>
 
         <form action={submit} className="space-y-4 border-t border-ink/10 pt-4">
           <input type="hidden" name="document_id" value={row.id} />
@@ -143,7 +132,7 @@ function QueueCard({ row, onResolved }: { row: VerificationRow; onResolved: () =
               disabled={pending}
               className="w-full sm:w-auto"
             >
-              {pending ? "Saving…" : "Approve document"}
+              {pending ? "Saving…" : "Approve credential"}
             </Button>
             <Button
               type="submit"
@@ -153,7 +142,7 @@ function QueueCard({ row, onResolved }: { row: VerificationRow; onResolved: () =
               disabled={pending}
               className="w-full sm:w-auto"
             >
-              Reject document
+              Reject credential
             </Button>
           </div>
         </form>

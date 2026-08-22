@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { requireAdmin } from "@/lib/guards";
-import { DOCUMENT_KINDS, isDocumentKind } from "@/lib/identity-documents";
+import { isDocumentKind } from "@/lib/identity-documents";
 import { documentViewUrl } from "@/lib/identity-storage";
 
 import { VerificationQueue, type VerificationRow } from "./queue";
@@ -16,14 +16,10 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 function labelFor(documentType: string | null, legacyType: string | null): string {
-  if (documentType) {
-    const current = DOCUMENT_KINDS.find((option) => option.id === documentType);
-    if (current) return current.label;
-  }
-
-  if (legacyType === "professional_license") return "Professional license";
-  if (legacyType) {
-    return legacyType
+  const kind = documentType ?? legacyType;
+  if (kind === "professional_license") return "Professional license";
+  if (kind) {
+    return kind
       .split("_")
       .filter(Boolean)
       .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
@@ -63,8 +59,17 @@ export default async function VerificationsPage() {
     );
   }
 
-  const pending = data ?? [];
-  const profileIds = [...new Set(pending.map((row) => row.profile_id).filter(Boolean))] as string[];
+  // Government-ID review is manual-only. profile_documents is now retained
+  // solely for legacy professional credentials; any historical ID rows are not
+  // actionable and cannot grant an identity badge.
+  const credentials = (data ?? []).filter((row) => {
+    const kind = row.document_type ?? row.type ?? "";
+    return !isDocumentKind(kind);
+  });
+
+  const profileIds = [
+    ...new Set(credentials.map((row) => row.profile_id).filter(Boolean)),
+  ] as string[];
 
   const names = new Map<string, string>();
   if (profileIds.length > 0) {
@@ -81,11 +86,9 @@ export default async function VerificationsPage() {
     }
   }
 
-  const rows: VerificationRow[] = await Promise.all(
-    pending.map(async (row) => {
+  const credentialRows: VerificationRow[] = await Promise.all(
+    credentials.map(async (row) => {
       const storedPath = row.storage_path ?? row.url;
-      const isIdentity = Boolean(row.document_type && isDocumentKind(row.document_type));
-
       return {
         id: row.id,
         profileId: row.profile_id,
@@ -93,13 +96,10 @@ export default async function VerificationsPage() {
         kindLabel: labelFor(row.document_type, row.type),
         submittedAt: row.created_at ? new Date(row.created_at).toISOString().slice(0, 10) : null,
         viewUrl: storedPath ? await documentViewUrl(storedPath) : null,
-        isIdentity,
       };
     }),
   );
 
-  const identityRows = rows.filter((row) => row.isIdentity);
-  const credentialRows = rows.filter((row) => !row.isIdentity);
   const manualCount = manualPending ?? 0;
 
   return (
@@ -108,58 +108,50 @@ export default async function VerificationsPage() {
         <div className="min-w-0">
           <h1 className="text-2xl font-semibold text-ink sm:text-3xl">Identity verifications</h1>
           <p className="mt-1 max-w-2xl text-sm leading-6 text-ink/60">
-            Review V2 government ID submissions, manual identity checks, and professional
-            credentials as separate trust signals.
+            Identity verification is manual only. Therapists submit their ID and selfie through the
+            dashboard, and an authorized MasseurMatch admin makes the final approval or rejection.
           </p>
         </div>
         <Link
           href="/verifications/manual"
-          className="inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-wine/20 px-3 py-2 text-sm font-medium text-wine hover:bg-wineSoft/30 sm:w-auto"
+          className="inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-wine px-4 py-2 text-sm font-medium text-white hover:bg-wineDark sm:w-auto"
         >
-          Manual ID queue{manualCount ? ` (${manualCount})` : ""}
+          Open manual ID queue{manualCount ? ` (${manualCount})` : ""}
         </Link>
       </div>
 
-      <div className="mb-8 grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <div className="rounded-xl border border-ink/10 bg-surface p-3">
-          <p className="text-xs text-ink/50">V2 identity docs</p>
-          <p className="mt-1 text-2xl font-semibold text-ink">{identityRows.length}</p>
+      <div className="mb-10 grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="rounded-xl border border-wine/15 bg-wineSoft/20 p-4">
+          <p className="text-xs font-medium uppercase tracking-wide text-wineDark/70">
+            Manual identity pending
+          </p>
+          <p className="mt-1 text-3xl font-semibold text-ink">{manualCount}</p>
+          <p className="mt-2 text-sm leading-6 text-ink/60">
+            This is the only queue that can grant or reject the identity badge.
+          </p>
         </div>
-        <div className="rounded-xl border border-ink/10 bg-surface p-3">
-          <p className="text-xs text-ink/50">Manual submissions</p>
-          <p className="mt-1 text-2xl font-semibold text-ink">{manualCount}</p>
-        </div>
-        <div className="rounded-xl border border-ink/10 bg-surface p-3">
-          <p className="text-xs text-ink/50">Legacy credentials</p>
-          <p className="mt-1 text-2xl font-semibold text-ink">{credentialRows.length}</p>
+        <div className="rounded-xl border border-ink/10 bg-surface p-4">
+          <p className="text-xs font-medium uppercase tracking-wide text-ink/50">
+            Legacy credentials
+          </p>
+          <p className="mt-1 text-3xl font-semibold text-ink">{credentialRows.length}</p>
+          <p className="mt-2 text-sm leading-6 text-ink/60">
+            Professional credentials are separate from identity and never grant the identity badge.
+          </p>
         </div>
       </div>
 
       <section>
         <div className="mb-3">
-          <h2 className="text-lg font-semibold text-ink">Current identity document queue</h2>
+          <h2 className="text-lg font-semibold text-ink">Legacy professional credentials</h2>
           <p className="mt-1 text-sm leading-6 text-ink/55">
-            Government ID and selfie documents from the V2 flow. All three required document kinds
-            must be approved before the identity badge is granted.
-          </p>
-        </div>
-        <VerificationQueue
-          rows={identityRows}
-          emptyMessage="No V2 identity documents are waiting for review."
-        />
-      </section>
-
-      <section className="mt-10">
-        <div className="mb-3">
-          <h2 className="text-lg font-semibold text-ink">Legacy credential queue</h2>
-          <p className="mt-1 text-sm leading-6 text-ink/55">
-            Older professional-license uploads are reviewable here, but approving them never grants
-            an identity badge.
+            These older credential uploads remain reviewable for historical product compatibility,
+            but they are not identity verification.
           </p>
         </div>
         <VerificationQueue
           rows={credentialRows}
-          emptyMessage="No legacy credential documents are waiting for review."
+          emptyMessage="No legacy professional credentials are waiting for review."
         />
       </section>
     </main>
