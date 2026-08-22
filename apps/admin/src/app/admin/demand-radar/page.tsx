@@ -39,7 +39,10 @@ export default async function DemandRadarPage({
             Search interest by keyword, from <code className="text-ink/80">keyword_trends</code>.
           </p>
         </div>
-        <nav className="flex gap-1 overflow-x-auto pb-1 sm:overflow-visible" aria-label="Date range">
+        <nav
+          className="flex gap-1 overflow-x-auto pb-1 sm:overflow-visible"
+          aria-label="Date range"
+        >
           {RANGES.map((range) => (
             <Link
               key={range}
