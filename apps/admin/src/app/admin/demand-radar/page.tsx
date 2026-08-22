@@ -21,31 +21,34 @@ export default async function DemandRadarPage({
 }: {
   searchParams: { days?: string };
 }) {
-  await requireAdmin("/admin/demand-radar");
+  await requireAdmin("/demand-radar");
 
   const days = Number(searchParams.days ?? 30);
   const data = await getRadarData(Number.isFinite(days) ? days : 30);
   const active = RANGES.includes(days as (typeof RANGES)[number]) ? days : 30;
 
-  const highPriority = data.insights.filter((i) => i.priority === "high");
-  const peaks = data.trends.filter((t) => t.peak_detected);
+  const highPriority = data.insights.filter((insight) => insight.priority === "high");
+  const peaks = data.trends.filter((trend) => trend.peak_detected);
 
   return (
-    <main className="mx-auto w-full max-w-5xl px-6 py-12">
-      <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-semibold text-ink">Demand Radar</h1>
-          <p className="mt-1 text-sm text-ink/60">
+    <main className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 sm:py-12">
+      <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-semibold text-ink sm:text-3xl">Demand Radar</h1>
+          <p className="mt-1 text-sm leading-6 text-ink/60">
             Search interest by keyword, from <code className="text-ink/80">keyword_trends</code>.
           </p>
         </div>
-        <nav className="flex gap-1" aria-label="Date range">
+        <nav
+          className="flex gap-1 overflow-x-auto pb-1 sm:overflow-visible"
+          aria-label="Date range"
+        >
           {RANGES.map((range) => (
             <Link
               key={range}
-              href={`/admin/demand-radar?days=${range}`}
+              href={`/demand-radar?days=${range}`}
               className={[
-                "rounded-full px-3 py-1 text-sm",
+                "shrink-0 rounded-full px-3 py-1.5 text-sm",
                 range === active ? "bg-wine text-white" : "bg-ink/5 text-ink/60 hover:bg-ink/10",
               ].join(" ")}
             >
@@ -62,7 +65,7 @@ export default async function DemandRadarPage({
           </h2>
           <ul className="space-y-2">
             {highPriority.map((insight) => (
-              <li key={insight.id} className="text-sm text-wineDark">
+              <li key={insight.id} className="break-words text-sm leading-6 text-wineDark">
                 <strong className="font-medium">{insight.keyword ?? "—"}</strong>
                 {insight.description ? ` — ${insight.description}` : null}
                 {insight.action_recommended ? (
@@ -76,7 +79,7 @@ export default async function DemandRadarPage({
 
       <RadarChart keywords={data.keywords} series={data.series} />
 
-      <section className="mt-8 grid gap-4 sm:grid-cols-3">
+      <section className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
         <Card className="p-4">
           <p className="text-sm text-ink/60">Keywords tracked</p>
           <p className="font-stat text-ds-32 text-ink">{data.keywords.length}</p>

@@ -6,11 +6,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   await requireAdmin("/");
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="flex min-h-screen min-w-0 flex-col overflow-x-hidden bg-background">
       <Navbar title="Admin Operations" homeLink="/" />
-      <div className="flex flex-1 flex-col overflow-hidden lg:flex-row">
+      <div className="flex min-w-0 flex-1 flex-col lg:flex-row">
         <AdminSidebar />
-        <main className="min-w-0 flex-1 overflow-y-auto">{children}</main>
+        <main className="min-w-0 flex-1 overflow-x-hidden overflow-y-auto">{children}</main>
       </div>
     </div>
   );

@@ -17,7 +17,7 @@ function pageHref(q: string, page: number): string {
   if (q) params.set("q", q);
   if (page > 1) params.set("page", String(page));
   const query = params.toString();
-  return query ? `/admin/audit-log?${query}` : "/admin/audit-log";
+  return query ? `/audit-log?${query}` : "/audit-log";
 }
 
 export default async function AuditLogPage({
@@ -25,40 +25,40 @@ export default async function AuditLogPage({
 }: {
   searchParams: { q?: string; page?: string };
 }) {
-  await requireAdmin("/admin/audit-log");
+  await requireAdmin("/audit-log");
   const q = (searchParams.q ?? "").trim();
   const page = Math.max(1, Number.parseInt(searchParams.page ?? "1", 10) || 1);
   const { rows, total } = await listAuditLog(page, q);
   const pageCount = Math.max(1, Math.ceil(total / 50));
 
   return (
-    <main className="mx-auto w-full max-w-6xl px-6 py-12">
+    <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
       <div>
-        <h1 className="text-3xl font-semibold text-ink">Audit log</h1>
-        <p className="mt-1 text-sm text-ink/60">
+        <h1 className="text-2xl font-semibold text-ink sm:text-3xl">Audit log</h1>
+        <p className="mt-1 max-w-3xl text-sm leading-6 text-ink/60">
           Immutable operational trail for moderation, verification, reports, photos, and other
           privileged actions.
         </p>
       </div>
 
-      <form method="get" action="/admin/audit-log" className="mt-6 flex flex-wrap gap-3">
+      <form method="get" action="/audit-log" className="mt-6 grid gap-3 sm:flex sm:flex-wrap">
         <input
           type="search"
           name="q"
           defaultValue={q}
           placeholder="Search action, target type, or target id"
-          className="w-full max-w-md rounded-lg border border-ink/15 bg-transparent px-3 py-2 text-sm text-ink"
+          className="min-h-11 w-full rounded-lg border border-ink/15 bg-transparent px-3 py-2 text-base text-ink sm:max-w-md sm:text-sm"
         />
         <button
           type="submit"
-          className="rounded-lg bg-wine px-4 py-2 text-sm font-medium text-white"
+          className="min-h-11 w-full rounded-lg bg-wine px-4 py-2 text-sm font-medium text-white sm:w-auto"
         >
           Search
         </button>
         {q ? (
           <Link
-            href="/admin/audit-log"
-            className="rounded-lg border border-ink/15 px-4 py-2 text-sm text-ink/70"
+            href="/audit-log"
+            className="inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-ink/15 px-4 py-2 text-sm text-ink/70 sm:w-auto"
           >
             Clear
           </Link>
@@ -117,12 +117,17 @@ export default async function AuditLogPage({
       </Card>
 
       {pageCount > 1 ? (
-        <nav aria-label="Audit log pages" className="mt-4 flex items-center gap-4 text-sm">
+        <nav
+          aria-label="Audit log pages"
+          className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm sm:justify-start sm:gap-4"
+        >
           {page > 1 ? (
             <Link href={pageHref(q, page - 1)} className="text-wine hover:underline">
               ← Previous
             </Link>
-          ) : null}
+          ) : (
+            <span />
+          )}
           <span className="text-ink/50">
             Page {Math.min(page, pageCount)} of {pageCount}
           </span>

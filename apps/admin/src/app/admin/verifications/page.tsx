@@ -3,10 +3,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { requireAdmin } from "@/lib/guards";
-import { DOCUMENT_KINDS } from "@/lib/identity-documents";
+import { DOCUMENT_KINDS, isDocumentKind } from "@/lib/identity-documents";
 import { documentViewUrl } from "@/lib/identity-storage";
+import { hasStripeIdentityKey } from "@/lib/stripe-identity";
 
 import { VerificationQueue, type VerificationRow } from "./queue";
+import { StripeIdentityQueue, type StripeIdentityRow } from "./stripe-queue";
 
 export const metadata: Metadata = {
   title: "Identity verifications",
@@ -15,40 +17,77 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-function labelFor(kind: string | null): string {
-  return DOCUMENT_KINDS.find((option) => option.id === kind)?.label ?? "Document";
+function labelFor(documentType: string | null, legacyType: string | null): string {
+  if (documentType) {
+    const current = DOCUMENT_KINDS.find((option) => option.id === documentType);
+    if (current) return current.label;
+  }
+
+  if (legacyType === "professional_license") return "Professional license";
+  if (legacyType) {
+    return legacyType
+      .split("_")
+      .filter(Boolean)
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(" ");
+  }
+  return "Legacy credential document";
 }
 
 export default async function VerificationsPage() {
-  await requireAdmin("/admin/verifications");
+  await requireAdmin("/verifications");
 
   const service = createServiceClient();
 
-  const [{ data, error }, { count: manualPending }] = await Promise.all([
+  const [
+    { data, error },
+    { count: manualPending, error: manualError },
+    { data: stripeData, error: stripeError },
+  ] = await Promise.all([
     service
       .from("profile_documents")
-      .select("id,profile_id,document_type,status,created_at,storage_path")
+      .select("id,profile_id,document_type,type,status,created_at,storage_path,url")
       .eq("status", "pending")
       .order("created_at", { ascending: true })
-      .limit(50),
+      .limit(100),
     service
       .from("identity_verifications")
       .select("id", { count: "exact", head: true })
       .eq("provider", "manual")
       .eq("status", "pending"),
+    service
+      .from("identity_verifications")
+      .select(
+        "id,profile_id,status,last_error,created_at,stripe_session_id,stripe_verification_session_id",
+      )
+      .eq("provider", "stripe")
+      .in("status", ["pending", "processing", "requires_input"])
+      .order("created_at", { ascending: true })
+      .limit(100),
   ]);
 
-  if (error) {
+  const queueError = error ?? manualError ?? stripeError;
+  if (queueError) {
     return (
-      <main className="mx-auto w-full max-w-3xl px-6 py-12">
+      <main className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
         <h1 className="text-2xl font-semibold text-ink">Identity verifications</h1>
-        <p className="mt-4 text-sm text-wine">Could not load the queue: {error.message}</p>
+        <p className="mt-4 rounded-lg bg-wineSoft/40 px-3 py-2 text-sm text-wineDark">
+          Could not load the queue: {queueError.message}
+        </p>
       </main>
     );
   }
 
   const pending = data ?? [];
-  const profileIds = [...new Set(pending.map((row) => row.profile_id).filter(Boolean))] as string[];
+  const legacyStripe = stripeData ?? [];
+  const profileIds = [
+    ...new Set(
+      [
+        ...pending.map((row) => row.profile_id),
+        ...legacyStripe.map((row) => row.profile_id),
+      ].filter(Boolean),
+    ),
+  ] as string[];
 
   const names = new Map<string, string>();
   if (profileIds.length > 0) {
@@ -66,41 +105,101 @@ export default async function VerificationsPage() {
   }
 
   const rows: VerificationRow[] = await Promise.all(
-    pending.map(async (row) => ({
-      id: row.id,
-      profileId: row.profile_id,
-      name: (row.profile_id && names.get(row.profile_id)) || "Unknown therapist",
-      kindLabel: labelFor(row.document_type),
-      submittedAt: row.created_at ? new Date(row.created_at).toISOString().slice(0, 10) : null,
-      viewUrl: row.storage_path ? await documentViewUrl(row.storage_path) : null,
-    })),
+    pending.map(async (row) => {
+      const storedPath = row.storage_path ?? row.url;
+      const isIdentity = Boolean(row.document_type && isDocumentKind(row.document_type));
+
+      return {
+        id: row.id,
+        profileId: row.profile_id,
+        name: (row.profile_id && names.get(row.profile_id)) || "Unknown therapist",
+        kindLabel: labelFor(row.document_type, row.type),
+        submittedAt: row.created_at ? new Date(row.created_at).toISOString().slice(0, 10) : null,
+        viewUrl: storedPath ? await documentViewUrl(storedPath) : null,
+        isIdentity,
+      };
+    }),
   );
 
+  const stripeRows: StripeIdentityRow[] = legacyStripe.map((row) => ({
+    id: row.id,
+    name: (row.profile_id && names.get(row.profile_id)) || "Unknown therapist",
+    status: row.status,
+    submittedAt: row.created_at ? new Date(row.created_at).toISOString().slice(0, 10) : null,
+    lastError: row.last_error,
+    hasSession: Boolean(row.stripe_verification_session_id || row.stripe_session_id),
+  }));
+
+  const identityRows = rows.filter((row) => row.isIdentity);
+  const credentialRows = rows.filter((row) => !row.isIdentity);
+  const manualCount = manualPending ?? 0;
+
   return (
-    <main className="mx-auto w-full max-w-3xl px-6 py-12">
-      <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold text-ink">Identity verifications</h1>
-          <p className="mt-1 text-sm text-ink/60">
-            {rows.length === 0
-              ? "Nothing waiting in the current document queue."
-              : `${rows.length} waiting. Each document is deleted once you decide.`}
+    <main className="mx-auto w-full max-w-4xl px-4 py-8 sm:px-6 sm:py-12">
+      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-semibold text-ink sm:text-3xl">Identity verifications</h1>
+          <p className="mt-1 max-w-2xl text-sm leading-6 text-ink/60">
+            Review V2 government ID submissions, manual identity checks, legacy Stripe Identity
+            sessions, and professional credentials as separate trust signals.
           </p>
         </div>
-        <div className="flex flex-wrap gap-3 text-sm">
-          <Link
-            href="/admin/verifications/manual"
-            className="rounded-lg border border-wine/20 px-3 py-2 font-medium text-wine hover:bg-wineSoft/30"
-          >
-            Manual legacy queue{manualPending ? ` (${manualPending})` : ""}
-          </Link>
-          <Link href="/admin" className="px-2 py-2 font-medium text-wine hover:underline">
-            Back to admin
-          </Link>
+        <Link
+          href="/verifications/manual"
+          className="inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-wine/20 px-3 py-2 text-sm font-medium text-wine hover:bg-wineSoft/30 sm:w-auto"
+        >
+          Manual ID queue{manualCount ? ` (${manualCount})` : ""}
+        </Link>
+      </div>
+
+      <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="rounded-xl border border-ink/10 bg-surface p-3">
+          <p className="text-xs text-ink/50">V2 identity docs</p>
+          <p className="mt-1 text-2xl font-semibold text-ink">{identityRows.length}</p>
+        </div>
+        <div className="rounded-xl border border-ink/10 bg-surface p-3">
+          <p className="text-xs text-ink/50">Manual submissions</p>
+          <p className="mt-1 text-2xl font-semibold text-ink">{manualCount}</p>
+        </div>
+        <div className="rounded-xl border border-ink/10 bg-surface p-3">
+          <p className="text-xs text-ink/50">Legacy Stripe</p>
+          <p className="mt-1 text-2xl font-semibold text-ink">{stripeRows.length}</p>
+        </div>
+        <div className="rounded-xl border border-ink/10 bg-surface p-3">
+          <p className="text-xs text-ink/50">Legacy credentials</p>
+          <p className="mt-1 text-2xl font-semibold text-ink">{credentialRows.length}</p>
         </div>
       </div>
 
-      <VerificationQueue rows={rows} />
+      <section>
+        <div className="mb-3">
+          <h2 className="text-lg font-semibold text-ink">Current identity document queue</h2>
+          <p className="mt-1 text-sm leading-6 text-ink/55">
+            Government ID and selfie documents from the V2 flow. All three required document kinds
+            must be approved before the identity badge is granted.
+          </p>
+        </div>
+        <VerificationQueue
+          rows={identityRows}
+          emptyMessage="No V2 identity documents are waiting for review."
+        />
+      </section>
+
+      <StripeIdentityQueue rows={stripeRows} configured={hasStripeIdentityKey()} />
+
+      <section className="mt-10">
+        <div className="mb-3">
+          <h2 className="text-lg font-semibold text-ink">Legacy credential queue</h2>
+          <p className="mt-1 text-sm leading-6 text-ink/55">
+            Older professional-license uploads are reviewable here, but approving them never grants
+            an identity badge.
+          </p>
+        </div>
+        <VerificationQueue
+          rows={credentialRows}
+          emptyMessage="No legacy credential documents are waiting for review."
+        />
+      </section>
     </main>
   );
 }
