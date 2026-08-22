@@ -50,10 +50,15 @@
 -- Blast radius
 -- ---------------------------------------------------------------------------
 -- Touches two columns on rows where `outcall_radius` is not null. No column is
--- added or dropped, no policy changes, and the write is idempotent in the
--- sense that matters: re-running it would convert already-converted values a
--- second time, so it is written to run once and guarded by the audit note
--- below. Apply to staging first and compare the before/after counts.
+-- added or dropped and no policy changes.
+--
+-- It is safe to run twice. The backup insert is the guard: `on conflict do
+-- nothing ... returning` yields only the rows it actually captured, and the
+-- update converts only those. A second run captures nothing, so it converts
+-- nothing. Without that, re-running would convert already-converted values
+-- again and a 5-mile radius would decay to 3, then 2.
+--
+-- Apply to staging first and compare the before/after counts.
 
 begin;
 
@@ -67,18 +72,23 @@ create table if not exists public._outcall_radius_km_backup (
   captured_at timestamptz not null default now()
 );
 
-insert into public._outcall_radius_km_backup (
-  profile_id,
-  outcall_radius_km,
-  outcall_radius_miles_before
-)
-select id, outcall_radius, outcall_radius_miles
-from public.profiles
-where outcall_radius is not null
-on conflict (profile_id) do nothing;
-
--- Nearest rung on the ladder the editor offers, measured in miles.
-with converted as (
+-- Capture and convert in one statement. `captured` returns only the rows the
+-- insert actually took, and the conversion is joined to it — which is what
+-- makes a second run a no-op rather than a second conversion.
+with captured as (
+  insert into public._outcall_radius_km_backup (
+    profile_id,
+    outcall_radius_km,
+    outcall_radius_miles_before
+  )
+  select id, outcall_radius, outcall_radius_miles
+  from public.profiles
+  where outcall_radius is not null
+  on conflict (profile_id) do nothing
+  returning profile_id
+),
+converted as (
+  -- Nearest rung on the ladder the editor offers, measured in miles.
   select
     p.id,
     (
@@ -88,7 +98,7 @@ with converted as (
       limit 1
     ) as miles
   from public.profiles p
-  where p.outcall_radius is not null
+  join captured on captured.profile_id = p.id
 )
 update public.profiles p
 set
