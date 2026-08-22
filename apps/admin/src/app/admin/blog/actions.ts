@@ -23,7 +23,9 @@ const blockSchema = z.object({
 });
 
 function field(formData: FormData, name: string, max: number): string {
-  return String(formData.get(name) ?? "").trim().slice(0, max);
+  return String(formData.get(name) ?? "")
+    .trim()
+    .slice(0, max);
 }
 
 function parseContent(value: string): string {
@@ -51,9 +53,19 @@ export async function saveBlogPost(formData: FormData): Promise<void> {
   const viewer = await requireAdmin("/blog");
   const id = field(formData, "id", 100);
   const slug = slugSchema.parse(field(formData, "slug", 140));
-  const title = z.string().min(2).max(220).parse(field(formData, "title", 220));
-  const excerpt = z.string().max(600).parse(field(formData, "excerpt", 600));
-  const seoDescription = z.string().max(320).parse(field(formData, "seo_description", 320));
+  const title = z
+    .string()
+    .min(2)
+    .max(220)
+    .parse(field(formData, "title", 220));
+  const excerpt = z
+    .string()
+    .max(600)
+    .parse(field(formData, "excerpt", 600));
+  const seoDescription = z
+    .string()
+    .max(320)
+    .parse(field(formData, "seo_description", 320));
   const content = parseContent(String(formData.get("content_json") ?? "[]"));
   const tags = field(formData, "tags", 1000)
     .split(",")

@@ -23,15 +23,17 @@ export async function recordAdminAudit({
   reason: string;
   details?: Json;
 }): Promise<void> {
-  const { error } = await createServiceClient().from("audit_log").insert({
-    admin_id: adminId,
-    admin_user_id: adminId,
-    action,
-    target_type: targetType,
-    target_id: targetId ?? null,
-    reason,
-    details,
-  });
+  const { error } = await createServiceClient()
+    .from("audit_log")
+    .insert({
+      admin_id: adminId,
+      admin_user_id: adminId,
+      action,
+      target_type: targetType,
+      target_id: targetId ?? null,
+      reason,
+      details,
+    });
 
   if (error) throw new Error(`Could not write audit log: ${error.message}`);
 }

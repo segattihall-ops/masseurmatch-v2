@@ -48,7 +48,9 @@ export async function listProfileMigrations(): Promise<ProfileMigrationRow[]> {
 
   const migrationIds = (migrations ?? []).map((row) => row.id);
   const profileIds = [
-    ...new Set((migrations ?? []).map((row) => row.profile_id).filter((id): id is string => Boolean(id))),
+    ...new Set(
+      (migrations ?? []).map((row) => row.profile_id).filter((id): id is string => Boolean(id)),
+    ),
   ];
 
   const [reviewsResult, profilesResult] = await Promise.all([
@@ -66,14 +68,19 @@ export async function listProfileMigrations(): Promise<ProfileMigrationRow[]> {
       : Promise.resolve({ data: [], error: null }),
   ]);
 
-  if (reviewsResult.error) throw new Error(`Could not load imported reviews: ${reviewsResult.error.message}`);
-  if (profilesResult.error) throw new Error(`Could not load imported profile names: ${profilesResult.error.message}`);
+  if (reviewsResult.error)
+    throw new Error(`Could not load imported reviews: ${reviewsResult.error.message}`);
+  if (profilesResult.error)
+    throw new Error(`Could not load imported profile names: ${profilesResult.error.message}`);
 
   const names = new Map<string, string>();
   for (const profile of profilesResult.data ?? []) {
     names.set(
       profile.id,
-      profile.display_name?.trim() || profile.full_name?.trim() || profile.email?.trim() || "Unnamed provider",
+      profile.display_name?.trim() ||
+        profile.full_name?.trim() ||
+        profile.email?.trim() ||
+        "Unnamed provider",
     );
   }
 
@@ -98,7 +105,9 @@ export async function listProfileMigrations(): Promise<ProfileMigrationRow[]> {
     email: migration.email,
     profileId: migration.profile_id,
     profileName:
-      (migration.profile_id && names.get(migration.profile_id)) || migration.email || "Unlinked import",
+      (migration.profile_id && names.get(migration.profile_id)) ||
+      migration.email ||
+      "Unlinked import",
     platform: migration.platform,
     sourceUrl: migration.source_url,
     status: migration.status,

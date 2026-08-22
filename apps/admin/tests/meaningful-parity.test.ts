@@ -27,9 +27,7 @@ describe("meaningful Admin parity", () => {
   });
 
   it("keeps imported-review moderation service-role only and atomic", () => {
-    const migration = read(
-      "packages/db/migrations/20260822193000_admin_profile_import_review.sql",
-    );
+    const migration = read("packages/db/migrations/20260822193000_admin_profile_import_review.sql");
     expect(migration).toContain("create or replace function public.admin_review_profile_migration");
     expect(migration).toContain("security definer");
     expect(migration).toContain(
@@ -41,9 +39,7 @@ describe("meaningful Admin parity", () => {
   });
 
   it("keeps manual messaging queue creation service-role only and atomic", () => {
-    const migration = read(
-      "packages/db/migrations/20260822194500_admin_messaging_queue.sql",
-    );
+    const migration = read("packages/db/migrations/20260822194500_admin_messaging_queue.sql");
     expect(migration).toContain("create or replace function public.admin_queue_messaging_message");
     expect(migration).toContain("security definer");
     expect(migration).toContain(

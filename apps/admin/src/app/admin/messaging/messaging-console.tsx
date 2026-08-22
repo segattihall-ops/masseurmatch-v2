@@ -112,7 +112,7 @@ const EMPTY: Snapshot = {
 function conversationContact(conversation: Conversation | null): Contact | null {
   if (!conversation) return null;
   const value = conversation.messaging_contacts;
-  return Array.isArray(value) ? value[0] ?? null : value ?? null;
+  return Array.isArray(value) ? (value[0] ?? null) : (value ?? null);
 }
 
 function when(value: string | null | undefined): string {
@@ -230,12 +230,18 @@ export function MessagingConsole() {
   return (
     <div className="mt-8 space-y-6">
       {error ? (
-        <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800" role="alert">
+        <div
+          className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800"
+          role="alert"
+        >
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" /> {error}
         </div>
       ) : null}
       {notice ? (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800" role="status">
+        <div
+          className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800"
+          role="status"
+        >
           {notice}
         </div>
       ) : null}
@@ -273,20 +279,29 @@ export function MessagingConsole() {
                   action: "update_settings",
                   globalPause: !snapshot.settings?.global_pause,
                 },
-                snapshot.settings?.global_pause ? "Outbound messaging resumed." : "Outbound messaging paused.",
+                snapshot.settings?.global_pause
+                  ? "Outbound messaging resumed."
+                  : "Outbound messaging paused.",
               )
             }
             className={`inline-flex min-h-11 items-center gap-2 rounded-lg px-4 text-sm font-medium text-white disabled:opacity-50 ${
               snapshot.settings?.global_pause ? "bg-emerald-700" : "bg-red-700"
             }`}
           >
-            {snapshot.settings?.global_pause ? <CirclePlay className="h-4 w-4" /> : <CirclePause className="h-4 w-4" />}
+            {snapshot.settings?.global_pause ? (
+              <CirclePlay className="h-4 w-4" />
+            ) : (
+              <CirclePause className="h-4 w-4" />
+            )}
             {snapshot.settings?.global_pause ? "Resume all" : "Pause all"}
           </button>
         </div>
       </div>
 
-      <nav aria-label="Messaging sections" className="flex gap-1 overflow-x-auto rounded-xl bg-ink/5 p-1">
+      <nav
+        aria-label="Messaging sections"
+        className="flex gap-1 overflow-x-auto rounded-xl bg-ink/5 p-1"
+      >
         {(["inbox", "contacts", "queue", "campaigns", "settings"] as Tab[]).map((item) => (
           <button
             key={item}
@@ -394,7 +409,9 @@ function Inbox({
                       </span>
                     ) : null}
                   </div>
-                  <p className={`mt-1 truncate text-xs ${active ? "text-white/65" : "text-ink/50"}`}>
+                  <p
+                    className={`mt-1 truncate text-xs ${active ? "text-white/65" : "text-ink/50"}`}
+                  >
                     {contact?.city || "Unknown city"} · {conversation.current_channel}
                   </p>
                   <p className={`mt-2 text-[11px] ${active ? "text-white/45" : "text-ink/35"}`}>
@@ -416,7 +433,9 @@ function Inbox({
               </h2>
               {activeContact ? (
                 <p className="mt-1 text-xs text-ink/50">
-                  {activeContact.phone_e164} · {[activeContact.city, activeContact.state].filter(Boolean).join(", ") || "Unknown location"}
+                  {activeContact.phone_e164} ·{" "}
+                  {[activeContact.city, activeContact.state].filter(Boolean).join(", ") ||
+                    "Unknown location"}
                 </p>
               ) : null}
             </div>
@@ -463,17 +482,25 @@ function Inbox({
         </header>
 
         <div className="flex-1 space-y-3 overflow-y-auto p-4">
-          {!selectedConversationId ? <Empty text="Choose a conversation to view its history." /> : null}
+          {!selectedConversationId ? (
+            <Empty text="Choose a conversation to view its history." />
+          ) : null}
           {snapshot.messages.map((message) => (
-            <div key={message.id} className={`flex ${message.direction === "outbound" ? "justify-end" : "justify-start"}`}>
+            <div
+              key={message.id}
+              className={`flex ${message.direction === "outbound" ? "justify-end" : "justify-start"}`}
+            >
               <div
                 className={`max-w-[84%] rounded-2xl px-4 py-3 text-sm ${
                   message.direction === "outbound" ? "bg-ink text-white" : "bg-ink/[0.055] text-ink"
                 }`}
               >
                 <p className="whitespace-pre-wrap">{message.body}</p>
-                <p className={`mt-2 text-[10px] ${message.direction === "outbound" ? "text-white/55" : "text-ink/45"}`}>
-                  {message.sender_type} · {message.channel} · {message.delivery_status} · {when(message.created_at)}
+                <p
+                  className={`mt-2 text-[10px] ${message.direction === "outbound" ? "text-white/55" : "text-ink/45"}`}
+                >
+                  {message.sender_type} · {message.channel} · {message.delivery_status} ·{" "}
+                  {when(message.created_at)}
                 </p>
                 {message.error_message ? (
                   <p className="mt-1 text-[10px] text-red-300">{message.error_message}</p>
@@ -500,7 +527,9 @@ function Inbox({
               onChange={(event) => setDraft(event.target.value)}
               maxLength={4000}
               rows={3}
-              disabled={!activeContact || activeContact.opted_out || busy || snapshot.settings?.global_pause}
+              disabled={
+                !activeContact || activeContact.opted_out || busy || snapshot.settings?.global_pause
+              }
               className="input min-h-24 flex-1"
               placeholder="Write a manual outbound message…"
             />
@@ -559,7 +588,11 @@ function Contacts({
               placeholder="Name, phone or city"
             />
           </div>
-          <button type="button" onClick={() => void load()} className="rounded-lg border border-ink/15 px-4 text-sm font-medium">
+          <button
+            type="button"
+            onClick={() => void load()}
+            className="rounded-lg border border-ink/15 px-4 text-sm font-medium"
+          >
             Search
           </button>
         </div>
@@ -567,13 +600,19 @@ function Contacts({
       <div className="mt-4 space-y-2">
         {contacts.length === 0 ? <Empty text="No messaging contacts yet." /> : null}
         {contacts.map((contact) => (
-          <div key={contact.id} className="flex flex-col gap-3 rounded-xl border border-ink/10 p-4 md:flex-row md:items-center md:justify-between">
+          <div
+            key={contact.id}
+            className="flex flex-col gap-3 rounded-xl border border-ink/10 p-4 md:flex-row md:items-center md:justify-between"
+          >
             <div>
               <p className="font-medium text-ink">{contact.name || "Unnamed contact"}</p>
               <p className="mt-1 text-xs text-ink/50">
-                {contact.phone_e164} · {[contact.city, contact.state].filter(Boolean).join(", ") || "Unknown location"}
+                {contact.phone_e164} ·{" "}
+                {[contact.city, contact.state].filter(Boolean).join(", ") || "Unknown location"}
               </p>
-              <p className="mt-1 text-[11px] text-ink/35">Last activity {when(contact.last_activity_at)}</p>
+              <p className="mt-1 text-[11px] text-ink/35">
+                Last activity {when(contact.last_activity_at)}
+              </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <Pill>{contact.lifecycle_status}</Pill>
@@ -598,14 +637,18 @@ function Queue({ rows }: { rows: QueueItem[] }) {
   return (
     <section className="rounded-2xl border border-ink/10 bg-white p-5 shadow-sm">
       <h2 className="font-semibold text-ink">Outbound queue</h2>
-      <p className="mt-1 text-xs text-ink/50">Real queue state consumed by the configured transport bridge.</p>
+      <p className="mt-1 text-xs text-ink/50">
+        Real queue state consumed by the configured transport bridge.
+      </p>
       <div className="mt-4 space-y-2">
         {rows.length === 0 ? <Empty text="No queued messages." /> : null}
         {rows.map((item) => (
           <div key={item.id} className="rounded-xl border border-ink/10 p-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="font-medium text-ink">
-                {item.messaging_contacts?.name || item.messaging_contacts?.phone_e164 || "Unknown contact"}
+                {item.messaging_contacts?.name ||
+                  item.messaging_contacts?.phone_e164 ||
+                  "Unknown contact"}
               </p>
               <Pill danger={item.status === "failed"}>{item.status}</Pill>
             </div>
@@ -628,7 +671,10 @@ function Campaigns({ rows }: { rows: Campaign[] }) {
       <div className="mt-4 space-y-2">
         {rows.length === 0 ? <Empty text="No messaging campaigns yet." /> : null}
         {rows.map((campaign) => (
-          <div key={campaign.id} className="flex flex-col gap-2 rounded-xl border border-ink/10 p-4 md:flex-row md:items-center md:justify-between">
+          <div
+            key={campaign.id}
+            className="flex flex-col gap-2 rounded-xl border border-ink/10 p-4 md:flex-row md:items-center md:justify-between"
+          >
             <div>
               <p className="font-medium text-ink">{campaign.name}</p>
               <p className="mt-1 text-xs text-ink/50">
@@ -713,7 +759,15 @@ function Settings({
   );
 }
 
-function Metric({ label, value, icon: Icon }: { label: string; value: number; icon: typeof Users }) {
+function Metric({
+  label,
+  value,
+  icon: Icon,
+}: {
+  label: string;
+  value: number;
+  icon: typeof Users;
+}) {
   return (
     <div className="rounded-2xl border border-ink/10 bg-white p-4 shadow-sm">
       <div className="flex items-center justify-between gap-3">
@@ -727,7 +781,9 @@ function Metric({ label, value, icon: Icon }: { label: string; value: number; ic
 
 function Pill({ children, danger = false }: { children: React.ReactNode; danger?: boolean }) {
   return (
-    <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${danger ? "bg-red-50 text-red-700" : "bg-ink/5 text-ink/60"}`}>
+    <span
+      className={`rounded-full px-2.5 py-1 text-xs font-medium ${danger ? "bg-red-50 text-red-700" : "bg-ink/5 text-ink/60"}`}
+    >
       {children}
     </span>
   );

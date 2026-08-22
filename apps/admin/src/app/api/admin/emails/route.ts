@@ -48,13 +48,20 @@ const draftSchema = z.object({
   action: z.literal("ai_generate"),
   objective: z.string().trim().min(3).max(1200),
   audience: z.string().trim().max(500).default("MasseurMatch providers"),
-  tone: z.enum(["professional", "warm", "concise", "educational", "promotional"]).default("professional"),
+  tone: z
+    .enum(["professional", "warm", "concise", "educational", "promotional"])
+    .default("professional"),
   cta: z.string().trim().max(300).optional().nullable(),
   offer: z.string().trim().max(500).optional().nullable(),
   category: z.enum(["marketing", "transactional"]).default("marketing"),
 });
 
-const postSchema = z.discriminatedUnion("action", [campaignSchema, templateSchema, cancelSchema, draftSchema]);
+const postSchema = z.discriminatedUnion("action", [
+  campaignSchema,
+  templateSchema,
+  cancelSchema,
+  draftSchema,
+]);
 
 const generatedDraftSchema = z.object({
   campaignName: z.string().min(1).max(120),
@@ -88,9 +95,16 @@ type RpcClient = {
 
 async function apiAdmin() {
   const viewer = await getViewer();
-  if (!viewer) return { viewer: null, response: NextResponse.json({ error: "Authentication required." }, { status: 401 }) };
+  if (!viewer)
+    return {
+      viewer: null,
+      response: NextResponse.json({ error: "Authentication required." }, { status: 401 }),
+    };
   if (viewer.role !== "admin") {
-    return { viewer: null, response: NextResponse.json({ error: "Admin access required." }, { status: 403 }) };
+    return {
+      viewer: null,
+      response: NextResponse.json({ error: "Admin access required." }, { status: 403 }),
+    };
   }
   return { viewer, response: null };
 }
@@ -106,7 +120,8 @@ function limited(request: Request, bucket: string, limit: number): NextResponse 
 
 function fallbackDraft(input: z.infer<typeof draftSchema>) {
   const cta = input.cta || "Open your MasseurMatch dashboard";
-  const title = input.objective.length > 72 ? "A MasseurMatch update for your profile" : input.objective;
+  const title =
+    input.objective.length > 72 ? "A MasseurMatch update for your profile" : input.objective;
   const offerHtml = input.offer ? `<p><strong>${escapeHtml(input.offer)}</strong></p>` : "";
   const objective = escapeHtml(input.objective);
   const ctaHtml = escapeHtml(cta);
@@ -133,7 +148,10 @@ function escapeHtml(value: string): string {
 function extractJson(value: string): string {
   const trimmed = value.trim();
   if (!trimmed.startsWith("```")) return trimmed;
-  return trimmed.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+  return trimmed
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/, "")
+    .trim();
 }
 
 async function generateDraft(input: z.infer<typeof draftSchema>) {
@@ -182,7 +200,10 @@ export async function GET(request: Request) {
 
   const query = new URL(request.url).searchParams.get("q")?.trim() || null;
   const rpc = createServiceClient() as unknown as RpcClient;
-  const { data, error } = await rpc.rpc("admin_email_center_snapshot", { p_query: query, p_limit: 500 });
+  const { data, error } = await rpc.rpc("admin_email_center_snapshot", {
+    p_query: query,
+    p_limit: 500,
+  });
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true, ...(data as Record<string, unknown>) });
 }
@@ -264,12 +285,22 @@ export async function POST(request: Request) {
   }
 
   const audienceCount =
-    input.userIds.length + input.profileStatuses.length + input.plans.length + input.cities.length + input.states.length;
+    input.userIds.length +
+    input.profileStatuses.length +
+    input.plans.length +
+    input.cities.length +
+    input.states.length;
   if (audienceCount === 0) {
-    return NextResponse.json({ error: "Choose recipients or at least one audience filter." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Choose recipients or at least one audience filter." },
+      { status: 400 },
+    );
   }
   if (input.sendCategory === "transactional" && input.userIds.length === 0) {
-    return NextResponse.json({ error: "Transactional campaigns require explicitly selected recipients." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Transactional campaigns require explicitly selected recipients." },
+      { status: 400 },
+    );
   }
 
   const scheduledFor = input.scheduledFor || new Date().toISOString();

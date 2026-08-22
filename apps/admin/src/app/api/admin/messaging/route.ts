@@ -88,7 +88,12 @@ function limited(request: Request, bucket: string, limit: number): NextResponse 
 
 function safeSearch(value: string | null): string | null {
   if (!value) return null;
-  return value.trim().replace(/[,()%]/g, " ").slice(0, 120) || null;
+  return (
+    value
+      .trim()
+      .replace(/[,()%]/g, " ")
+      .slice(0, 120) || null
+  );
 }
 
 function errorResponse(message: string, status = 500) {
@@ -160,7 +165,10 @@ export async function GET(request: Request) {
       .order("created_at", { ascending: false })
       .limit(100),
     db.from("messaging_contacts").select("id", { count: "exact", head: true }),
-    db.from("messaging_contacts").select("id", { count: "exact", head: true }).eq("opted_out", true),
+    db
+      .from("messaging_contacts")
+      .select("id", { count: "exact", head: true })
+      .eq("opted_out", true),
     db
       .from("messaging_queue")
       .select("id", { count: "exact", head: true })
@@ -185,7 +193,8 @@ export async function GET(request: Request) {
     [openConversationsResult, "conversation count"],
   ] as const;
   for (const [result, label] of required) {
-    if (result.error) return errorResponse(`Could not load messaging ${label}: ${result.error.message}`);
+    if (result.error)
+      return errorResponse(`Could not load messaging ${label}: ${result.error.message}`);
   }
 
   let messages: unknown[] = [];
@@ -198,7 +207,8 @@ export async function GET(request: Request) {
       .eq("conversation_id", conversationId)
       .order("created_at", { ascending: true })
       .limit(500);
-    if (result.error) return errorResponse(`Could not load conversation messages: ${result.error.message}`);
+    if (result.error)
+      return errorResponse(`Could not load conversation messages: ${result.error.message}`);
     messages = result.data ?? [];
   }
 

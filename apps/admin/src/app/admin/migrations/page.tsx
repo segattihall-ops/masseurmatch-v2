@@ -39,7 +39,9 @@ export default async function MigrationsPage({
   return (
     <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
       <header>
-        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-wine">Data operations</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-wine">
+          Data operations
+        </p>
         <h1 className="mt-2 text-3xl font-semibold text-ink">Profile Imports</h1>
         <p className="mt-2 max-w-3xl text-sm text-ink/60">
           Review external profile migrations and imported testimonials. A submission is finalized in
@@ -48,8 +50,12 @@ export default async function MigrationsPage({
       </header>
 
       {searchParams.reviewed ? (
-        <p className="mt-6 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800" role="status">
-          Import reviewed: {searchParams.approved ?? "0"} approved, {searchParams.rejected ?? "0"} rejected.
+        <p
+          className="mt-6 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800"
+          role="status"
+        >
+          Import reviewed: {searchParams.approved ?? "0"} approved, {searchParams.rejected ?? "0"}{" "}
+          rejected.
         </p>
       ) : null}
 
@@ -84,9 +90,15 @@ export default async function MigrationsPage({
                       </p>
                     </div>
                     <div className="flex flex-wrap gap-2 text-xs">
-                      <Pill value={`${pendingReviews.length} pending`} tone={pendingReviews.length > 0 ? "amber" : "neutral"} />
+                      <Pill
+                        value={`${pendingReviews.length} pending`}
+                        tone={pendingReviews.length > 0 ? "amber" : "neutral"}
+                      />
                       <Pill value={`${migration.reviews.length} reviews`} tone="neutral" />
-                      <Pill value={migration.verified ? "Reviewed" : "Not finalized"} tone={migration.verified ? "green" : "neutral"} />
+                      <Pill
+                        value={migration.verified ? "Reviewed" : "Not finalized"}
+                        tone={migration.verified ? "green" : "neutral"}
+                      />
                     </div>
                   </div>
                 </summary>
@@ -94,17 +106,29 @@ export default async function MigrationsPage({
                 <div className="border-t border-ink/10 p-5 sm:p-6">
                   <div className="flex flex-wrap gap-3 text-sm">
                     {migration.profileId ? (
-                      <Link href={`/people/${migration.profileId}`} className="font-medium text-wine hover:underline">
+                      <Link
+                        href={`/people/${migration.profileId}`}
+                        className="font-medium text-wine hover:underline"
+                      >
                         Open provider →
                       </Link>
                     ) : null}
                     {source ? (
-                      <a href={source} target="_blank" rel="noreferrer" className="font-medium text-wine hover:underline">
+                      <a
+                        href={source}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="font-medium text-wine hover:underline"
+                      >
                         Source profile ↗
                       </a>
                     ) : null}
                   </div>
-                  {migration.notes ? <p className="mt-4 rounded-xl bg-ink/[0.035] p-3 text-sm text-ink/60">{migration.notes}</p> : null}
+                  {migration.notes ? (
+                    <p className="mt-4 rounded-xl bg-ink/[0.035] p-3 text-sm text-ink/60">
+                      {migration.notes}
+                    </p>
+                  ) : null}
 
                   {pendingReviews.length > 0 ? (
                     <form action={reviewProfileImport} className="mt-6">
@@ -113,7 +137,8 @@ export default async function MigrationsPage({
                         <div>
                           <h2 className="font-semibold text-ink">Pending publication review</h2>
                           <p className="mt-1 text-xs text-ink/50">
-                            Every pending testimonial needs one decision before this import can be finalized.
+                            Every pending testimonial needs one decision before this import can be
+                            finalized.
                           </p>
                         </div>
                       </div>
@@ -122,7 +147,10 @@ export default async function MigrationsPage({
                         {pendingReviews.map((review) => {
                           const reviewSource = externalUrl(review.sourceUrl);
                           return (
-                            <fieldset key={review.id} className="rounded-xl border border-ink/10 p-4">
+                            <fieldset
+                              key={review.id}
+                              className="rounded-xl border border-ink/10 p-4"
+                            >
                               <input type="hidden" name="review_id" value={review.id} />
                               <div className="flex flex-wrap items-start justify-between gap-3">
                                 <div>
@@ -131,11 +159,18 @@ export default async function MigrationsPage({
                                     {review.rating !== null ? ` · ${review.rating}/5` : ""}
                                   </p>
                                   <p className="mt-1 text-xs text-ink/45">
-                                    {[review.reviewDate, review.sourcePlatform].filter(Boolean).join(" · ")}
+                                    {[review.reviewDate, review.sourcePlatform]
+                                      .filter(Boolean)
+                                      .join(" · ")}
                                   </p>
                                 </div>
                                 {reviewSource ? (
-                                  <a href={reviewSource} target="_blank" rel="noreferrer" className="text-xs font-semibold text-wine hover:underline">
+                                  <a
+                                    href={reviewSource}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="text-xs font-semibold text-wine hover:underline"
+                                  >
                                     Evidence ↗
                                   </a>
                                 ) : null}
@@ -145,24 +180,43 @@ export default async function MigrationsPage({
                               </p>
                               <div className="mt-4 flex flex-wrap gap-5 text-sm">
                                 <label className="inline-flex items-center gap-2">
-                                  <input type="radio" name={`decision_${review.id}`} value="approve" required />
+                                  <input
+                                    type="radio"
+                                    name={`decision_${review.id}`}
+                                    value="approve"
+                                    required
+                                  />
                                   Approve for public profile
                                 </label>
                                 <label className="inline-flex items-center gap-2">
-                                  <input type="radio" name={`decision_${review.id}`} value="reject" required />
+                                  <input
+                                    type="radio"
+                                    name={`decision_${review.id}`}
+                                    value="reject"
+                                    required
+                                  />
                                   Reject
                                 </label>
                               </div>
                               <label className="mt-3 block">
-                                <span className="text-xs font-medium text-ink/55">Review notes (optional)</span>
-                                <input name={`notes_${review.id}`} maxLength={1000} className="input mt-1.5" />
+                                <span className="text-xs font-medium text-ink/55">
+                                  Review notes (optional)
+                                </span>
+                                <input
+                                  name={`notes_${review.id}`}
+                                  maxLength={1000}
+                                  className="input mt-1.5"
+                                />
                               </label>
                             </fieldset>
                           );
                         })}
                       </div>
 
-                      <button type="submit" className="mt-5 min-h-11 rounded-lg bg-wine px-4 text-sm font-medium text-white">
+                      <button
+                        type="submit"
+                        className="mt-5 min-h-11 rounded-lg bg-wine px-4 text-sm font-medium text-white"
+                      >
                         Finalize all pending decisions
                       </button>
                     </form>
@@ -183,10 +237,19 @@ export default async function MigrationsPage({
                                 {review.reviewerName || "Anonymous reviewer"}
                                 {review.rating !== null ? ` · ${review.rating}/5` : ""}
                               </p>
-                              <Pill value={review.isPublic ? "Approved" : "Rejected"} tone={review.isPublic ? "green" : "red"} />
+                              <Pill
+                                value={review.isPublic ? "Approved" : "Rejected"}
+                                tone={review.isPublic ? "green" : "red"}
+                              />
                             </div>
-                            <p className="mt-2 line-clamp-3 whitespace-pre-wrap text-ink/60">{review.reviewText || "No review text."}</p>
-                            {review.reviewNotes ? <p className="mt-2 text-xs text-ink/45">Admin note: {review.reviewNotes}</p> : null}
+                            <p className="mt-2 line-clamp-3 whitespace-pre-wrap text-ink/60">
+                              {review.reviewText || "No review text."}
+                            </p>
+                            {review.reviewNotes ? (
+                              <p className="mt-2 text-xs text-ink/45">
+                                Admin note: {review.reviewNotes}
+                              </p>
+                            ) : null}
                           </li>
                         ))}
                       </ul>

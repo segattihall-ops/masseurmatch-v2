@@ -28,7 +28,9 @@ export default async function CitiesPage() {
   return (
     <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
       <header>
-        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-wine">Directory coverage</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-wine">
+          Directory coverage
+        </p>
         <h1 className="mt-2 text-3xl font-semibold text-ink">Cities</h1>
         <p className="mt-2 max-w-3xl text-sm text-ink/60">
           Live coverage derived from provider profiles. This replaces the legacy file-backed city
@@ -93,7 +95,11 @@ export default async function CitiesPage() {
       </Card>
 
       <p className="mt-5 text-xs text-ink/45">
-        Need to change a provider&apos;s city or status? Use <Link href="/people" className="font-medium text-wine hover:underline">People</Link> so the underlying profile remains the source of truth.
+        Need to change a provider&apos;s city or status? Use{" "}
+        <Link href="/people" className="font-medium text-wine hover:underline">
+          People
+        </Link>{" "}
+        so the underlying profile remains the source of truth.
       </p>
     </main>
   );

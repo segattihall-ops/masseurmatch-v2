@@ -57,7 +57,10 @@ export default async function BlogCmsPage({
       </header>
 
       {searchParams.notice ? (
-        <p className="mt-6 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800" role="status">
+        <p
+          className="mt-6 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800"
+          role="status"
+        >
           {searchParams.notice === "deleted"
             ? `Deleted ${searchParams.slug ?? "blog post"}.`
             : `Saved ${searchParams.slug ?? "blog post"}. Public blog cache refreshes automatically.`}
@@ -77,7 +80,8 @@ export default async function BlogCmsPage({
             title: "",
             excerpt: "",
             seoDescription: "",
-            content: "[\n  {\n    \"type\": \"paragraph\",\n    \"content\": \"Write the opening paragraph here.\"\n  }\n]",
+            content:
+              '[\n  {\n    "type": "paragraph",\n    "content": "Write the opening paragraph here."\n  }\n]',
             tags: "",
             publishedAt: localInput(new Date().toISOString()),
           }}
@@ -94,10 +98,15 @@ export default async function BlogCmsPage({
 
         <div className="mt-4 space-y-4">
           {posts.length === 0 ? (
-            <Card className="p-8 text-center text-sm text-ink/55">No blog posts in the database.</Card>
+            <Card className="p-8 text-center text-sm text-ink/55">
+              No blog posts in the database.
+            </Card>
           ) : (
             posts.map((post) => (
-              <details key={post.id} className="rounded-2xl border border-ink/10 bg-white shadow-sm">
+              <details
+                key={post.id}
+                className="rounded-2xl border border-ink/10 bg-white shadow-sm"
+              >
                 <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-3 px-5 py-4">
                   <div>
                     <p className="font-semibold text-ink">{post.title}</p>
@@ -131,11 +140,15 @@ export default async function BlogCmsPage({
                     }}
                   />
 
-                  <form action={deleteBlogPost} className="mt-8 rounded-xl border border-red-200 bg-red-50 p-4">
+                  <form
+                    action={deleteBlogPost}
+                    className="mt-8 rounded-xl border border-red-200 bg-red-50 p-4"
+                  >
                     <input type="hidden" name="id" value={post.id} />
                     <p className="text-sm font-semibold text-red-900">Permanent deletion</p>
                     <p className="mt-1 text-xs text-red-800">
-                      Type <code>{post.slug}</code> exactly. The action is audited and cannot be undone.
+                      Type <code>{post.slug}</code> exactly. The action is audited and cannot be
+                      undone.
                     </p>
                     <div className="mt-3 flex flex-wrap gap-2">
                       <input
@@ -186,25 +199,60 @@ function BlogForm({
     <form action={action} className="mt-5 grid gap-4 sm:grid-cols-2">
       {id ? <input type="hidden" name="id" value={id} /> : null}
       <Field label="Slug">
-        <input name="slug" required defaultValue={defaults.slug} className="input" placeholder="how-to-choose-a-massage-therapist" />
+        <input
+          name="slug"
+          required
+          defaultValue={defaults.slug}
+          className="input"
+          placeholder="how-to-choose-a-massage-therapist"
+        />
       </Field>
       <Field label="Publish date">
-        <input name="published_at" type="datetime-local" required defaultValue={defaults.publishedAt} className="input" />
+        <input
+          name="published_at"
+          type="datetime-local"
+          required
+          defaultValue={defaults.publishedAt}
+          className="input"
+        />
       </Field>
       <div className="sm:col-span-2">
         <Field label="Title">
-          <input name="title" required maxLength={220} defaultValue={defaults.title} className="input" />
+          <input
+            name="title"
+            required
+            maxLength={220}
+            defaultValue={defaults.title}
+            className="input"
+          />
         </Field>
       </div>
       <Field label="Excerpt">
-        <textarea name="excerpt" maxLength={600} defaultValue={defaults.excerpt} rows={4} className="input min-h-28" />
+        <textarea
+          name="excerpt"
+          maxLength={600}
+          defaultValue={defaults.excerpt}
+          rows={4}
+          className="input min-h-28"
+        />
       </Field>
       <Field label="SEO description">
-        <textarea name="seo_description" maxLength={320} defaultValue={defaults.seoDescription} rows={4} className="input min-h-28" />
+        <textarea
+          name="seo_description"
+          maxLength={320}
+          defaultValue={defaults.seoDescription}
+          rows={4}
+          className="input min-h-28"
+        />
       </Field>
       <div className="sm:col-span-2">
         <Field label="Tags (comma separated)">
-          <input name="tags" defaultValue={defaults.tags} className="input" placeholder="safety, massage, directory" />
+          <input
+            name="tags"
+            defaultValue={defaults.tags}
+            className="input"
+            placeholder="safety, massage, directory"
+          />
         </Field>
       </div>
       <div className="sm:col-span-2">
@@ -219,11 +267,15 @@ function BlogForm({
           />
         </Field>
         <p className="mt-2 text-xs text-ink/45">
-          Supported public block types include <code>paragraph</code>, <code>h2</code>, <code>h3</code> and <code>list</code> with an <code>items</code> array.
+          Supported public block types include <code>paragraph</code>, <code>h2</code>,{" "}
+          <code>h3</code> and <code>list</code> with an <code>items</code> array.
         </p>
       </div>
       <div className="sm:col-span-2 border-t border-ink/10 pt-4">
-        <button type="submit" className="min-h-11 rounded-lg bg-wine px-4 text-sm font-medium text-white">
+        <button
+          type="submit"
+          className="min-h-11 rounded-lg bg-wine px-4 text-sm font-medium text-white"
+        >
           {submitLabel}
         </button>
       </div>

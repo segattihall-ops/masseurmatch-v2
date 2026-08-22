@@ -12,7 +12,6 @@ import {
   Save,
   Search,
   Send,
-  Users,
   XCircle,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -110,13 +109,6 @@ function values<T>(input: Array<T | null | undefined>): T[] {
   return [...new Set(input.filter((value): value is T => value !== null && value !== undefined))];
 }
 
-function localDateTime(value: string): string {
-  if (!value) return "";
-  const date = new Date(value);
-  const offset = date.getTimezoneOffset() * 60_000;
-  return new Date(date.getTime() - offset).toISOString().slice(0, 16);
-}
-
 export function EmailCenter() {
   const [snapshot, setSnapshot] = useState<Snapshot>(EMPTY);
   const [loading, setLoading] = useState(true);
@@ -143,15 +135,23 @@ export function EmailCenter() {
 
   const [objective, setObjective] = useState("");
   const [audience, setAudience] = useState("MasseurMatch providers");
-  const [tone, setTone] = useState<"professional" | "warm" | "concise" | "educational" | "promotional">("professional");
+  const [tone, setTone] = useState<
+    "professional" | "warm" | "concise" | "educational" | "promotional"
+  >("professional");
   const [cta, setCta] = useState("");
   const [offer, setOffer] = useState("");
-  const [draftMeta, setDraftMeta] = useState<Pick<Draft, "previewText" | "suggestedAudience" | "suggestedSchedule"> | null>(null);
+  const [draftMeta, setDraftMeta] = useState<Pick<
+    Draft,
+    "previewText" | "suggestedAudience" | "suggestedSchedule"
+  > | null>(null);
 
   const load = useCallback(async (search = "") => {
     setLoading(true);
     try {
-      const data = await api<{ ok: true } & Snapshot>(undefined, search ? `?q=${encodeURIComponent(search)}` : "");
+      const data = await api<{ ok: true } & Snapshot>(
+        undefined,
+        search ? `?q=${encodeURIComponent(search)}` : "",
+      );
       setSnapshot({
         recipients: data.recipients ?? [],
         templates: data.templates ?? [],
@@ -159,7 +159,10 @@ export function EmailCenter() {
         summary: data.summary ?? EMPTY.summary,
       });
     } catch (error) {
-      setNotice({ ok: false, text: error instanceof Error ? error.message : "Could not load Email Center." });
+      setNotice({
+        ok: false,
+        text: error instanceof Error ? error.message : "Could not load Email Center.",
+      });
     } finally {
       setLoading(false);
     }
@@ -181,10 +184,22 @@ export function EmailCenter() {
     [snapshot.recipients, profileStatus, plan, city, state],
   );
 
-  const profileStatuses = useMemo(() => values(snapshot.recipients.map((row) => row.profileStatus)).sort(), [snapshot.recipients]);
-  const plans = useMemo(() => values(snapshot.recipients.map((row) => row.plan)).sort(), [snapshot.recipients]);
-  const cities = useMemo(() => values(snapshot.recipients.map((row) => row.city)).sort(), [snapshot.recipients]);
-  const states = useMemo(() => values(snapshot.recipients.map((row) => row.state)).sort(), [snapshot.recipients]);
+  const profileStatuses = useMemo(
+    () => values(snapshot.recipients.map((row) => row.profileStatus)).sort(),
+    [snapshot.recipients],
+  );
+  const plans = useMemo(
+    () => values(snapshot.recipients.map((row) => row.plan)).sort(),
+    [snapshot.recipients],
+  );
+  const cities = useMemo(
+    () => values(snapshot.recipients.map((row) => row.city)).sort(),
+    [snapshot.recipients],
+  );
+  const states = useMemo(
+    () => values(snapshot.recipients.map((row) => row.state)).sort(),
+    [snapshot.recipients],
+  );
 
   function applyTemplate(id: string) {
     setTemplateId(id);
@@ -206,7 +221,9 @@ export function EmailCenter() {
   }
 
   function selectVisible() {
-    setSelected((current) => [...new Set([...current, ...visibleRecipients.map((row) => row.userId)])]);
+    setSelected((current) => [
+      ...new Set([...current, ...visibleRecipients.map((row) => row.userId)]),
+    ]);
   }
 
   async function generateDraft() {
@@ -234,7 +251,10 @@ export function EmailCenter() {
       });
       setNotice({ ok: true, text: "Draft generated. Review every field before sending." });
     } catch (error) {
-      setNotice({ ok: false, text: error instanceof Error ? error.message : "Could not generate draft." });
+      setNotice({
+        ok: false,
+        text: error instanceof Error ? error.message : "Could not generate draft.",
+      });
     } finally {
       setBusy(false);
     }
@@ -263,7 +283,10 @@ export function EmailCenter() {
       setNotice({ ok: true, text: "Template saved." });
       await load(query);
     } catch (error) {
-      setNotice({ ok: false, text: error instanceof Error ? error.message : "Could not save template." });
+      setNotice({
+        ok: false,
+        text: error instanceof Error ? error.message : "Could not save template.",
+      });
     } finally {
       setBusy(false);
     }
@@ -315,7 +338,10 @@ export function EmailCenter() {
       setTab("campaigns");
       await load(query);
     } catch (error) {
-      setNotice({ ok: false, text: error instanceof Error ? error.message : "Could not create campaign." });
+      setNotice({
+        ok: false,
+        text: error instanceof Error ? error.message : "Could not create campaign.",
+      });
     } finally {
       setBusy(false);
     }
@@ -324,11 +350,20 @@ export function EmailCenter() {
   async function cancelCampaign(campaignId: string) {
     setBusy(true);
     try {
-      const result = await api<{ ok: true; cancelled: number }>({ action: "cancel_campaign", campaignId });
-      setNotice({ ok: true, text: `Campaign cancelled. ${result.cancelled} queued messages skipped.` });
+      const result = await api<{ ok: true; cancelled: number }>({
+        action: "cancel_campaign",
+        campaignId,
+      });
+      setNotice({
+        ok: true,
+        text: `Campaign cancelled. ${result.cancelled} queued messages skipped.`,
+      });
       await load(query);
     } catch (error) {
-      setNotice({ ok: false, text: error instanceof Error ? error.message : "Could not cancel campaign." });
+      setNotice({
+        ok: false,
+        text: error instanceof Error ? error.message : "Could not cancel campaign.",
+      });
     } finally {
       setBusy(false);
     }
@@ -352,7 +387,11 @@ export function EmailCenter() {
       <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Metric label="Sent · 30d" value={snapshot.summary.sent30d} icon={CheckCircle2} />
         <Metric label="Failed · 30d" value={snapshot.summary.failed30d} icon={XCircle} />
-        <Metric label="Suppressed · 30d" value={snapshot.summary.suppressed30d} icon={AlertTriangle} />
+        <Metric
+          label="Suppressed · 30d"
+          value={snapshot.summary.suppressed30d}
+          icon={AlertTriangle}
+        />
         <Metric label="Complaints · 30d" value={snapshot.summary.complaints30d} icon={Mail} />
       </section>
 
@@ -394,7 +433,8 @@ export function EmailCenter() {
                 <h2 className="font-semibold text-ink">Draft assistant</h2>
               </div>
               <p className="mt-1 text-xs text-ink/50">
-                Uses DeepSeek when configured; otherwise produces a conservative template draft. Always review before sending.
+                Uses DeepSeek when configured; otherwise produces a conservative template draft.
+                Always review before sending.
               </p>
               <Field label="Objective">
                 <textarea
@@ -407,11 +447,19 @@ export function EmailCenter() {
                 />
               </Field>
               <Field label="Audience description">
-                <input value={audience} onChange={(event) => setAudience(event.target.value)} className="input" />
+                <input
+                  value={audience}
+                  onChange={(event) => setAudience(event.target.value)}
+                  className="input"
+                />
               </Field>
               <div className="grid gap-3 sm:grid-cols-2">
                 <Field label="Tone">
-                  <select value={tone} onChange={(event) => setTone(event.target.value as typeof tone)} className="input">
+                  <select
+                    value={tone}
+                    onChange={(event) => setTone(event.target.value as typeof tone)}
+                    className="input"
+                  >
                     <option value="professional">Professional</option>
                     <option value="warm">Warm</option>
                     <option value="concise">Concise</option>
@@ -420,11 +468,21 @@ export function EmailCenter() {
                   </select>
                 </Field>
                 <Field label="CTA request">
-                  <input value={cta} onChange={(event) => setCta(event.target.value)} className="input" placeholder="Optional" />
+                  <input
+                    value={cta}
+                    onChange={(event) => setCta(event.target.value)}
+                    className="input"
+                    placeholder="Optional"
+                  />
                 </Field>
               </div>
               <Field label="Offer / announcement details">
-                <input value={offer} onChange={(event) => setOffer(event.target.value)} className="input" placeholder="Optional — never invented by the assistant" />
+                <input
+                  value={offer}
+                  onChange={(event) => setOffer(event.target.value)}
+                  className="input"
+                  placeholder="Optional — never invented by the assistant"
+                />
               </Field>
               <button
                 type="button"
@@ -437,9 +495,15 @@ export function EmailCenter() {
               </button>
               {draftMeta ? (
                 <div className="mt-4 rounded-xl bg-ink/[0.035] p-3 text-xs text-ink/60">
-                  <p><strong>Preview:</strong> {draftMeta.previewText}</p>
-                  <p className="mt-1"><strong>Audience:</strong> {draftMeta.suggestedAudience}</p>
-                  <p className="mt-1"><strong>Schedule:</strong> {draftMeta.suggestedSchedule}</p>
+                  <p>
+                    <strong>Preview:</strong> {draftMeta.previewText}
+                  </p>
+                  <p className="mt-1">
+                    <strong>Audience:</strong> {draftMeta.suggestedAudience}
+                  </p>
+                  <p className="mt-1">
+                    <strong>Schedule:</strong> {draftMeta.suggestedSchedule}
+                  </p>
                 </div>
               ) : null}
             </section>
@@ -450,7 +514,11 @@ export function EmailCenter() {
                   <h2 className="font-semibold text-ink">Recipients</h2>
                   <p className="text-xs text-ink/50">{selected.length} explicitly selected</p>
                 </div>
-                <button type="button" onClick={selectVisible} className="text-xs font-semibold text-wine hover:underline">
+                <button
+                  type="button"
+                  onClick={selectVisible}
+                  className="text-xs font-semibold text-wine hover:underline"
+                >
                   Select visible
                 </button>
               </div>
@@ -467,12 +535,21 @@ export function EmailCenter() {
                     placeholder="Search name, email or city"
                   />
                 </div>
-                <button type="button" onClick={() => void load(query)} className="rounded-lg border border-ink/15 px-3 text-sm font-medium">
+                <button
+                  type="button"
+                  onClick={() => void load(query)}
+                  className="rounded-lg border border-ink/15 px-3 text-sm font-medium"
+                >
                   Search
                 </button>
               </div>
               <div className="mt-3 grid grid-cols-2 gap-2">
-                <Filter value={profileStatus} onChange={setProfileStatus} label="Profile status" values={profileStatuses} />
+                <Filter
+                  value={profileStatus}
+                  onChange={setProfileStatus}
+                  label="Profile status"
+                  values={profileStatuses}
+                />
                 <Filter value={plan} onChange={setPlan} label="Plan" values={plans} />
                 <Filter value={city} onChange={setCity} label="City" values={cities} />
                 <Filter value={state} onChange={setState} label="State" values={states} />
@@ -490,7 +567,10 @@ export function EmailCenter() {
                           type="checkbox"
                           checked={selected.includes(recipient.userId)}
                           onChange={() => toggleRecipient(recipient.userId)}
-                          disabled={recipient.suppressed || (sendCategory === "marketing" && !recipient.marketingOptIn)}
+                          disabled={
+                            recipient.suppressed ||
+                            (sendCategory === "marketing" && !recipient.marketingOptIn)
+                          }
                           aria-label={`Select ${recipient.name}`}
                           className="mt-1 h-4 w-4"
                         />
@@ -498,9 +578,18 @@ export function EmailCenter() {
                           <p className="truncate font-medium text-ink">{recipient.name}</p>
                           <p className="truncate text-xs text-ink/50">{recipient.email}</p>
                           <p className="mt-1 text-[11px] text-ink/45">
-                            {[recipient.city, recipient.state, recipient.plan, recipient.profileStatus].filter(Boolean).join(" · ")}
+                            {[
+                              recipient.city,
+                              recipient.state,
+                              recipient.plan,
+                              recipient.profileStatus,
+                            ]
+                              .filter(Boolean)
+                              .join(" · ")}
                           </p>
-                          {recipient.suppressed ? <p className="mt-1 text-[11px] font-medium text-red-700">Suppressed</p> : null}
+                          {recipient.suppressed ? (
+                            <p className="mt-1 text-[11px] font-medium text-red-700">Suppressed</p>
+                          ) : null}
                         </div>
                       </li>
                     ))}
@@ -514,7 +603,9 @@ export function EmailCenter() {
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <h2 className="font-semibold text-ink">Campaign composer</h2>
-                <p className="mt-1 text-xs text-ink/50">Queue delivery through the existing lifecycle email worker.</p>
+                <p className="mt-1 text-xs text-ink/50">
+                  Queue delivery through the existing lifecycle email worker.
+                </p>
               </div>
               <button
                 type="button"
@@ -539,39 +630,80 @@ export function EmailCenter() {
             ) : (
               <div className="mt-5">
                 <Field label="Saved template">
-                  <select value={templateId} onChange={(event) => applyTemplate(event.target.value)} className="input">
+                  <select
+                    value={templateId}
+                    onChange={(event) => applyTemplate(event.target.value)}
+                    className="input"
+                  >
                     <option value="">New / custom draft</option>
                     {snapshot.templates.map((template) => (
-                      <option key={template.id} value={template.id}>{template.name}</option>
+                      <option key={template.id} value={template.id}>
+                        {template.name}
+                      </option>
                     ))}
                   </select>
                 </Field>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <Field label="Campaign name">
-                    <input value={campaignName} onChange={(event) => setCampaignName(event.target.value)} maxLength={120} className="input" />
+                    <input
+                      value={campaignName}
+                      onChange={(event) => setCampaignName(event.target.value)}
+                      maxLength={120}
+                      className="input"
+                    />
                   </Field>
                   <Field label="Category">
-                    <select value={sendCategory} onChange={(event) => setSendCategory(event.target.value as typeof sendCategory)} className="input">
+                    <select
+                      value={sendCategory}
+                      onChange={(event) =>
+                        setSendCategory(event.target.value as typeof sendCategory)
+                      }
+                      className="input"
+                    >
                       <option value="marketing">Marketing</option>
                       <option value="transactional">Transactional</option>
                     </select>
                   </Field>
                 </div>
                 <Field label="Subject">
-                  <input value={subject} onChange={(event) => setSubject(event.target.value)} maxLength={180} className="input" />
+                  <input
+                    value={subject}
+                    onChange={(event) => setSubject(event.target.value)}
+                    maxLength={180}
+                    className="input"
+                  />
                 </Field>
                 <Field label="HTML body">
-                  <textarea value={bodyHtml} onChange={(event) => setBodyHtml(event.target.value)} rows={15} className="input font-mono text-xs" />
+                  <textarea
+                    value={bodyHtml}
+                    onChange={(event) => setBodyHtml(event.target.value)}
+                    rows={15}
+                    className="input font-mono text-xs"
+                  />
                 </Field>
                 <Field label="Plain-text body">
-                  <textarea value={bodyText} onChange={(event) => setBodyText(event.target.value)} rows={8} className="input font-mono text-xs" />
+                  <textarea
+                    value={bodyText}
+                    onChange={(event) => setBodyText(event.target.value)}
+                    rows={8}
+                    className="input font-mono text-xs"
+                  />
                 </Field>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <Field label="From">
-                    <input value={fromAddress} onChange={(event) => setFromAddress(event.target.value)} className="input" />
+                    <input
+                      value={fromAddress}
+                      onChange={(event) => setFromAddress(event.target.value)}
+                      className="input"
+                    />
                   </Field>
                   <Field label="Reply-to">
-                    <input type="email" value={replyTo} onChange={(event) => setReplyTo(event.target.value)} className="input" />
+                    <input
+                      type="email"
+                      value={replyTo}
+                      onChange={(event) => setReplyTo(event.target.value)}
+                      className="input"
+                    />
                   </Field>
                 </div>
                 <Field label="Schedule (local time)">
@@ -583,7 +715,8 @@ export function EmailCenter() {
                   />
                 </Field>
                 <p className="mt-2 text-xs text-ink/45">
-                  Leave schedule blank to queue now. Marketing suppressions and preferences are enforced by the database worker.
+                  Leave schedule blank to queue now. Marketing suppressions and preferences are
+                  enforced by the database worker.
                 </p>
               </div>
             )}
@@ -603,7 +736,13 @@ export function EmailCenter() {
                 disabled={busy}
                 className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-wine px-4 text-sm font-medium text-white disabled:opacity-50"
               >
-                {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : scheduledFor ? <CalendarClock className="h-4 w-4" /> : <Send className="h-4 w-4" />}
+                {busy ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : scheduledFor ? (
+                  <CalendarClock className="h-4 w-4" />
+                ) : (
+                  <Send className="h-4 w-4" />
+                )}
                 {scheduledFor ? "Schedule campaign" : "Queue campaign"}
               </button>
             </div>
@@ -668,8 +807,12 @@ function Campaigns({
                     <p className="font-medium text-ink">{row.name}</p>
                     <p className="mt-0.5 max-w-72 truncate text-xs text-ink/50">{row.subject}</p>
                   </td>
-                  <td className="px-4 py-3"><Status status={row.status} /></td>
-                  <td className="px-4 py-3 text-ink/60">{new Date(row.scheduledFor).toLocaleString()}</td>
+                  <td className="px-4 py-3">
+                    <Status status={row.status} />
+                  </td>
+                  <td className="px-4 py-3 text-ink/60">
+                    {new Date(row.scheduledFor).toLocaleString()}
+                  </td>
                   <td className="px-4 py-3 tabular-nums">{row.total}</td>
                   <td className="px-4 py-3 tabular-nums">{row.sent}</td>
                   <td className="px-4 py-3 tabular-nums">{row.queued + row.processing}</td>
@@ -709,7 +852,11 @@ function Status({ status }: { status: string }) {
         : value === "scheduled" || value === "processing"
           ? "bg-blue-50 text-blue-700"
           : "bg-ink/5 text-ink/60";
-  return <span className={`rounded-full px-2.5 py-1 text-xs font-medium capitalize ${className}`}>{status}</span>;
+  return (
+    <span className={`rounded-full px-2.5 py-1 text-xs font-medium capitalize ${className}`}>
+      {status}
+    </span>
+  );
 }
 
 function Filter({
@@ -724,9 +871,18 @@ function Filter({
   values: string[];
 }) {
   return (
-    <select value={value} onChange={(event) => onChange(event.target.value)} className="input text-xs" aria-label={label}>
+    <select
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+      className="input text-xs"
+      aria-label={label}
+    >
       <option value="">All {label.toLowerCase()}s</option>
-      {options.map((option) => <option key={option} value={option}>{option}</option>)}
+      {options.map((option) => (
+        <option key={option} value={option}>
+          {option}
+        </option>
+      ))}
     </select>
   );
 }
@@ -739,5 +895,3 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
     </label>
   );
 }
-
-void localDateTime;

@@ -23,18 +23,24 @@ type RpcClient = {
 };
 
 function text(formData: FormData, name: string, max = 1000): string {
-  return String(formData.get(name) ?? "").trim().slice(0, max);
+  return String(formData.get(name) ?? "")
+    .trim()
+    .slice(0, max);
 }
 
 export async function reviewProfileImport(formData: FormData): Promise<void> {
   const viewer = await requireAdmin("/migrations");
-  const migrationId = z.string().uuid().parse(text(formData, "migration_id", 100));
+  const migrationId = z
+    .string()
+    .uuid()
+    .parse(text(formData, "migration_id", 100));
   const reviewIds = formData
     .getAll("review_id")
     .map((value) => z.string().uuid().parse(String(value)));
 
   if (reviewIds.length === 0) throw new Error("This import has no pending reviews to decide.");
-  if (new Set(reviewIds).size !== reviewIds.length) throw new Error("A review was submitted more than once.");
+  if (new Set(reviewIds).size !== reviewIds.length)
+    throw new Error("A review was submitted more than once.");
 
   const decisions = reviewIds.map((reviewId) => {
     const value = text(formData, `decision_${reviewId}`, 20);
@@ -125,7 +131,10 @@ export async function reviewProfileImport(formData: FormData): Promise<void> {
       p_flow_key: "profile_import_review",
       p_template_key: "profile_import_review",
       p_send_category: "transactional",
-      p_subject: result.approved > 0 ? "Your imported reviews were reviewed" : "Your profile import review is complete",
+      p_subject:
+        result.approved > 0
+          ? "Your imported reviews were reviewed"
+          : "Your profile import review is complete",
       p_body_html: `<p>Hi ${escapeHtml(recipientName)},</p><p>${escapeHtml(approvedText)}</p><p><a href="https://dashboard.masseurmatch.com/">Open your dashboard</a></p><p>MasseurMatch</p>`,
       p_body_text: `Hi ${recipientName},\n\n${approvedText}\n\nOpen your dashboard: https://dashboard.masseurmatch.com/\n\nMasseurMatch`,
       p_from_address: process.env.RESEND_FROM_EMAIL || null,

@@ -31,7 +31,16 @@ export async function listAdminCityCoverage(): Promise<AdminCityCoverage[]> {
     const key = `${state.toLowerCase()}::${city.toLowerCase()}`;
     const row =
       cities.get(key) ??
-      ({ key, city, state, total: 0, public: 0, approved: 0, pending: 0, suspended: 0 } satisfies AdminCityCoverage);
+      ({
+        key,
+        city,
+        state,
+        total: 0,
+        public: 0,
+        approved: 0,
+        pending: 0,
+        suspended: 0,
+      } satisfies AdminCityCoverage);
 
     row.total += 1;
     if (profile.visibility_status === "public") row.public += 1;
@@ -44,7 +53,11 @@ export async function listAdminCityCoverage(): Promise<AdminCityCoverage[]> {
   }
 
   return [...cities.values()].sort(
-    (a, b) => b.public - a.public || b.total - a.total || a.state.localeCompare(b.state) || a.city.localeCompare(b.city),
+    (a, b) =>
+      b.public - a.public ||
+      b.total - a.total ||
+      a.state.localeCompare(b.state) ||
+      a.city.localeCompare(b.city),
   );
 }
 
