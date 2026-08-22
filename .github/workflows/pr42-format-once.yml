@@ -1,0 +1,33 @@
+name: PR42 format once
+
+on:
+  pull_request:
+    types: [synchronize]
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    if: github.head_ref == 'fix/launch-critical-flows' && github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/launch-critical-flows
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm prettier --write apps/admin/src/app/admin/moderation/actions.ts apps/dashboard/src/app/admin/moderation/actions.ts apps/dashboard/src/app/onboarding/actions.ts apps/web/src/app/api/profile-actions/route.ts apps/web/src/app/api/profile-reports/route.ts packages/db/tests/review-lifecycle.test.ts
+      - name: Commit formatting and remove this workflow
+        run: |
+          rm .github/workflows/pr42-format-once.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "style: format launch-critical changes"
+          git push origin HEAD:fix/launch-critical-flows
