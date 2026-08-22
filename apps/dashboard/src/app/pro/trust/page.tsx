@@ -28,7 +28,11 @@ function formatDate(value: string | null) {
   if (!value) return null;
   const date = new Date(`${value.slice(0, 10)}T12:00:00Z`);
   if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric" }).format(date);
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(date);
 }
 
 function licenseStatus(row: LicenseRow | null) {
@@ -164,11 +168,14 @@ export default async function ProTrustPage() {
 
           {license?.status === "pending" ? (
             <p className="text-sm text-muted-foreground">
-              Your license is waiting for review. You can submit a replacement below only if you need to correct the information or image.
+              Your license is waiting for review. You can submit a replacement below only if you
+              need to correct the information or image.
             </p>
           ) : license?.status === "approved" ? (
             <p className="mb-4 text-sm text-muted-foreground">
-              Your current license is verified. Submit a new copy below when the license is renewed or the details change; the current verified credential remains valid until the replacement is approved or expires.
+              Your current license is verified. Submit a new copy below when the license is renewed
+              or the details change; the current verified credential remains valid until the
+              replacement is approved or expires.
             </p>
           ) : null}
 
@@ -180,7 +187,10 @@ export default async function ProTrustPage() {
 
       <Section title="What clients see">
         <p className="text-sm text-muted-foreground">
-          Verified phone and identity earn their own trust signals. When a professional license is approved, clients can see a separate license-verified signal and sanitized credential details. The license image and full document remain private and are never shown on the public profile.
+          Verified phone and identity earn their own trust signals. When a professional license is
+          approved, clients can see a separate license-verified signal and sanitized credential
+          details. The license image and full document remain private and are never shown on the
+          public profile.
         </p>
       </Section>
     </>

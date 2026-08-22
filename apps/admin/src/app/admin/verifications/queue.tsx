@@ -112,7 +112,9 @@ function QueueCard({ row, onResolved }: { row: VerificationRow; onResolved: () =
           <dl className="mb-5 grid gap-3 rounded-xl border border-ink/10 bg-ink/[0.025] p-4 sm:grid-cols-2">
             {details.map(([label, value]) => (
               <div key={String(label)}>
-                <dt className="text-[11px] font-medium uppercase tracking-wide text-ink/45">{label}</dt>
+                <dt className="text-[11px] font-medium uppercase tracking-wide text-ink/45">
+                  {label}
+                </dt>
                 <dd className="mt-1 break-words text-sm font-medium text-ink">{value}</dd>
               </div>
             ))}
@@ -124,7 +126,8 @@ function QueueCard({ row, onResolved }: { row: VerificationRow; onResolved: () =
         )}
 
         <p className="mb-4 rounded-lg bg-ink/5 px-3 py-2 text-xs leading-5 text-ink/60">
-          Compare these provider-entered fields with the private image. Professional-license approval is separate from identity verification.
+          Compare these provider-entered fields with the private image. Professional-license
+          approval is separate from identity verification.
         </p>
 
         <form action={submit} className="space-y-4 border-t border-ink/10 pt-4">

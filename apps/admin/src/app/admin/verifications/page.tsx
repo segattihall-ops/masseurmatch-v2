@@ -112,7 +112,8 @@ export default async function VerificationsPage() {
           <h1 className="text-2xl font-semibold text-ink sm:text-3xl">Credential verifications</h1>
           <p className="mt-1 max-w-2xl text-sm leading-6 text-ink/60">
             Providers enter their own professional-license details and upload the supporting image.
-            Compare the submitted fields with the image, then approve or reject. No data re-entry is needed.
+            Compare the submitted fields with the image, then approve or reject. No data re-entry is
+            needed.
           </p>
         </div>
         <Link
@@ -125,14 +126,22 @@ export default async function VerificationsPage() {
 
       <div className="mb-10 grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div className="rounded-xl border border-wine/15 bg-wineSoft/20 p-4">
-          <p className="text-xs font-medium uppercase tracking-wide text-wineDark/70">Manual identity pending</p>
+          <p className="text-xs font-medium uppercase tracking-wide text-wineDark/70">
+            Manual identity pending
+          </p>
           <p className="mt-1 text-3xl font-semibold text-ink">{manualCount}</p>
-          <p className="mt-2 text-sm leading-6 text-ink/60">This queue controls only identity verification.</p>
+          <p className="mt-2 text-sm leading-6 text-ink/60">
+            This queue controls only identity verification.
+          </p>
         </div>
         <div className="rounded-xl border border-ink/10 bg-surface p-4">
-          <p className="text-xs font-medium uppercase tracking-wide text-ink/50">Professional credentials pending</p>
+          <p className="text-xs font-medium uppercase tracking-wide text-ink/50">
+            Professional credentials pending
+          </p>
           <p className="mt-1 text-3xl font-semibold text-ink">{credentialRows.length}</p>
-          <p className="mt-2 text-sm leading-6 text-ink/60">License approval is separate from identity verification.</p>
+          <p className="mt-2 text-sm leading-6 text-ink/60">
+            License approval is separate from identity verification.
+          </p>
         </div>
       </div>
 
@@ -140,10 +149,14 @@ export default async function VerificationsPage() {
         <div className="mb-3">
           <h2 className="text-lg font-semibold text-ink">Professional licenses</h2>
           <p className="mt-1 text-sm leading-6 text-ink/55">
-            The provider has already entered the license data. Your job is to compare it against the private image and decide.
+            The provider has already entered the license data. Your job is to compare it against the
+            private image and decide.
           </p>
         </div>
-        <VerificationQueue rows={credentialRows} emptyMessage="No professional licenses are waiting for review." />
+        <VerificationQueue
+          rows={credentialRows}
+          emptyMessage="No professional licenses are waiting for review."
+        />
       </section>
     </main>
   );

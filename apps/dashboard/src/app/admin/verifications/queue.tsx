@@ -106,7 +106,9 @@ function QueueCard({ row, onResolved }: { row: VerificationRow; onResolved: () =
           <dl className="mb-5 grid gap-3 rounded-xl border border-ink/10 bg-ink/[0.025] p-4 sm:grid-cols-2">
             {details.map(([label, value]) => (
               <div key={String(label)}>
-                <dt className="text-[11px] font-medium uppercase tracking-wide text-ink/45">{label}</dt>
+                <dt className="text-[11px] font-medium uppercase tracking-wide text-ink/45">
+                  {label}
+                </dt>
                 <dd className="mt-1 break-words text-sm font-medium text-ink">{value}</dd>
               </div>
             ))}

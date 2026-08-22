@@ -62,7 +62,8 @@ export async function decideVerification(_prev: StepState, formData: FormData): 
       document.jurisdiction,
       document.storage_path ?? document.url,
     ].some((value) => !String(value ?? "").trim());
-    if (missing) return { error: "This license is missing required fields or its supporting image." };
+    if (missing)
+      return { error: "This license is missing required fields or its supporting image." };
 
     if (document.expires_on && document.expires_on < new Date().toISOString().slice(0, 10)) {
       return { error: "This license is already expired and cannot be approved." };
@@ -95,14 +96,28 @@ export async function decideVerification(_prev: StepState, formData: FormData): 
     });
 
   if (logError) {
-    return { error: `Could not write the audit entry, so nothing was changed: ${logError.message}` };
+    return {
+      error: `Could not write the audit entry, so nothing was changed: ${logError.message}`,
+    };
   }
 
   const now = new Date().toISOString();
   const update =
     action === "approve"
-      ? { status: "approved", reviewed_by: adminId, verified_at: now, rejection_reason: null, updated_at: now }
-      : { status: "rejected", reviewed_by: adminId, verified_at: null, rejection_reason: reason, updated_at: now };
+      ? {
+          status: "approved",
+          reviewed_by: adminId,
+          verified_at: now,
+          rejection_reason: null,
+          updated_at: now,
+        }
+      : {
+          status: "rejected",
+          reviewed_by: adminId,
+          verified_at: null,
+          rejection_reason: reason,
+          updated_at: now,
+        };
 
   const { error: statusError } = await service
     .from("profile_documents")

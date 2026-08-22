@@ -10,7 +10,9 @@ const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 const MAX_BYTES = 8 * 1024 * 1024;
 
 function text(data: FormData, key: string, max = 160) {
-  return String(data.get(key) ?? "").trim().slice(0, max);
+  return String(data.get(key) ?? "")
+    .trim()
+    .slice(0, max);
 }
 
 function extension(mime: string) {
@@ -74,7 +76,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "One of the license dates is invalid." }, { status: 400 });
   }
   if (issuedOn && expiresOn && expiresOn < issuedOn) {
-    return NextResponse.json({ error: "Expiration date cannot be before the issued date." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Expiration date cannot be before the issued date." },
+      { status: 400 },
+    );
   }
   if (!file || !ALLOWED_TYPES.has(file.type) || file.size <= 0 || file.size > MAX_BYTES) {
     return NextResponse.json(
@@ -111,7 +116,13 @@ export async function POST(request: Request) {
     .filter((value: unknown): value is string => typeof value === "string" && value.length > 0);
   if (oldPaths.length) await service.storage.from("identity-documents").remove(oldPaths);
   if ((pending ?? []).length) {
-    await service.from("profile_documents").delete().in("id", pending.map((row: any) => row.id));
+    await service
+      .from("profile_documents")
+      .delete()
+      .in(
+        "id",
+        pending.map((row: any) => row.id),
+      );
   }
 
   const storagePath = `${user.id}/licenses/${randomUUID()}.${extension(file.type)}`;
