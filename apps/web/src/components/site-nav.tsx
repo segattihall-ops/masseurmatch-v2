@@ -6,6 +6,25 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { PRIMARY_NAV } from "./site-nav-data";
 
+/**
+ * The site's primary navigation.
+ *
+ * ---------------------------------------------------------------------------
+ * What this replaces
+ * ---------------------------------------------------------------------------
+ * A row of four links behind `hidden sm:flex`, and on anything narrower two
+ * words — "Find" and "List". There was no menu button, so on a phone four of
+ * the six destinations in the bar were unreachable from the bar, and the other
+ * forty-odd pages were reachable only by scrolling to the footer.
+ *
+ * ---------------------------------------------------------------------------
+ * Why the group label is a link and the arrow is a button
+ * ---------------------------------------------------------------------------
+ * Splitting them is what lets "Find a therapist" go somewhere on click while
+ * the submenu still opens on keyboard. Making the whole thing a button loses
+ * the destination; making it a link and opening on hover alone loses keyboard
+ * users. Hover opens it for pointers, the arrow opens it for everyone else.
+ */
 export function SiteNav({ signUpHref }: { signUpHref: string | null }) {
   const pathname = usePathname();
   const [openGroup, setOpenGroup] = useState<string | null>(null);
@@ -19,6 +38,8 @@ export function SiteNav({ signUpHref }: { signUpHref: string | null }) {
     setDrawerOpen(false);
   }, []);
 
+  // Navigating closes whatever is open. Without this the panel sits over the
+  // page it just navigated to, which reads as a broken link.
   useEffect(() => {
     closeAll();
   }, [pathname, closeAll]);
@@ -33,6 +54,8 @@ export function SiteNav({ signUpHref }: { signUpHref: string | null }) {
       closeAll();
     };
 
+    // A click anywhere else dismisses the dropdown — the behaviour every menu
+    // has, and the one people try first when they opened the wrong one.
     const onPointerDown = (event: MouseEvent) => {
       const target = event.target as Node;
       if (bar.current?.contains(target) || drawer.current?.contains(target)) return;
@@ -47,6 +70,7 @@ export function SiteNav({ signUpHref }: { signUpHref: string | null }) {
     };
   }, [openGroup, drawerOpen, closeAll]);
 
+  // The page behind an open drawer must not scroll under it.
   useEffect(() => {
     if (!drawerOpen) return;
     const previous = document.body.style.overflow;
@@ -62,6 +86,9 @@ export function SiteNav({ signUpHref }: { signUpHref: string | null }) {
 
   return (
     <>
+      {/* ---------------------------------------------------------------- */}
+      {/* Pointer-width bar                                                 */}
+      {/* ---------------------------------------------------------------- */}
       <div ref={bar} className="hidden lg:block">
         <ul className="flex list-none items-center gap-1 p-0 text-sm">
           {PRIMARY_NAV.map((group) => {
@@ -131,6 +158,9 @@ export function SiteNav({ signUpHref }: { signUpHref: string | null }) {
         </ul>
       </div>
 
+      {/* ---------------------------------------------------------------- */}
+      {/* Right-hand actions, at every width                                */}
+      {/* ---------------------------------------------------------------- */}
       <div className="flex shrink-0 items-center gap-2">
         {signUpHref ? (
           <a
@@ -161,6 +191,9 @@ export function SiteNav({ signUpHref }: { signUpHref: string | null }) {
         </button>
       </div>
 
+      {/* ---------------------------------------------------------------- */}
+      {/* Drawer                                                            */}
+      {/* ---------------------------------------------------------------- */}
       {drawerOpen ? (
         <div className="fixed inset-0 z-50 lg:hidden">
           <button
@@ -192,6 +225,10 @@ export function SiteNav({ signUpHref }: { signUpHref: string | null }) {
             </div>
 
             <div className="flex-1 overflow-y-auto px-3 py-3">
+              {/* `<details>` rather than more state: the browser already knows
+                  how to open and close a disclosure, and it stays keyboard
+                  operable with no code of ours in the way. The first group is
+                  open so the drawer never looks like a list of four words. */}
               {PRIMARY_NAV.map((group, index) => (
                 <details
                   key={group.label}
@@ -247,6 +284,9 @@ export function SiteNav({ signUpHref }: { signUpHref: string | null }) {
     </>
   );
 }
+
+/* Inline rather than a dependency: three glyphs is not worth an icon package
+   in an app that ships none today. */
 
 function Chevron({ className = "" }: { className?: string }) {
   return (

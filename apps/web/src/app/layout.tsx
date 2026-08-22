@@ -24,6 +24,11 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en-US" className={satoshi.variable}>
+      {/*
+        The bottom padding is what stops the mobile bar covering the last of the
+        footer. It has to match the bar's own height (`min-h-14`) plus the safe
+        area, and it is dropped from `sm` up where the bar is not rendered.
+      */}
       <body className="flex min-h-screen flex-col overflow-x-hidden bg-background pb-[calc(3.5rem+env(safe-area-inset-bottom))] font-sans text-foreground antialiased sm:pb-0">
         <MotionProvider>
           <SiteHeader />

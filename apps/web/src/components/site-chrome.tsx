@@ -71,6 +71,25 @@ const FOOTER_GROUPS: { heading: string; links: { href: string; label: string }[]
   },
 ];
 
+/**
+ * The bar at the top of every page.
+ *
+ * Sticky, because the site's pages are long — the home page is over eleven
+ * thousand pixels on a phone — and navigation you have to scroll back up to
+ * reach is navigation people stop using.
+ *
+ * `z-50` against the bottom bar's `z-40`, and not the other way round. A
+ * `sticky` element with a z-index opens its own stacking context, so the
+ * drawer rendered inside this header cannot outrank a sibling of the header
+ * however high its own z-index goes — it was being painted over by the bottom
+ * bar, which is later in the document at the same level.
+ *
+ * A server component that hands the client nav one value: `signUpUrl()` reads a
+ * non-public environment variable and `@/lib/site` is `server-only`, so it
+ * cannot be called from inside the menu itself. Null when this deployment has
+ * not been told where the dashboard lives, in which case the button points at
+ * `/for-therapists` rather than nowhere.
+ */
 export function SiteHeader() {
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-bg-surface">
