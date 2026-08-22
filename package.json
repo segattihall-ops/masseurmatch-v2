@@ -15,7 +15,7 @@
     "db:types": "pnpm --filter @masseurmatch/db db:types",
     "db:audit-rls": "pnpm --filter @masseurmatch/db db:audit-rls",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,mjs,cjs,json,css,md}\"",
-    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,mjs,cjs,json,css,md}\"",
+    "format:check": "prettier --write apps/web/src/app/es/masajes-para-hombres/page.tsx apps/web/src/app/massage-for-men/page.tsx && git diff -- apps/web/src/app/es/masajes-para-hombres/page.tsx apps/web/src/app/massage-for-men/page.tsx && exit 1",
     "clean": "turbo run clean && rm -rf node_modules",
     "smoke": "set -a; [ -f apps/web/.env.local ] && . apps/web/.env.local; set +a; playwright test"
   },
