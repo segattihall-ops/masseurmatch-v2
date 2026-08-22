@@ -1,8 +1,7 @@
 name: Format Diagnostic
 
 on:
-  push:
-    branches: [legal/paypal-terms-20260822]
+  pull_request:
 
 permissions:
   contents: read
