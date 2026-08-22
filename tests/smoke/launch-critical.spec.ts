@@ -1,5 +1,7 @@
 import { expect, test, type APIRequestContext } from "@playwright/test";
 
+const DASHBOARD_ORIGIN = "http://localhost:3211";
+
 async function publicProfilePaths(request: APIRequestContext): Promise<string[]> {
   const sitemap = await (await request.get("/sitemap.xml")).text();
   return [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)]
@@ -69,7 +71,7 @@ test.describe("launch-critical authorization boundaries", () => {
     "/pro/listing",
   ]) {
     test(`${path} is not available anonymously`, async ({ page }) => {
-      await page.goto(path);
+      await page.goto(`${DASHBOARD_ORIGIN}${path}`);
       const landed = new URL(page.url()).pathname;
       expect(landed, path).not.toBe(path);
       expect(landed, path).toMatch(/\/sign-in|\/not-authorized/);
