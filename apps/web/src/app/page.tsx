@@ -28,7 +28,7 @@ import { KnottyChat } from "./knotty-chat";
 
 export const revalidate = DIRECTORY_REVALIDATE_SECONDS;
 
-const HOME_TITLE = `${SITE_NAME} — Verified Male Massage Therapists`;
+const HOME_TITLE = `${SITE_NAME} — Male Massage Therapist Directory`;
 
 export const metadata: Metadata = {
   title: HOME_TITLE,
@@ -49,7 +49,7 @@ export const metadata: Metadata = {
 };
 
 const discoverySignals = [
-  ["Reviewed profiles", "Before public approval"],
+  ["Public profiles", "Provider-submitted details"],
   ["Direct contact", "No booking middleman"],
   ["Local discovery", "City and service pages"],
 ] as const;
@@ -136,8 +136,10 @@ export default async function HomePage() {
               id="home-hero-title"
               className="mt-5 max-w-5xl font-display text-[clamp(2.75rem,7vw,6.5rem)] font-bold leading-[0.96] tracking-[-0.045em] text-white"
             >
-              Verified male massage therapists,
-              <span className="mt-2 block text-[#d66b7a] sm:mt-3">without the guesswork.</span>
+              Discover independent male massage therapists.
+              <span className="mt-2 block text-[#d66b7a] sm:mt-3">
+                Compare profiles. Contact directly.
+              </span>
             </h1>
 
             <p className="mt-7 max-w-2xl text-base leading-7 text-white/68 sm:text-lg sm:leading-8">
