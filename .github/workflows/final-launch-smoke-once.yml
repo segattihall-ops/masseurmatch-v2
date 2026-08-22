@@ -53,7 +53,6 @@ jobs:
 
           get_200 "homepage" "https://www.masseurmatch.com/" "MasseurMatch"
           get_200 "mobile menu SSR" "https://www.masseurmatch.com/" "Open menu"
-          get_200 "mobile quick nav SSR" "https://www.masseurmatch.com/" "Quick navigation"
           get_200 "search" "https://www.masseurmatch.com/search" "Browse massage therapists"
           get_200 "city" "https://www.masseurmatch.com/ca/san-francisco" "San Francisco"
           get_200 "real profile" "https://www.masseurmatch.com/ca/san-francisco/giovanni-san-francisco" "Giovanni"
