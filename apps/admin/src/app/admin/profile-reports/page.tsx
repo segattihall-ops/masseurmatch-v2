@@ -21,35 +21,36 @@ export default async function AdminProfileReportsPage({
 }: {
   searchParams: { status?: string };
 }) {
-  await requireAdmin("/admin/profile-reports");
+  await requireAdmin("/profile-reports");
   const status = FILTERS.includes(searchParams.status as (typeof FILTERS)[number])
     ? (searchParams.status as (typeof FILTERS)[number])
     : "open";
   const reports = await listAdminReports(status);
 
   return (
-    <main className="mx-auto w-full max-w-5xl px-6 py-12">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-semibold text-ink">Safety reports</h1>
-          <p className="mt-1 max-w-2xl text-sm text-ink/60">
+    <main className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 sm:py-12">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-semibold text-ink sm:text-3xl">Safety reports</h1>
+          <p className="mt-1 max-w-2xl text-sm leading-6 text-ink/60">
             One queue for legacy complaints and current profile reports. Decisions are written to
             the audit log before the underlying report is changed.
           </p>
         </div>
-        <Link href="/admin/audit-log" className="text-sm font-medium text-wine hover:underline">
+        <Link
+          href="/audit-log"
+          className="inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-wine/20 px-3 py-2 text-sm font-medium text-wine hover:bg-wineSoft/30 sm:w-auto"
+        >
           Audit log →
         </Link>
       </div>
 
-      <nav aria-label="Report status" className="mt-6 flex flex-wrap gap-2">
+      <nav aria-label="Report status" className="mt-6 flex gap-2 overflow-x-auto pb-1 sm:flex-wrap">
         {FILTERS.map((value) => (
           <Link
             key={value}
-            href={
-              value === "open" ? "/admin/profile-reports" : `/admin/profile-reports?status=${value}`
-            }
-            className={`rounded-full px-3 py-1 text-sm capitalize ${
+            href={value === "open" ? "/profile-reports" : `/profile-reports?status=${value}`}
+            className={`shrink-0 rounded-full px-3 py-1.5 text-sm capitalize ${
               status === value ? "bg-wine text-white" : "bg-ink/5 text-ink/70 hover:bg-ink/10"
             }`}
           >
@@ -63,7 +64,7 @@ export default async function AdminProfileReportsPage({
       </p>
 
       {reports.length === 0 ? (
-        <Card className="mt-6 p-8 text-center">
+        <Card className="mt-6 p-6 text-center sm:p-8">
           <p className="text-sm text-ink/60">Nothing matches this status.</p>
         </Card>
       ) : (
@@ -82,11 +83,13 @@ export default async function AdminProfileReportsPage({
 
             return (
               <li key={`${report.source}-${report.id}`}>
-                <Card className="p-5">
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
+                <Card className="p-4 sm:p-5">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <h2 className="text-lg font-semibold text-ink">{report.profileName}</h2>
+                        <h2 className="break-words text-lg font-semibold text-ink">
+                          {report.profileName}
+                        </h2>
                         <span className="rounded-full bg-ink/5 px-2 py-0.5 text-xs uppercase tracking-wide text-ink/60">
                           {report.source === "profile_report"
                             ? "Profile report"
@@ -96,25 +99,25 @@ export default async function AdminProfileReportsPage({
                           {report.category}
                         </span>
                       </div>
-                      <p className="mt-1 text-xs text-ink/50">
+                      <p className="mt-1 text-xs leading-5 text-ink/50">
                         {new Date(report.createdAt).toLocaleString()} · status {report.status}
                       </p>
                     </div>
                     {report.reporterEmail ? (
                       <a
                         href={`mailto:${report.reporterEmail}`}
-                        className="text-sm font-medium text-wine hover:underline"
+                        className="inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-wine/20 px-3 py-2 text-sm font-medium text-wine sm:w-auto"
                       >
                         Contact reporter
                       </a>
                     ) : null}
                   </div>
 
-                  <p className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-ink/75">
+                  <p className="mt-4 whitespace-pre-wrap break-words text-sm leading-relaxed text-ink/75">
                     {report.reason}
                   </p>
                   {report.adminNotes ? (
-                    <p className="mt-3 rounded-lg bg-ink/5 px-3 py-2 text-sm text-ink/65">
+                    <p className="mt-3 rounded-lg bg-ink/5 px-3 py-2 text-sm leading-6 text-ink/65">
                       Admin notes: {report.adminNotes}
                     </p>
                   ) : null}
@@ -135,18 +138,18 @@ export default async function AdminProfileReportsPage({
                       <textarea
                         id={`notes-${report.source}-${report.id}`}
                         name="notes"
-                        rows={2}
+                        rows={3}
                         defaultValue={report.adminNotes ?? ""}
-                        className="w-full rounded-lg border border-ink/15 bg-transparent px-3 py-2 text-sm text-ink"
+                        className="w-full rounded-lg border border-ink/15 bg-transparent px-3 py-2 text-base text-ink sm:text-sm"
                       />
-                      <div className="flex flex-wrap gap-2">
+                      <div className="grid gap-2 sm:flex sm:flex-wrap">
                         {statuses.map((next) => (
                           <button
                             key={next}
                             type="submit"
                             name="status"
                             value={next}
-                            className={`rounded-lg px-3 py-2 text-sm font-medium ${
+                            className={`min-h-11 w-full rounded-lg px-3 py-2 text-sm font-medium sm:w-auto ${
                               next === "dismissed"
                                 ? "border border-ink/15 text-ink/70"
                                 : "bg-wine text-white"
