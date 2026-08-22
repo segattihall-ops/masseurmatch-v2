@@ -131,8 +131,8 @@ export default function Page() {
       </p>
       <p>
         Payment credentials and full payment-method details are handled by PayPal rather than stored
-        in full by MasseurMatch. Your payment activity may also be subject to PayPal&apos;s applicable
-        user agreements, privacy terms, and dispute procedures.
+        in full by MasseurMatch. Your payment activity may also be subject to PayPal&apos;s
+        applicable user agreements, privacy terms, and dispute procedures.
       </p>
 
       <h2>8. Payment Disputes and Chargebacks</h2>
@@ -167,9 +167,9 @@ export default function Page() {
       <h2>10. Annual Plans</h2>
       <p>
         Annual subscriptions are generally non-refundable after the first 14 calendar days from the
-        initial purchase date, except as required by law. Within the first 14 days, you may request a
-        prorated refund for the unused portion. Any approved refund will be processed through PayPal
-        to the original payment source when supported.
+        initial purchase date, except as required by law. Within the first 14 days, you may request
+        a prorated refund for the unused portion. Any approved refund will be processed through
+        PayPal to the original payment source when supported.
       </p>
 
       <h2>11. Changes to This Policy</h2>
