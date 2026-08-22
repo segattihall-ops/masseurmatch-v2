@@ -102,11 +102,55 @@ export function currentDemand(rows: DemandRow[], now: Date = new Date()): Demand
   };
 }
 
-/** `Busy and rising` — one line, no jargon, no invented precision. */
-export function demandLabel(reading: DemandReading | null): string {
+/**
+ * Where this city sits against every other city collected this week.
+ *
+ * ---------------------------------------------------------------------------
+ * Why a rank and not the raw score
+ * ---------------------------------------------------------------------------
+ * `demand_scores.score` is not a percentage and never was. Measured across the
+ * 59 live readings in this database: the range is **7 to 13**, mean 9.3. So a
+ * page that renders "10" next to "out of 100" tells a therapist their market is
+ * dead when 10 is in fact an ordinary week in a large city — and a bucketing
+ * like `>= 70 ? "Busy"` labels literally every city in the country "Quiet".
+ *
+ * A rank is the honest reading of a number whose absolute scale means nothing:
+ * 10 is meaningless, "12th busiest of 59 cities" is not.
+ *
+ * Ties share the better rank, the way league tables do — two cities on 11 are
+ * both 4th, and neither is told it is behind the other on a number they match.
+ */
+export type MarketStanding = {
+  /** 1 is the busiest city collected this week. */
+  rank: number;
+  total: number;
+  /** 100 is the top of the table. Null-safe: a single-city week is 100. */
+  percentile: number;
+};
+
+export function marketStanding(allScores: number[], score: number): MarketStanding | null {
+  const scores = allScores.filter((value) => Number.isFinite(value));
+  if (scores.length === 0) return null;
+
+  const rank = 1 + scores.filter((value) => value > score).length;
+  const total = scores.length;
+  const percentile = total === 1 ? 100 : Math.round(((total - rank) / (total - 1)) * 100);
+
+  return { rank, total, percentile };
+}
+
+/**
+ * One line, no jargon, no invented precision.
+ *
+ * Reads from the standing rather than the score, for the reason above. Without
+ * a standing there is nothing comparative to say, so it says what it knows.
+ */
+export function demandLabel(
+  reading: DemandReading | null,
+  standing: MarketStanding | null = null,
+): string {
   if (!reading) return "No demand data for your city yet.";
 
-  const level = reading.score >= 70 ? "Busy" : reading.score >= 40 ? "Steady" : "Quiet";
   const movement =
     reading.direction === "rising"
       ? "and picking up"
@@ -114,7 +158,31 @@ export function demandLabel(reading: DemandReading | null): string {
         ? "and easing off"
         : "and level";
 
-  return `${level} ${movement}.`;
+  if (!standing) return `Collected this week, ${movement.replace(/^and /, "")}.`;
+
+  const level =
+    standing.percentile >= 75
+      ? "Among the busiest markets we collect"
+      : standing.percentile >= 40
+        ? "A middling market"
+        : "A quieter market";
+
+  return `${level} — ${ordinal(standing.rank)} of ${standing.total} cities this week, ${movement}.`;
+}
+
+function ordinal(value: number): string {
+  const rest = value % 100;
+  if (rest >= 11 && rest <= 13) return `${value}th`;
+  switch (value % 10) {
+    case 1:
+      return `${value}st`;
+    case 2:
+      return `${value}nd`;
+    case 3:
+      return `${value}rd`;
+    default:
+      return `${value}th`;
+  }
 }
 
 /**

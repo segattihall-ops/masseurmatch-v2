@@ -73,7 +73,24 @@ export function ProDemandRadar({ demand }: { demand: MyCityDemand }) {
             {reading ? (
               <>
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                  <Stat label="Demand score" value={String(reading.score)} hint="Out of 100" />
+                  <Stat
+                    label="Busiest ranking"
+                    value={demand.standing ? `#${demand.standing.rank}` : String(reading.score)}
+                    hint={
+                      demand.standing
+                        ? `of ${demand.standing.total} cities collected`
+                        : "Score for this week"
+                    }
+                  />
+                  <Stat
+                    label="Percentile"
+                    value={demand.standing ? `${demand.standing.percentile}` : "—"}
+                    hint={
+                      demand.standing
+                        ? "100 is the busiest market"
+                        : "Needs other cities to compare against"
+                    }
+                  />
                   <Stat
                     label="Direction"
                     value={
@@ -85,21 +102,29 @@ export function ProDemandRadar({ demand }: { demand: MyCityDemand }) {
                     }
                     hint="Against last week"
                   />
-                  <Stat
-                    label="Competition"
-                    value={reading.competition === null ? "—" : String(reading.competition)}
-                    hint={
-                      reading.competition === null ? "Not reported this week" : "Higher is busier"
-                    }
-                  />
                 </div>
 
                 <p className="mt-4 text-sm text-muted-foreground">
-                  {demandLabel(reading)}
+                  {demandLabel(reading, demand.standing)}
                   {reading.weekStart
                     ? ` Week beginning ${new Date(reading.weekStart).toLocaleDateString()}.`
                     : ""}
                 </p>
+
+                {/* Said once, and only when it is true. `competition_index` is
+                    null on every live row in this database, so a "Competition"
+                    figure would be a permanent em dash pretending to be a
+                    measurement. Naming the gap is more use than showing it. */}
+                {reading.competition === null ? (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Competition is not part of this reading yet — our collector is not reporting it
+                    for any city.
+                  </p>
+                ) : (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Competition index {reading.competition}. Higher is busier.
+                  </p>
+                )}
               </>
             ) : (
               <EmptyState>
