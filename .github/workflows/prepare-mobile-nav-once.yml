@@ -1,0 +1,45 @@
+name: Prepare mobile nav once
+
+on:
+  push:
+    branches:
+      - feat/launch-mobile-nav
+
+permissions:
+  contents: write
+
+jobs:
+  prepare:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/launch-mobile-nav
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --lockfile-only
+      - run: >-
+          pnpm exec prettier --write
+          apps/web/package.json
+          apps/web/src/app/layout.tsx
+          apps/web/src/components/site-bottom-bar.tsx
+          apps/web/src/components/site-chrome.tsx
+          apps/web/src/components/site-nav-data.ts
+          apps/web/src/components/site-nav.tsx
+          apps/web/tests/site-nav.test.ts
+          apps/web/vitest.config.ts
+          pnpm-lock.yaml
+      - name: Commit generated lockfile and formatting
+        run: |
+          if git diff --quiet; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apps/web/package.json apps/web/src/app/layout.tsx apps/web/src/components/site-bottom-bar.tsx apps/web/src/components/site-chrome.tsx apps/web/src/components/site-nav-data.ts apps/web/src/components/site-nav.tsx apps/web/tests/site-nav.test.ts apps/web/vitest.config.ts pnpm-lock.yaml
+          git commit -m "chore(web): prepare mobile navigation for CI"
+          git push origin HEAD:feat/launch-mobile-nav
