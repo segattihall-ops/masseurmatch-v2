@@ -98,9 +98,9 @@ export default async function AdminPeoplePage({
             {people.map((person) => (
               <tr key={person.id} className="border-b border-ink/5 last:border-b-0">
                 <td className="px-4 py-3">
-                  <p className="font-medium text-ink">
+                  <Link href={`/people/${person.id}`} className="font-medium text-wine hover:underline">
                     {person.display_name || person.full_name || "Unnamed"}
-                  </p>
+                  </Link>
                   <p className="text-xs text-ink/50">{person.email ?? "—"}</p>
                 </td>
                 <td className="px-4 py-3 text-ink/70">
