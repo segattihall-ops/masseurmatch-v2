@@ -14,8 +14,12 @@ import { absoluteUrl } from "@/lib/site";
  * Kept as data rather than spelled out below, because the list is now long
  * enough that a page added without a sitemap entry would not be noticed. A test
  * asserts every one of these resolves.
+ *
+ * `/search` is intentionally excluded because robots.ts disallows crawler access
+ * to filter permutations; stable city/service/profile URLs carry the indexable
+ * discovery content instead.
  */
-const HUBS = ["/", "/search", "/therapists", "/cities", "/states", "/guides", "/compare", "/blog"];
+const HUBS = ["/", "/therapists", "/cities", "/states", "/guides", "/compare", "/blog"];
 
 const MARKETING = [
   "/about",
