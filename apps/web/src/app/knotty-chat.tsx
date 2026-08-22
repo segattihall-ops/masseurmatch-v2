@@ -117,7 +117,10 @@ export function KnottyChat({
         ) : null}
 
         <form onSubmit={ask} className="flex gap-2">
-          <label className="sr-only" htmlFor={profile ? `knotty-message-${profile.id}` : "knotty-message"}>
+          <label
+            className="sr-only"
+            htmlFor={profile ? `knotty-message-${profile.id}` : "knotty-message"}
+          >
             What would you like to know?
           </label>
           <input

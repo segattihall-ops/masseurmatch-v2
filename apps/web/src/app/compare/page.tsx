@@ -28,7 +28,9 @@ export const metadata: Metadata = {
 export const dynamic = "force-static";
 
 const PRIMARY_NAMES = new Set(["MasseurFinder", "RentMasseur"]);
-const primaryComparisons = competitorsByTier.filter((competitor) => PRIMARY_NAMES.has(competitor.name));
+const primaryComparisons = competitorsByTier.filter((competitor) =>
+  PRIMARY_NAMES.has(competitor.name),
+);
 const TIERS: CompetitorTier[] = [2, 3];
 
 export default function ComparePage() {

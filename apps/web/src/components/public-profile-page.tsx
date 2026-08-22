@@ -964,29 +964,44 @@ export function PublicProfilePage({
             </p>
             <div className="grid gap-4 md:grid-cols-2">
               {reviews.slice(0, showAllReviews ? reviews.length : 2).map((review) => (
-                <article
+                <details
                   key={review.id}
-                  className="rounded-2xl border border-border bg-bg-surface p-5"
+                  className="group rounded-2xl border border-border bg-bg-surface p-5"
                 >
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="font-semibold text-text-primary">
-                      {review.public_label ?? review.reviewer_name ?? "Client review"}
+                  <summary className="cursor-pointer list-none">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="font-semibold text-text-primary">
+                          {review.public_label ?? review.reviewer_name ?? "Client review"}
+                        </p>
+                        {review.review_date ? (
+                          <p className="mt-1 text-xs text-text-secondary">
+                            {formatDate(review.review_date)}
+                          </p>
+                        ) : null}
+                      </div>
+                      <div className="flex items-center gap-3">
+                        {review.rating ? (
+                          <span className="text-sm font-semibold text-text-primary">
+                            {Number(review.rating).toFixed(1)} / 5
+                          </span>
+                        ) : null}
+                        <span
+                          aria-hidden="true"
+                          className="text-lg text-text-secondary transition group-open:rotate-45"
+                        >
+                          +
+                        </span>
+                      </div>
+                    </div>
+                    <p className="mt-2 text-xs font-medium text-brand-secondary group-open:hidden">
+                      Read review
                     </p>
-                    {review.rating ? (
-                      <span className="text-sm font-semibold text-text-primary">
-                        {Number(review.rating).toFixed(1)} / 5
-                      </span>
-                    ) : null}
-                  </div>
-                  <p className="mt-3 whitespace-pre-line text-sm leading-6 text-text-secondary">
+                  </summary>
+                  <p className="mt-4 whitespace-pre-line border-t border-border pt-4 text-sm leading-6 text-text-secondary">
                     {review.review_text}
                   </p>
-                  {review.review_date ? (
-                    <p className="mt-3 text-xs text-text-secondary">
-                      {formatDate(review.review_date)}
-                    </p>
-                  ) : null}
-                </article>
+                </details>
               ))}
             </div>
             {reviews.length > 2 ? (

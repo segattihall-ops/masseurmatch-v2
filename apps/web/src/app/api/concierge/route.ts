@@ -196,7 +196,9 @@ async function answerForDirectory(
   message: string,
   therapists: Awaited<ReturnType<typeof getVisibleTherapists>>,
 ) {
-  const cities = [...new Set(therapists.map((therapist) => therapist.city).filter(Boolean))] as string[];
+  const cities = [
+    ...new Set(therapists.map((therapist) => therapist.city).filter(Boolean)),
+  ] as string[];
   const want = understand(message, cities);
   const matches = matchListings(therapists as unknown as ConciergeListing[], want);
   const deterministic = conciergeReply(want, matches);
@@ -235,7 +237,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ reply: "I did not catch that." }, { status: 400 });
   }
 
-  const message = String((body as { message?: unknown })?.message ?? "").slice(0, 2000).trim();
+  const message = String((body as { message?: unknown })?.message ?? "")
+    .slice(0, 2000)
+    .trim();
   const profileId = String((body as { profileId?: unknown })?.profileId ?? "").trim();
   if (!message) return NextResponse.json({ reply: "Ask me something about the profile." });
 

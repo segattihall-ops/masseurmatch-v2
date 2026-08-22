@@ -47,8 +47,6 @@ export const PRIMARY_NAV: NavItem[] = [
       { href: "/blog", label: "Blog" },
       { href: "/how-it-works", label: "How it works" },
       { href: "/compare", label: "Compare directories" },
-      { href: "/compare/masseurmatch-vs-masseurfinder", label: "vs MasseurFinder" },
-      { href: "/compare/masseurmatch-vs-rentmasseur", label: "vs RentMasseur" },
       { href: "/faq", label: "FAQ" },
     ],
   },
