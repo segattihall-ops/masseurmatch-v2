@@ -1,14 +1,16 @@
 import type { Metadata } from "next";
-import Image from "next/image";
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Avatar, Card, CardContent, FadeIn, StaggerItem, StaggerList } from "@masseurmatch/ui";
 import {
   getCities,
   getProfileBySlug,
   getVisibleTherapists,
   searchTherapists,
 } from "@masseurmatch/db/actions/directory";
+import {
+  getPublicImportedReviews,
+  getPublicProfileSupplement,
+  type PublicProfileSupplement,
+} from "@masseurmatch/db/actions/public-profile";
 import {
   citySlug,
   DIRECTORY_REVALIDATE_SECONDS,
@@ -19,6 +21,7 @@ import {
 } from "@masseurmatch/db/actions/directory-config";
 
 import { LegacyDirectoryLanding } from "@/components/legacy-directory-landing";
+import { PublicProfilePage, type ProfileFaqItem } from "@/components/public-profile-page";
 import { getLegacyKeyword, getLegacySegment, formatLegacyArea } from "@/content/legacy-directory";
 import { hasImage } from "@/lib/cloudinary";
 import { jsonLdScript, therapistJsonLd } from "@/lib/jsonld";
@@ -41,7 +44,6 @@ type LegacyLanding = {
   canonicalPath: string;
 };
 
-/** Prerender every publicly visible profile that has a city to route under. */
 export async function generateStaticParams() {
   const therapists = await getVisibleTherapists();
   return therapists
@@ -53,11 +55,6 @@ export async function generateStaticParams() {
     }));
 }
 
-/**
- * A slug alone is not enough to prove a canonical profile URL. Without this
- * location check, any `/anything/anything/{real-slug}` URL rendered the same
- * profile and created unlimited duplicate-content paths.
- */
 async function getCanonicalProfile(params: ProfileParams["params"]): Promise<ProfileDetail | null> {
   const profile = await getProfileBySlug(params.slug);
   if (!profile?.city || !profile.state) return null;
@@ -82,15 +79,12 @@ function mergeLegacyFilters(first: DirectoryFilters, second: DirectoryFilters): 
   };
 }
 
-async function resolveLegacyLanding(
-  params: ProfileParams["params"],
-): Promise<LegacyLanding | null> {
+async function resolveLegacyLanding(params: ProfileParams["params"]): Promise<LegacyLanding | null> {
   const legacyCity = await getLegacyCity(params.state);
   if (!legacyCity) return null;
 
   const canonicalPath = `/${params.state}/${params.city}/${params.slug}`;
 
-  // OLD neighborhood route: /{city}/areas/{area}
   if (params.city === "areas") {
     const area = formatLegacyArea(params.slug);
     if (!area) return null;
@@ -103,7 +97,6 @@ async function resolveLegacyLanding(
     };
   }
 
-  // OLD long-tail route: /{city}/{segment}/{keyword}
   const segment = getLegacySegment(params.city);
   const keyword = getLegacyKeyword(params.slug);
   if (!segment || !keyword) return null;
@@ -117,9 +110,61 @@ async function resolveLegacyLanding(
   };
 }
 
+function customFaqItems(value: unknown): ProfileFaqItem[] {
+  let raw = value;
+  if (typeof raw === "string") {
+    try {
+      raw = JSON.parse(raw) as unknown;
+    } catch {
+      return [];
+    }
+  }
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((item) => {
+      if (!item || typeof item !== "object") return null;
+      const record = item as Record<string, unknown>;
+      const question = String(record.question ?? record.q ?? "").trim();
+      const answer = String(record.answer ?? record.a ?? "").trim();
+      return question && answer ? { question, answer } : null;
+    })
+    .filter((item): item is ProfileFaqItem => Boolean(item));
+}
+
+function buildProfileFaq(profile: ProfileDetail, supplement: PublicProfileSupplement): ProfileFaqItem[] {
+  const name = therapistName(profile).split(/\s+/)[0] || therapistName(profile);
+  const custom = customFaqItems(supplement.custom_faq);
+  const standard: ProfileFaqItem[] = [
+    {
+      question: `How do I contact ${name}?`,
+      answer: `Use the public contact options shown on this profile. MasseurMatch is a directory, so availability, exact location, services and final rates are confirmed directly with ${name}.`,
+    },
+    {
+      question: `Does ${name} offer incall or outcall?`,
+      answer:
+        profile.offers_incall && profile.offers_outcall
+          ? `${name} lists both incall and outcall. Confirm the exact location or travel area directly before meeting.`
+          : profile.offers_incall
+            ? `${name} lists incall. Confirm the exact location and access details directly.`
+            : profile.offers_outcall
+              ? `${name} lists outcall. Confirm that your location is within the provider's service area.`
+              : `The profile does not currently specify incall or outcall. Ask ${name} directly.`,
+    },
+    {
+      question: `What do MasseurMatch verification badges mean on ${name}'s profile?`,
+      answer:
+        "Badges describe specific MasseurMatch profile or identity checks. They are not a professional-license verification, background check, guarantee, or endorsement.",
+    },
+  ];
+  return [...custom, ...standard].filter(
+    (item, index, array) => array.findIndex((candidate) => candidate.question === item.question) === index,
+  );
+}
+
 export async function generateMetadata({ params }: ProfileParams): Promise<Metadata> {
   const profile = await getCanonicalProfile(params);
   if (profile) {
+    const [supplement] = await Promise.all([getPublicProfileSupplement(profile.id)]);
     const name = therapistName(profile);
     const location = profile.city && profile.state ? ` — ${profile.city}, ${profile.state}` : "";
     const title = profile.seo_title ?? `${name}${location}`;
@@ -127,13 +172,14 @@ export async function generateMetadata({ params }: ProfileParams): Promise<Metad
       profile.seo_description ??
       profile.headline ??
       profile.tagline ??
-      `${name}, a verified male massage therapist on ${SITE_NAME}.`;
+      `${name}, an independent massage therapist listed on ${SITE_NAME}.`;
     const canonical = absoluteUrl(`/${params.state}/${params.city}/${params.slug}`);
-    const image = profile.avatar_url ?? profile.photo_url;
+    const image = profile.avatar_url ?? profile.photo_url ?? profile.photos[0]?.url ?? null;
 
     return {
       title,
       description,
+      keywords: supplement.seo_keywords ?? undefined,
       alternates: { canonical },
       openGraph: {
         type: "profile",
@@ -193,154 +239,58 @@ export default async function ProfilePage({ params }: ProfileParams) {
     );
   }
 
+  const [supplement, reviews, nearby] = await Promise.all([
+    getPublicProfileSupplement(profile.id),
+    getPublicImportedReviews(profile.id, 100),
+    profile.city
+      ? searchTherapists({ city: citySlug(profile.city), state: profile.state?.toLowerCase() })
+      : Promise.resolve([]),
+  ]);
+  const relatedProfiles = await withApprovedProfilePhotos(
+    nearby.filter((therapist) => therapist.id !== profile.id).slice(0, 3),
+  );
+  const faqItems = buildProfileFaq(profile, supplement);
+  const canonicalPath = `/${params.state}/${params.city}/${params.slug}`;
   const name = therapistName(profile);
-  const hero = profile.avatar_url ?? profile.photo_url;
-  const services = [
-    ...new Set([...(profile.service_categories ?? []), ...(profile.massage_techniques ?? [])]),
-  ];
+
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: absoluteUrl("/") },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: `${profile.city}, ${profile.state}`,
+        item: absoluteUrl(`/${params.state}/${params.city}`),
+      },
+      { "@type": "ListItem", position: 3, name, item: absoluteUrl(canonicalPath) },
+    ],
+  };
+  const faqJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faqItems.map((faq) => ({
+      "@type": "Question",
+      name: faq.question,
+      acceptedAnswer: { "@type": "Answer", text: faq.answer },
+    })),
+  };
 
   return (
     <>
-      {/* Client-side on purpose: this page is ISR-cached, so counting in the
-          server component would report cache misses rather than visitors. */}
       <ViewBeacon profileId={profile.id} />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: jsonLdScript(therapistJsonLd(profile)) }}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(therapistJsonLd(profile)) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(breadcrumbJsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(faqJsonLd) }} />
+      <PublicProfilePage
+        profile={profile}
+        supplement={supplement}
+        reviews={reviews}
+        relatedProfiles={relatedProfiles}
+        faqItems={faqItems}
+        cityHref={`/${params.state}/${params.city}`}
       />
-
-      <main className="mx-auto w-full max-w-5xl px-6 pb-16 pt-12">
-        <nav aria-label="Breadcrumb" className="text-sm text-text-secondary">
-          <Link href={`/${params.state}/${params.city}`} className="hover:text-brand-secondary">
-            {profile.city}, {profile.state}
-          </Link>
-        </nav>
-
-        <header className="mt-6 flex flex-col gap-6 sm:flex-row sm:items-center">
-          {hasImage(hero) ? (
-            <Image
-              src={hero}
-              alt={name}
-              width={160}
-              height={160}
-              sizes="160px"
-              priority
-              className="h-40 w-40 shrink-0 rounded-full border border-border object-cover shadow-soft"
-            />
-          ) : (
-            <Avatar size="2xl" name={name} className="shrink-0" />
-          )}
-
-          <div className="space-y-2">
-            <h1 className="font-display text-ds-40 font-bold tracking-tight text-text-primary">
-              {name}
-            </h1>
-            {profile.headline ? (
-              <p className="text-ds-18 text-text-secondary">{profile.headline}</p>
-            ) : null}
-            <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-text-secondary">
-              {profile.city && profile.state ? (
-                <span>
-                  {profile.city}, {profile.state}
-                </span>
-              ) : null}
-              {profile.is_verified_identity ? (
-                <span className="font-semibold text-badge-verified">ID verified</span>
-              ) : null}
-              {profile.years_experience ? (
-                <span>{profile.years_experience} years experience</span>
-              ) : null}
-              {profile.lgbtq_affirming ? <span>LGBTQ+ affirming</span> : null}
-            </p>
-          </div>
-        </header>
-
-        {profile.bio ? (
-          <FadeIn whileInView className="mt-12 max-w-3xl">
-            <h2 className="font-display text-ds-24 font-bold tracking-tight text-text-primary">
-              About
-            </h2>
-            <p className="mt-3 whitespace-pre-line text-text-secondary">{profile.bio}</p>
-          </FadeIn>
-        ) : null}
-
-        {services.length > 0 ? (
-          <FadeIn whileInView className="mt-12">
-            <h2 className="font-display text-ds-24 font-bold tracking-tight text-text-primary">
-              Services
-            </h2>
-            <ul className="mt-4 flex list-none flex-wrap gap-2 p-0">
-              {services.map((service) => (
-                <li
-                  key={service}
-                  className="rounded-full bg-brand-soft px-3 py-1.5 text-sm font-medium text-brand-secondary"
-                >
-                  {service}
-                </li>
-              ))}
-            </ul>
-          </FadeIn>
-        ) : null}
-
-        {(profile.incall_price ?? profile.outcall_price) ? (
-          <FadeIn whileInView className="mt-12">
-            <h2 className="font-display text-ds-24 font-bold tracking-tight text-text-primary">
-              Pricing
-            </h2>
-            <Card className="mt-4">
-              <CardContent className="flex flex-wrap gap-8 p-6 pt-6">
-                {profile.incall_price ? (
-                  <div>
-                    <p className="text-xs uppercase tracking-wide text-text-secondary">Incall</p>
-                    <p className="font-stat text-ds-24 font-bold text-text-primary">
-                      ${profile.incall_price}
-                    </p>
-                  </div>
-                ) : null}
-                {profile.outcall_price ? (
-                  <div>
-                    <p className="text-xs uppercase tracking-wide text-text-secondary">Outcall</p>
-                    <p className="font-stat text-ds-24 font-bold text-text-primary">
-                      ${profile.outcall_price}
-                    </p>
-                  </div>
-                ) : null}
-              </CardContent>
-            </Card>
-          </FadeIn>
-        ) : null}
-
-        {profile.photos.length > 0 ? (
-          <section className="mt-12">
-            <h2 className="font-display text-ds-24 font-bold tracking-tight text-text-primary">
-              Gallery
-            </h2>
-            <StaggerList
-              whileInView
-              as="ul"
-              className="mt-4 grid list-none grid-cols-2 gap-4 p-0 sm:grid-cols-3"
-            >
-              {profile.photos.map((photo) => {
-                const src = photo.url ?? photo.storagePath;
-                if (!hasImage(src)) return null;
-                return (
-                  <StaggerItem as="li" key={photo.id}>
-                    <div className="relative aspect-[3/4] overflow-hidden rounded-2xl bg-bg-subtle">
-                      <Image
-                        src={src}
-                        alt={`${name} — photo`}
-                        fill
-                        sizes="(min-width: 640px) 30vw, 45vw"
-                        className="object-cover"
-                      />
-                    </div>
-                  </StaggerItem>
-                );
-              })}
-            </StaggerList>
-          </section>
-        ) : null}
-      </main>
     </>
   );
 }
