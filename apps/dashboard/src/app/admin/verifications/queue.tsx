@@ -12,8 +12,14 @@ export type VerificationRow = {
   name: string;
   kindLabel: string;
   submittedAt: string | null;
-  /** Signed, expires in a minute — see `documentViewUrl`. */
   viewUrl: string | null;
+  holderName: string | null;
+  licenseType: string | null;
+  licenseNumber: string | null;
+  issuingAuthority: string | null;
+  jurisdiction: string | null;
+  issuedOn: string | null;
+  expiresOn: string | null;
 };
 
 export function VerificationQueue({ rows }: { rows: VerificationRow[] }) {
@@ -23,7 +29,7 @@ export function VerificationQueue({ rows }: { rows: VerificationRow[] }) {
   if (visible.length === 0) {
     return (
       <Card className="p-8 text-center">
-        <p className="text-sm text-ink/60">No legacy professional credentials are waiting.</p>
+        <p className="text-sm text-ink/60">No professional credentials are waiting.</p>
       </Card>
     );
   }
@@ -56,6 +62,16 @@ function QueueCard({ row, onResolved }: { row: VerificationRow; onResolved: () =
     });
   }
 
+  const details = [
+    ["Name on license", row.holderName],
+    ["License type", row.licenseType],
+    ["License number", row.licenseNumber],
+    ["Issuing authority", row.issuingAuthority],
+    ["Jurisdiction", row.jurisdiction],
+    ["Issued", row.issuedOn],
+    ["Expires", row.expiresOn],
+  ].filter(([, value]) => Boolean(value));
+
   return (
     <li>
       <Card className="p-6">
@@ -64,7 +80,7 @@ function QueueCard({ row, onResolved }: { row: VerificationRow; onResolved: () =
             <div className="flex flex-wrap items-center gap-2">
               <h3 className="text-lg font-semibold text-ink">{row.name}</h3>
               <span className="rounded-full bg-ink/5 px-2 py-0.5 text-[11px] font-medium text-ink/60">
-                Credential
+                Professional credential
               </span>
             </div>
             <p className="text-sm text-ink/60">
@@ -77,18 +93,35 @@ function QueueCard({ row, onResolved }: { row: VerificationRow; onResolved: () =
               href={row.viewUrl}
               target="_blank"
               rel="noreferrer"
-              className="text-sm font-medium text-wine hover:underline"
+              className="rounded-lg border border-ink/15 px-3 py-2 text-sm font-medium text-wine hover:bg-ink/5"
             >
-              Open credential ↗
+              Open license image ↗
             </a>
           ) : (
-            <span className="text-sm text-ink/50">File missing</span>
+            <span className="text-sm font-medium text-wine">File missing</span>
           )}
         </div>
 
+        {details.length ? (
+          <dl className="mb-5 grid gap-3 rounded-xl border border-ink/10 bg-ink/[0.025] p-4 sm:grid-cols-2">
+            {details.map(([label, value]) => (
+              <div key={String(label)}>
+                <dt className="text-[11px] font-medium uppercase tracking-wide text-ink/45">
+                  {label}
+                </dt>
+                <dd className="mt-1 break-words text-sm font-medium text-ink">{value}</dd>
+              </div>
+            ))}
+          </dl>
+        ) : (
+          <p className="mb-5 rounded-lg bg-ink/5 px-3 py-2 text-sm text-ink/60">
+            Legacy credential: no structured license fields were submitted.
+          </p>
+        )}
+
         <p className="mb-4 rounded-lg bg-ink/5 px-3 py-2 text-xs leading-5 text-ink/60">
-          Professional credentials are separate from identity verification and can never grant an
-          identity badge.
+          Compare the provider-entered fields above with the private license image. Approving this
+          credential does not change identity verification.
         </p>
 
         <form action={submit} className="space-y-4 border-t border-ink/10 pt-4">
@@ -96,19 +129,17 @@ function QueueCard({ row, onResolved }: { row: VerificationRow; onResolved: () =
 
           <div className="space-y-1.5">
             <label htmlFor={`reason-${row.id}`} className="text-sm font-medium text-ink">
-              Reason
+              Review note / rejection reason
             </label>
             <textarea
               id={`reason-${row.id}`}
               name="reason"
               rows={2}
-              required
-              minLength={10}
-              placeholder="What you checked, or what was wrong with it."
+              placeholder="Optional when approving. Required when rejecting."
               className="w-full rounded-lg border border-ink/15 p-3 text-sm text-ink"
             />
             <p className="text-xs text-ink/50">
-              Goes in the audit log. Do not copy any document number into it.
+              Do not copy the license number into the note; the structured field already stores it.
             </p>
           </div>
 
@@ -119,11 +150,11 @@ function QueueCard({ row, onResolved }: { row: VerificationRow; onResolved: () =
           ) : null}
 
           <div className="flex flex-wrap gap-2">
-            <Button type="submit" name="action" value="approve" disabled={pending}>
-              {pending ? "Saving…" : "Approve credential"}
+            <Button type="submit" name="action" value="approve" disabled={pending || !row.viewUrl}>
+              {pending ? "Saving…" : "Approve license"}
             </Button>
             <Button type="submit" name="action" value="reject" variant="outline" disabled={pending}>
-              Reject credential
+              Reject
             </Button>
           </div>
         </form>
