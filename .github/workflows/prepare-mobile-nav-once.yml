@@ -21,7 +21,7 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: pnpm
-      - run: pnpm install --lockfile-only
+      - run: pnpm install --no-frozen-lockfile
       - run: >-
           pnpm exec prettier --write
           apps/web/package.json
