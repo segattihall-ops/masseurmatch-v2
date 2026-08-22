@@ -21,7 +21,7 @@ jobs:
             local name="$1" url="$2"
             local body status effective
             body="$(mktemp)"
-            read -r status effective < <(curl -sS -L --max-redirs 8 --connect-timeout 10 --max-time 40 -o "$body" -w '%{http_code} %{url_effective}' "$url")
+            read -r status effective < <(curl -sS -L --max-redirs 8 --connect-timeout 10 --max-time 40 -o "$body" -w '%{http_code} %{url_effective}\n' "$url")
             echo "$name status=$status effective=$effective"
             if [ "$status" != "200" ]; then
               echo "::error::$name expected 200 after auth redirect, got $status"
