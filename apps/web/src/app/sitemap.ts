@@ -9,16 +9,13 @@ import { SERVICES } from "@/content/services";
 import { absoluteUrl } from "@/lib/site";
 
 /**
- * Static routes, grouped by how often they change.
+ * Static routes that are intended to be indexed.
  *
- * Kept as data rather than spelled out below, because the list is now long
- * enough that a page added without a sitemap entry would not be noticed. A test
- * asserts every one of these resolves.
- *
- * `/search` remains declared for legacy sitemap continuity, while the route
- * itself is noindex so faceted permutations do not become duplicate index entries.
+ * Faceted `/search` URLs are intentionally excluded: the search route is
+ * noindex and blocked in robots, while stable topic and city pages provide the
+ * canonical organic-search surfaces.
  */
-const HUBS = ["/", "/search", "/therapists", "/cities", "/states", "/guides", "/compare", "/blog"];
+const HUBS = ["/", "/therapists", "/cities", "/states", "/guides", "/compare", "/blog"];
 
 const MARKETING = [
   "/about",
@@ -28,6 +25,8 @@ const MARKETING = [
   "/pricing",
   "/near-me",
   "/gay-massage",
+  "/massage-for-men",
+  "/es/masajes-para-hombres",
   "/advertise",
   "/contact",
   "/how-ranking-works",
@@ -66,13 +65,6 @@ const LEGAL = [
   "/therapist-agreement",
 ];
 
-/**
- * Sitemap, generated from the database.
- *
- * Lists every city and every publicly visible profile. It reads through the
- * anon client, so the sitemap can only ever contain URLs a logged-out visitor
- * could reach — a suspended or unapproved profile cannot leak in here.
- */
 export const revalidate = 3600;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -94,7 +86,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       url: absoluteUrl(path),
       lastModified: now,
       changeFrequency: "monthly" as const,
-      priority: path === "/near-me" || path === "/gay-massage" ? 0.8 : 0.5,
+      priority:
+        path === "/near-me" ||
+        path === "/gay-massage" ||
+        path === "/massage-for-men" ||
+        path === "/es/masajes-para-hombres"
+          ? 0.85
+          : 0.5,
     })),
     ...LEGAL.map((path) => ({
       url: absoluteUrl(path),
