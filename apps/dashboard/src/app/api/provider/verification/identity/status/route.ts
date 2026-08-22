@@ -2,17 +2,26 @@ import { createServiceClient } from "@masseurmatch/db/client";
 import { createSessionClient } from "@masseurmatch/db/auth";
 import { NextResponse } from "next/server";
 
+import { normalizeIdentityStatus } from "@/lib/identity-status";
+
+// Reads the caller's session, so it can never be rendered statically. Declared
+// rather than inferred: without it the build attempts a static render, the
+// cookie access throws, and the catch below logs an error for a route that is
+// working exactly as intended.
+export const dynamic = "force-dynamic";
+
 /**
  * GET /api/provider/verification/identity/status
  *
  * Returns the most recent identity verification status for the current user.
  *
- * Status values:
- * - "not_started": verification created but no documents uploaded
+ * Status values (see `@/lib/identity-status` for the mapping):
+ * - "not_started": no verification yet, or one created without documents
  * - "pending": documents submitted, awaiting admin review
- * - "approved": identity verified
- * - "rejected": identity rejected, with optional error message for retry guidance
- * - "none": no verification record exists
+ * - "processing": under automated processing
+ * - "requires_input": rejected — `lastError` carries the reviewer's reason
+ * - "failed" / "canceled": terminal states that need a fresh submission
+ * - "verified": identity confirmed, badge active
  */
 export async function GET() {
   try {
@@ -38,20 +47,9 @@ export async function GET() {
       return NextResponse.json({ error: "Could not fetch verification status" }, { status: 500 });
     }
 
-    // Map database status to public status
-    let publicStatus = "none";
-    if (data) {
-      const dbStatus = data.status as string;
-      if (dbStatus === "approved") publicStatus = "approved";
-      else if (dbStatus === "rejected") publicStatus = "rejected";
-      else if (dbStatus === "pending") publicStatus = "pending";
-      else if (dbStatus === "not_started") publicStatus = "not_started";
-      else publicStatus = "none";
-    }
-
     return NextResponse.json({
       ok: true,
-      status: publicStatus,
+      status: normalizeIdentityStatus(data?.status),
       provider: data?.provider ?? null,
       verificationId: data?.id ?? null,
       lastError: data?.last_error ?? null,

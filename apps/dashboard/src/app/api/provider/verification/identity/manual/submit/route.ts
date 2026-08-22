@@ -9,6 +9,57 @@ const ALLOWED_DOCUMENT_TYPES = new Set(["drivers_license", "passport", "state_id
 const COUNTRY_CODE_REGEX = /^[A-Z]{2}$/;
 
 /**
+ * Mail the review queue that a submission is waiting.
+ *
+ * Carries no identity data — not the documents, not the challenge code, not the
+ * therapist's name. Only the verification id and a link, because the reviewer
+ * has to authenticate into the admin app to see anything, and an inbox is the
+ * wrong place for evidence we delete on purpose after review.
+ *
+ * Returns silently when the mail credentials are unset, which is the normal
+ * state in local and preview environments.
+ */
+async function notifyAdminOfSubmission(verificationId: string): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY;
+  const to = process.env.ADMIN_NOTIFICATION_EMAIL;
+  const from = process.env.RESEND_FROM_EMAIL;
+  if (!apiKey || !to || !from) return;
+
+  const adminUrl = process.env.NEXT_PUBLIC_ADMIN_URL ?? "";
+  const reviewLink = adminUrl
+    ? `${adminUrl.replace(/\/$/, "")}/admin/verifications/manual`
+    : "/admin/verifications/manual";
+
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+      // One mail per verification, however many times this route is retried.
+      "Idempotency-Key": `identity-submit/${verificationId}`,
+    },
+    body: JSON.stringify({
+      from,
+      to: [to],
+      subject: "Identity verification awaiting manual review",
+      html:
+        `<div style="font-family:Arial,Helvetica,sans-serif;color:#111827;max-width:640px;margin:auto">` +
+        `<h1 style="font-size:18px">Identity verification awaiting review</h1>` +
+        `<p>A therapist has submitted documents for manual identity review.</p>` +
+        `<p style="color:#6b7280;font-size:13px">Verification ID: ${verificationId}</p>` +
+        `<p><a href="${reviewLink}" style="color:#8B1E2D;font-weight:700">Open the review queue</a></p>` +
+        `<p style="color:#6b7280;font-size:12px">Documents are viewable only inside the admin app, ` +
+        `through links that expire, and are deleted once a decision is recorded.</p>` +
+        `</div>`,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Resend returned ${response.status}`);
+  }
+}
+
+/**
  * Submit an identity verification.
  *
  * Requires:
@@ -146,9 +197,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Could not submit verification" }, { status: 500 });
     }
 
-    // Notify admins about the pending verification
-    // This is delegated to admin notifications system
-    // TODO: integrate with Resend to send admin notification email
+    // Tell a human there is something to review. Best-effort on purpose: the
+    // submission is already durable and visible in the queue, so a mail outage
+    // must not fail the request or invite a duplicate submission.
+    await notifyAdminOfSubmission(verificationId).catch((error: unknown) => {
+      console.error("[identity-submit] admin notification failed", error);
+    });
 
     return NextResponse.json({ ok: true, status: "pending" });
   } catch (error) {
