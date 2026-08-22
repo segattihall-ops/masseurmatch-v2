@@ -15,11 +15,19 @@ import { absoluteUrl } from "@/lib/site";
  * enough that a page added without a sitemap entry would not be noticed. A test
  * asserts every one of these resolves.
  *
- * `/search` is intentionally excluded because robots.ts disallows crawler access
- * to filter permutations; stable city/service/profile URLs carry the indexable
- * discovery content instead.
+ * `/search` remains declared for legacy sitemap continuity, while the route
+ * itself is noindex so faceted permutations do not become duplicate index entries.
  */
-const HUBS = ["/", "/therapists", "/cities", "/states", "/guides", "/compare", "/blog"];
+const HUBS = [
+  "/",
+  "/search",
+  "/therapists",
+  "/cities",
+  "/states",
+  "/guides",
+  "/compare",
+  "/blog",
+];
 
 const MARKETING = [
   "/about",
