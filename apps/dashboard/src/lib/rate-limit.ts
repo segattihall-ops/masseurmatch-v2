@@ -153,4 +153,9 @@ export const LIMITS = {
    * typo four times is still fine.
    */
   reviewImport: { limit: 5, windowMs: 3_600_000 },
+  /**
+   * Support tickets, per account. Each accepted call puts a row in a queue a
+   * person reads, so the cost of a runaway form is somebody's afternoon.
+   */
+  supportTicket: { limit: 5, windowMs: 3_600_000 },
 } as const;

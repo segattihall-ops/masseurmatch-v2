@@ -1,87 +1,87 @@
-import { createSessionClient } from "@masseurmatch/db/auth";
 import Link from "next/link";
 
 import { PageHeader } from "@/components/pro/page-header";
 import { EmptyState, Section } from "@/components/pro/section";
 import { requireTherapist } from "@/lib/guards";
+import { listMyTickets } from "@/lib/pro-tickets";
+import { categoryLabel, isOpenTicket, ticketStatusLabel } from "@/lib/ticket-vocabulary";
+
+import { NewTicketForm } from "./new-ticket-form";
 
 export const metadata = { title: "Support | MasseurMatch" };
 export const dynamic = "force-dynamic";
 
-type Ticket = {
-  id: string;
-  subject: string;
-  category: string;
-  status: string;
-  priority: string;
-  created_at: string;
-};
-
 /**
- * The therapist's own support tickets.
+ * The therapist's own support tickets, and the form that opens one.
  *
- * Their own, not the admin queue: the same table backs both, and the filter
- * here is `user_id`, matched again by RLS on the way out.
+ * ---------------------------------------------------------------------------
+ * What was wrong
+ * ---------------------------------------------------------------------------
+ * Two things, and the second hid the first.
+ *
+ * There was no way to open a ticket — the page was a list and nothing else, so
+ * "contact support" led to a screen that could only ever say "no tickets yet".
+ *
+ * And the list itself was empty for everybody. It read `support_tickets`
+ * through the session client, and that table has exactly one policy —
+ * `service_role_tickets_all` — with nothing granted to `authenticated`. RLS
+ * filters rather than errors, so every therapist got zero rows and the page
+ * rendered its friendly empty state over the top of however many tickets they
+ * actually had. See the note in `@/lib/pro-tickets`.
  */
 export default async function ProTicketsPage() {
   const viewer = await requireTherapist("/pro/tickets");
-
-  const { data, error } = await createSessionClient()
-    .from("support_tickets")
-    .select("id,subject,category,status,priority,created_at")
-    .eq("user_id", viewer.user.id)
-    .order("created_at", { ascending: false })
-    .limit(50);
-
-  const tickets = error ? [] : ((data ?? []) as unknown as Ticket[]);
+  const tickets = await listMyTickets(viewer.user.id);
+  const open = tickets.filter((ticket) => isOpenTicket(ticket.status)).length;
 
   return (
     <>
       <PageHeader
         eyebrow="Provider dashboard"
         title="Support"
-        subtitle="Tickets you have opened with our team."
+        subtitle={
+          tickets.length === 0
+            ? "Ask us anything about your listing, your plan or your account."
+            : `${open} open of ${tickets.length} ticket${tickets.length === 1 ? "" : "s"}.`
+        }
       />
 
       <Section
-        title="Your tickets"
-        description="Reply to the email thread on a ticket to add to it."
+        title="Open a ticket"
+        description="A person on our team reads these. Include anything that would help us reproduce the problem."
       >
+        <NewTicketForm />
+      </Section>
+
+      <Section title="Your tickets">
         {tickets.length === 0 ? (
           <EmptyState>
-            {error
-              ? "Support tickets are not available on this account yet."
-              : "No tickets open. Anything you raise with us shows up here."}
+            Nothing yet. Anything you open above appears here with its status, and you can reply in
+            the thread.
           </EmptyState>
         ) : (
           <ul className="space-y-2">
             {tickets.map((ticket) => (
-              <li
-                key={ticket.id}
-                className="flex flex-wrap items-baseline justify-between gap-2 rounded-lg border border-border p-4"
-              >
-                <div>
-                  <p className="font-medium text-foreground">{ticket.subject}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {ticket.category} · {ticket.priority} priority ·{" "}
-                    {new Date(ticket.created_at).toLocaleDateString()}
-                  </p>
-                </div>
-                <span className="text-sm text-muted-foreground">{ticket.status}</span>
+              <li key={ticket.id}>
+                <Link
+                  href={`/pro/tickets/${ticket.id}`}
+                  className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 rounded-lg border border-border p-4 transition hover:bg-muted"
+                >
+                  <span className="min-w-0">
+                    <span className="block font-medium text-foreground">{ticket.subject}</span>
+                    <span className="block text-xs text-muted-foreground">
+                      {categoryLabel(ticket.category)} ·{" "}
+                      {new Date(ticket.created_at).toLocaleDateString()}
+                    </span>
+                  </span>
+                  <span className="shrink-0 text-xs uppercase tracking-wide text-muted-foreground">
+                    {ticketStatusLabel(ticket.status)}
+                  </span>
+                </Link>
               </li>
             ))}
           </ul>
         )}
-      </Section>
-
-      <Section title="Something else?">
-        <p className="text-sm text-muted-foreground">
-          The{" "}
-          <Link href="/pro/ai-coach" className="underline underline-offset-4">
-            AI Profile Coach
-          </Link>{" "}
-          answers most profile and visibility questions without waiting on us.
-        </p>
       </Section>
     </>
   );

@@ -32,11 +32,14 @@ export const LONG_WINDOW_DAYS = 30;
 /**
  * What "open" means for the support count.
  *
- * Production has written all four of these into `support_tickets.status` over
- * time, so matching only `open` would under-report a therapist who is mid
- * conversation with the team.
+ * These are three of the five values `support_tickets_status_check` admits —
+ * the two left out are `resolved` and `closed`. The previous list was guessed
+ * rather than read: it matched `pending` and `awaiting_response`, which the
+ * constraint does not allow and no row has ever carried, while missing
+ * `waiting_on_user` — the status of a therapist the team is waiting on, which
+ * is exactly the one worth counting.
  */
-const OPEN_TICKET_STATUSES = ["open", "in_progress", "pending", "awaiting_response"];
+const OPEN_TICKET_STATUSES = ["open", "in_progress", "waiting_on_user"];
 
 export type PhotoCounts = { approved: number; pending: number; rejected: number };
 

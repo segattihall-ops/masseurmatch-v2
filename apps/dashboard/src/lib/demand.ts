@@ -3,10 +3,12 @@ import "server-only";
 import { createServiceClient } from "@masseurmatch/db/client";
 import {
   currentDemand,
+  marketStanding,
   risingKeywords,
   type DemandReading,
   type DemandRow,
   type KeywordOpportunity,
+  type MarketStanding,
   type TrendRow,
 } from "@masseurmatch/db/demand";
 
@@ -26,6 +28,8 @@ import { getOrCreateMyProfile } from "./profile";
 
 export type CityDemand = {
   reading: DemandReading | null;
+  /** Where this city ranks against every city collected this week. */
+  standing: MarketStanding | null;
   keywords: KeywordOpportunity[];
   /** Other publicly listed therapists in the same city. */
   peers: number;
@@ -33,7 +37,13 @@ export type CityDemand = {
   available: boolean;
 };
 
-const EMPTY: CityDemand = { reading: null, keywords: [], peers: 0, available: false };
+const EMPTY: CityDemand = {
+  standing: null,
+  reading: null,
+  keywords: [],
+  peers: 0,
+  available: false,
+};
 
 export async function getCityDemand(
   city: string | null,
@@ -52,7 +62,7 @@ export async function getCityDemand(
 
   const since = new Date(now.getTime() - 21 * 86_400_000).toISOString().slice(0, 10);
 
-  const [scores, trends, peers] = await Promise.all([
+  const [scores, trends, peers, national] = await Promise.all([
     supabase
       .from("demand_scores")
       .select(
@@ -78,13 +88,38 @@ export async function getCityDemand(
       .neq("id", profileId)
       .eq("profile_status", "approved")
       .eq("visibility_status", "public"),
+    /*
+     * Every live reading, scores only, for the ranking. `is NOT TRUE` rather
+     * than `= false` because the column is nullable and `is_sample <> true`
+     * would drop the NULL rows — which is most of them.
+     */
+    supabase
+      .from("demand_scores")
+      .select("score")
+      .not("is_sample", "is", true)
+      .gt("expires_at", now.toISOString())
+      .limit(2000),
   ]);
 
   // A missing table or an absent key must never take down the dashboard home.
   if (scores.error && trends.error) return EMPTY;
 
+  const reading = currentDemand((scores.data ?? []) as unknown as DemandRow[], now);
+
+  /*
+   * The comparison set: every city's live reading this week, scores only.
+   * Ranking needs the whole table, and a raw `score` on its own says nothing —
+   * see `marketStanding`. Sample and expired rows are excluded here for the
+   * same reason `usable()` excludes them from the reading itself; a ranking
+   * that counted 21 sample rows from June would flatter every real city.
+   */
+  const comparison = ((national.data ?? []) as unknown as { score: number | null }[])
+    .map((row) => row.score)
+    .filter((score): score is number => typeof score === "number");
+
   return {
-    reading: currentDemand((scores.data ?? []) as unknown as DemandRow[], now),
+    reading,
+    standing: reading ? marketStanding(comparison, reading.score) : null,
     keywords: risingKeywords((trends.data ?? []) as unknown as TrendRow[]),
     peers: peers.count ?? 0,
     available: true,
