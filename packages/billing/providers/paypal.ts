@@ -189,7 +189,7 @@ export function __resetPayPalToken(): void {
 
 async function callPayPal(
   path: string,
-  init: { method: string; body?: unknown; idempotencyKey?: string },
+  init: { method: string; body?: unknown; idempotencyKey?: string; notFoundAsNull?: boolean },
 ): Promise<{ status: number; body: PayPalSubscription }> {
   const token = await accessToken();
 
@@ -219,6 +219,12 @@ async function callPayPal(
   } catch {
     parsed = {};
   }
+
+  // "That subscription does not exist" is an answer, not a failure — but only
+  // where the caller said so. Everywhere else a 404 still throws, because a
+  // missing subscription during cancel or revise means our records are wrong
+  // and silence would hide it.
+  if (response.status === 404 && init.notFoundAsNull) return { status: 404, body: {} };
 
   if (!response.ok) {
     // The body can carry card or payer details, so it is not echoed into the
@@ -331,6 +337,24 @@ export const payPalProvider: PaymentProvider = {
       id: subscriptionId,
       approvalUrl: approvalUrlFrom(body) ?? approvalUrlFrom(current),
     };
+  },
+
+  /**
+   * Read a subscription straight from PayPal.
+   *
+   * The plan comes back as PayPal's own plan id, which `planIdFor` maps through
+   * the `PAYPAL_PLAN_*` variables. An unmapped plan resolves to `free` rather
+   * than guessing at a tier, so a reconcile can never promote someone onto a
+   * plan this deployment does not recognise.
+   */
+  async fetchSubscription(subscriptionId: string): Promise<SubscriptionRef | null> {
+    const { status, body } = await callPayPal(
+      `/v1/billing/subscriptions/${encodeURIComponent(subscriptionId)}`,
+      { method: "GET", notFoundAsNull: true },
+    );
+
+    if (status === 404 || !body.id) return null;
+    return { ...toRef(body, "free"), id: subscriptionId };
   },
 
   async handleWebhook(payload: string, signature: string): Promise<WebhookResult> {

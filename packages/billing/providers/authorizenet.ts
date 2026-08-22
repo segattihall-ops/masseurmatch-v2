@@ -99,6 +99,16 @@ export const authorizeNetProvider: PaymentProvider = {
     );
   },
 
+  async fetchSubscription(subscriptionId: string): Promise<SubscriptionRef | null> {
+    void subscriptionId;
+    // Throws rather than returning null: null means "the provider says no such
+    // subscription", and answering that from an unimplemented adapter would let
+    // a reconcile conclude a live subscription had vanished.
+    throw new Error(
+      "Authorize.Net subscription lookup is not implemented yet — needs sandbox credentials.",
+    );
+  },
+
   async handleWebhook(payload: string, signature: string): Promise<WebhookResult> {
     let signatureKey: string;
     try {

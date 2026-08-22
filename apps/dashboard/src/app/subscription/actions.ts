@@ -11,6 +11,7 @@ import { LIMITS, rateLimit } from "@/lib/rate-limit";
 import type { BillingState } from "./billing-state";
 import {
   getMySubscription,
+  reconcileSubscription,
   recordCancellationRequest,
   recordNewSubscription,
   recordPlanChange,
@@ -30,9 +31,11 @@ import {
  *      user's profile — never from the form. Otherwise anyone could cancel or
  *      re-plan a subscription by posting somebody else's id.
  *
- *   3. Nothing here marks a therapist paid. These actions record what the
- *      provider returned and then get out of the way; `active` is set only by
- *      the webhook, which is the only path with evidence that money moved.
+ *   3. Nothing here marks a therapist paid on its own say-so. These actions
+ *      record what the provider returned and then get out of the way. Only two
+ *      paths may set `active`, and both hold evidence that money moved: the
+ *      webhook, and `refreshSubscriptionStatus` below, which asks the provider
+ *      directly and writes back its answer.
  */
 
 async function requireTherapistProfile() {
@@ -165,6 +168,54 @@ export async function changePlan(_prev: BillingState, formData: FormData): Promi
  * therapist has paid for the current period. The provider's cancellation
  * webhook is what eventually sets `canceled`.
  */
+/**
+ * Ask the provider what this subscription's state actually is, and write it back.
+ *
+ * The recovery path for a webhook that never arrived. A therapist who approved
+ * at PayPal and came back to a page still saying "no subscription" has been
+ * charged and is not entitled, and until now nothing in the product could tell
+ * the difference between that and never having paid.
+ *
+ * Safe to press repeatedly: it writes only what PayPal reports, so pressing it
+ * on a healthy subscription is a no-op that rewrites the same values.
+ */
+export async function refreshSubscriptionStatus(_prev: BillingState): Promise<BillingState> {
+  const profile = await requireTherapistProfile();
+  const limited = billingLimit(profile.id);
+  if (limited) return { error: limited };
+
+  const existing = await getMySubscription(profile.id);
+  if (!existing?.providerSubscriptionId) {
+    return { error: "You do not have a subscription to check." };
+  }
+
+  try {
+    const ref = await getProvider().fetchSubscription(existing.providerSubscriptionId);
+
+    if (!ref) {
+      // PayPal does not know this id. Saying so plainly beats leaving the
+      // therapist pressing a button that reports success and changes nothing.
+      return {
+        error:
+          "The payment provider has no record of this subscription. Contact support before paying again.",
+      };
+    }
+
+    await reconcileSubscription({
+      subscriptionRowId: existing.id,
+      status: ref.status,
+      currentPeriodEnd: ref.nextChargeOn,
+      plan: ref.planId,
+    });
+  } catch (error) {
+    console.error("refreshSubscriptionStatus failed", error);
+    return { error: "Could not check the subscription status. Please try again." };
+  }
+
+  revalidatePath("/subscription");
+  return { ok: true };
+}
+
 export async function cancelSubscription(_prev: BillingState): Promise<BillingState> {
   const profile = await requireTherapistProfile();
   const limited = billingLimit(profile.id);

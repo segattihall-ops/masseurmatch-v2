@@ -7,7 +7,7 @@ import { requireTherapist } from "@/lib/guards";
 import { getOrCreateMyProfile } from "@/lib/profile";
 import { buildView, getMySubscription } from "@/lib/subscription";
 
-import { CancelForm, PlanPicker } from "./plan-forms";
+import { CancelForm, PlanPicker, RefreshStatusForm } from "./plan-forms";
 
 export const metadata: Metadata = {
   title: "Subscription",
@@ -100,6 +100,8 @@ export default async function SubscriptionPage() {
         currentPlanId={view.planId}
         hasSubscription={view.hasProviderSubscription && view.status !== "canceled"}
       />
+
+      {view.hasProviderSubscription && !view.isActive ? <RefreshStatusForm /> : null}
 
       {view.isActive && view.hasProviderSubscription ? (
         <CancelForm cancelAtPeriodEnd={view.cancelAtPeriodEnd} />

@@ -164,6 +164,42 @@ export async function recordPlanChange(subscriptionRowId: string, plan: PlanId):
 }
 
 /**
+ * Bring a subscription row into line with what the provider reports.
+ *
+ * The webhook remains the normal path and this does not replace it. It exists
+ * for the case the webhook cannot cover: one that never arrived, leaving a
+ * therapist charged and unentitled with no way to correct it from inside the
+ * product.
+ *
+ * Deliberately narrow. It writes status, period end and plan — the fields the
+ * provider is authoritative for — and touches nothing else. It never clears
+ * `cancel_at_period_end`, which records an intent the provider does not know
+ * about until the period actually ends.
+ */
+export async function reconcileSubscription(input: {
+  subscriptionRowId: string;
+  status: SubscriptionStatus;
+  currentPeriodEnd: string | null;
+  plan: PlanId | null;
+}): Promise<void> {
+  // Only when the provider named a plan we recognise. An unmapped PayPal plan
+  // resolves to `free`, and writing that would silently demote a paying tier.
+  const planId = input.plan && input.plan !== "free" ? await planUuid(input.plan) : null;
+
+  const { error } = await createServiceClient()
+    .from("therapist_subscriptions")
+    .update({
+      status: input.status,
+      current_period_end: input.currentPeriodEnd,
+      updated_at: new Date().toISOString(),
+      ...(planId ? { plan_id: planId } : {}),
+    })
+    .eq("id", input.subscriptionRowId);
+
+  if (error) throw new Error(`Could not reconcile the subscription: ${error.message}`);
+}
+
+/**
  * Mark a subscription as cancelling at period end.
  *
  * Not `canceled` — the therapist has paid for the current period and keeps the
