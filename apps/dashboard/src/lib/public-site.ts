@@ -1,37 +1,38 @@
-import { profilePath } from "@masseurmatch/db/actions/directory-config";
+const LIVE_PUBLIC_SITE_URL = "https://www.masseurmatch.com";
 
 /**
- * Links back to the public site (`apps/web`).
+ * Links back to the public site.
  *
- * Mirrors the fallback chain in `apps/web/src/lib/site.ts` so the two apps
- * agree on the origin: explicit env first, then Vercel's own production URL,
- * then localhost. The dashboard runs on 3001 and the site on 3000, so the local
- * fallback differs — getting that wrong sends "view public profile" to a page
- * on the dashboard's own port that does not exist.
+ * `VERCEL_PROJECT_PRODUCTION_URL` cannot be used here: in the dashboard project
+ * it points at the dashboard itself, not the public website. That produced URLs
+ * such as `dashboard-host/tx/dallas/slug`, which have no matching route.
+ *
+ * An explicit public-site origin always wins. Local development falls back to
+ * the web app on port 3000; deployed/production dashboard builds fall back to
+ * the current canonical public domain.
  */
 export function publicSiteUrl(): string {
   const explicit = process.env.NEXT_PUBLIC_SITE_URL;
   if (explicit) return explicit.replace(/\/$/, "");
 
-  const productionHost = process.env.VERCEL_PROJECT_PRODUCTION_URL;
-  if (productionHost) return `https://${productionHost}`;
+  if (process.env.VERCEL_ENV || process.env.NODE_ENV === "production") {
+    return LIVE_PUBLIC_SITE_URL;
+  }
 
   return "http://localhost:3000";
 }
 
 /**
- * Absolute URL of a therapist's public page, or null when it has none yet.
+ * Absolute URL of a therapist's public page, or null when it has no slug yet.
  *
- * Returns null unless slug, city and state are all present — the public route
- * is `/[state]/[city]/[slug]`, so a partial profile has no page to link to and
- * a "preview" button pointing at a 404 is worse than no button.
+ * `/therapists/{slug}` is the stable compatibility URL: it is the profile URL
+ * currently served by the live public site, and v2 keeps that route as a
+ * permanent redirect to the canonical `/{state}/{city}/{slug}` page. Using the
+ * compatibility URL keeps dashboard links working both before and after the
+ * public-site cutover and does not require location fields to be populated.
  */
-export function publicProfileUrl(profile: {
-  slug: string | null;
-  city: string | null;
-  state: string | null;
-}): string | null {
-  if (!profile.slug) return null;
-  const path = profilePath({ ...profile, slug: profile.slug });
-  return path ? `${publicSiteUrl()}${path}` : null;
+export function publicProfileUrl(profile: { slug: string | null }): string | null {
+  const slug = profile.slug?.trim();
+  if (!slug) return null;
+  return `${publicSiteUrl()}/therapists/${encodeURIComponent(slug)}`;
 }
