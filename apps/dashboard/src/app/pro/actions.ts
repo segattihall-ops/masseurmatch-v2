@@ -5,7 +5,7 @@ import { HIDDEN, PUBLIC } from "@masseurmatch/db/visibility";
 
 import type { ToggleResult } from "@/components/pro/toggle-action-button";
 import { requireTherapist } from "@/lib/guards";
-import { updateMyProfile } from "@/lib/profile";
+import { updateModerationState } from "@/lib/profile";
 
 import { setAvailableNow } from "../available-now-actions";
 
@@ -28,11 +28,16 @@ export async function toggleAvailableNow(next: boolean): Promise<ToggleResult> {
  * Hiding a profile does not withdraw it from review, and turning it back on
  * does not re-approve it — a therapist who takes a fortnight off should not
  * come back to a queue.
+ *
+ * `visibility_status` is intentionally not directly writable by authenticated
+ * clients. This server action authorizes the therapist first and then uses the
+ * trusted writer, so the UI remains functional without reopening profile
+ * approval, billing, or verification fields to direct REST writes.
  */
 export async function toggleVisibility(next: boolean): Promise<ToggleResult> {
   const viewer = await requireTherapist("/pro/dashboard");
 
-  const written = await updateMyProfile(viewer.user.id, {
+  const written = await updateModerationState(viewer.user.id, {
     visibility_status: next ? PUBLIC : HIDDEN,
   });
 
