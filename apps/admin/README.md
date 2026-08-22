@@ -22,7 +22,8 @@ Use the same Supabase project as the rest of MasseurMatch. The standalone Admin 
 Optional feature-gated configuration:
 
 - `NEXT_PUBLIC_TURNSTILE_SITE_KEY` + `TURNSTILE_SECRET_KEY` for sign-in bot protection.
-- `STRIPE_IDENTITY_RESTRICTED_KEY` (preferred) or `STRIPE_SECRET_KEY` to refresh the status of legacy Stripe Identity VerificationSessions created by the OLD application. The Stripe key is server-only and must never use a `NEXT_PUBLIC_` prefix.
+
+Identity verification in the Admin uses the current V2 document flow and the manual verification flow. Historical provider records remain in Supabase for audit/history, but retired third-party identity providers are not queried by the Admin.
 
 Never copy secret values into this repository.
 
