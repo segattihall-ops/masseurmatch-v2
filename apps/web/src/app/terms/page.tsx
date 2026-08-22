@@ -54,8 +54,9 @@ export default function TermsPage() {
             MasseurMatch may offer paid subscriptions, add-ons, boosts, advertising, and other
             visibility tools. MasseurMatch uses PayPal as its third-party payment processor for
             those paid platform products. Recurring charges, cancellation, refunds, and payment
-            disputes are governed by the <a href="/subscriptions">Paid Subscription and Add-On Terms</a>{" "}
-            and the <a href="/refund-policy">Refund and Cancellation Policy</a>.
+            disputes are governed by the{" "}
+            <a href="/subscriptions">Paid Subscription and Add-On Terms</a> and the{" "}
+            <a href="/refund-policy">Refund and Cancellation Policy</a>.
           </p>
           <p className="text-text-secondary">
             MasseurMatch does not process or collect payments between clients and independent
