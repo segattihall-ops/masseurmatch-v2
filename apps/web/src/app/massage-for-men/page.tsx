@@ -171,7 +171,10 @@ export default function MassageForMenPage() {
         />
       </InstitutionalSection>
 
-      <InstitutionalSection eyebrow="What to compare" title="Useful details for choosing massage for men.">
+      <InstitutionalSection
+        eyebrow="What to compare"
+        title="Useful details for choosing massage for men."
+      >
         <InstitutionalCardGrid
           cards={[
             {
@@ -206,7 +209,9 @@ export default function MassageForMenPage() {
         <div className="grid gap-8 md:grid-cols-2">
           {FAQS.map((faq) => (
             <div key={faq.question}>
-              <h3 className="font-display text-xl font-semibold text-text-primary">{faq.question}</h3>
+              <h3 className="font-display text-xl font-semibold text-text-primary">
+                {faq.question}
+              </h3>
               <p className="mt-3 text-sm leading-7 text-text-secondary">{faq.answer}</p>
             </div>
           ))}
