@@ -157,8 +157,8 @@ export default function Page() {
         <li>The transaction date and amount.</li>
         <li>The reason for your refund request.</li>
         <li>
-          The PayPal transaction or subscription identifier, if available, without sending passwords
-          or full payment credentials.
+          The PayPal transaction or subscription identifier, if available, without sending
+          passwords or full payment credentials.
         </li>
         <li>Any supporting documentation, such as a screenshot of a billing error.</li>
       </ul>
