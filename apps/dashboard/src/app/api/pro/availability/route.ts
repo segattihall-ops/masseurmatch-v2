@@ -1,7 +1,8 @@
 import { getViewer } from "@masseurmatch/db/auth";
-import { updateMyProfile } from "@/lib/profile";
 import { HIDDEN, PUBLIC } from "@masseurmatch/db/visibility";
 import { revalidatePath } from "next/cache";
+
+import { updateModerationState } from "@/lib/profile";
 
 export const dynamic = "force-dynamic";
 
@@ -11,14 +12,18 @@ export async function POST(request: Request): Promise<Response> {
     if (!viewer) {
       return Response.json({ ok: false, error: "Not authenticated" }, { status: 401 });
     }
+    if (viewer.role !== "provider" && viewer.role !== "admin") {
+      return Response.json({ ok: false, error: "Not authorized" }, { status: 403 });
+    }
 
     const body = await request.json();
-    const { status } = body as { status: "hidden" | "available" };
+    const { status } = body as { status?: unknown };
+    if (status !== "hidden" && status !== "available") {
+      return Response.json({ ok: false, error: "Invalid availability status" }, { status: 400 });
+    }
 
-    const userId = viewer.user.id;
     const visibilityStatus = status === "hidden" ? HIDDEN : PUBLIC;
-
-    const written = await updateMyProfile(userId, {
+    const written = await updateModerationState(viewer.user.id, {
       visibility_status: visibilityStatus,
     });
 
@@ -26,7 +31,6 @@ export async function POST(request: Request): Promise<Response> {
       return Response.json({ ok: false, error: "Profile not found" }, { status: 404 });
     }
 
-    // Revalidate cache
     revalidatePath("/", "layout");
 
     const message =

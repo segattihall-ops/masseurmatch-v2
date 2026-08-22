@@ -3,16 +3,17 @@ import "server-only";
 import { createSessionClient } from "@masseurmatch/db/auth";
 import { createServiceClient } from "@masseurmatch/db/client";
 import { toProfileStatus, type ProfileStatus } from "@masseurmatch/db/profile-status";
-import { HIDDEN } from "@masseurmatch/db/visibility";
 
 import type { OnboardingSnapshot } from "./onboarding";
 
 /**
  * The signed-in therapist's own profile.
  *
- * Every read and write here goes through the *session* client, so RLS applies
- * on the real path — a therapist cannot reach another therapist's row even if
- * a bug passed the wrong id. The service-role client is deliberately not used.
+ * Owner-scoped reads, initial creation and ordinary content writes use the
+ * session client so RLS remains part of the real path. Privileged lifecycle
+ * fields such as approval, moderation and visibility are written only through
+ * the narrowly typed service-role helper at the bottom of this file after the
+ * caller has already been authorized by a server action or route.
  *
  * Convention, verified against production: `profiles.id` has no default and is
  * required on insert, and every existing row has `id = user_id`. The profile's
@@ -142,13 +143,9 @@ export async function getOrCreateMyProfile(userId: string): Promise<MyProfileVie
       .insert({
         id: userId,
         user_id: userId,
-        // `draft`, not `pending`. A profile exists from the first sign-in, long
-        // before anyone asks for it to be reviewed. Creating it as `pending`
-        // put empty profiles straight into the admin moderation queue — the
-        // production database already distinguished these, which is how the bug
-        // surfaced.
-        profile_status: "draft",
-        visibility_status: HIDDEN,
+        // Never send lifecycle, billing or trust fields from the authenticated
+        // client. PostgreSQL owns the safe initial state (`draft`, `hidden`,
+        // free/unverified defaults), which lets INSERT grants stay fail-closed.
       })
       .select(PROFILE_COLUMNS)
       .single();
