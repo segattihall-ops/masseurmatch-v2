@@ -44,8 +44,12 @@ export function publicProfileUrl(profile: {
   profile_status?: string | null;
   visibility_status?: string | null;
 }): string | null {
-  if (profile.profile_status !== undefined && profile.profile_status !== "approved") return null;
-  if (profile.visibility_status !== undefined && profile.visibility_status !== "public") return null;
+  if (profile.profile_status !== undefined && profile.profile_status !== "approved") {
+    return null;
+  }
+  if (profile.visibility_status !== undefined && profile.visibility_status !== "public") {
+    return null;
+  }
 
   const slug = profile.slug?.trim();
   if (!slug) return null;
