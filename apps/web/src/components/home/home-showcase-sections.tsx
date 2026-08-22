@@ -24,7 +24,7 @@ export function HomeFeaturedTherapists({ therapists }: { therapists: TherapistLi
     <InstitutionalSection
       eyebrow="Featured profiles"
       title="Featured therapists ready to explore"
-      intro="Compare reviewed public profiles, location, services, session formats, and published rates before contacting a therapist directly."
+      intro="Compare public profiles, location, services, session formats, and rates shown on provider-submitted profiles before contacting an independent therapist directly."
     >
       <div className="flex justify-end">
         <Link href="/search" className={secondaryAction}>
@@ -57,11 +57,11 @@ const discoveryFeatures = [
   ],
   [
     "Compare useful details",
-    "Review specialties, location, incall or outcall options, published rates, and profile information in one place.",
+    "Review specialties, location, incall or outcall options, published rates, and provider-submitted profile information in one place.",
   ],
   [
     "Local discovery",
-    "Move from national discovery into city and service pages built around real public directory inventory.",
+    "Move from national discovery into city and service pages built around public directory listings.",
   ],
   [
     "Direct communication",
@@ -74,7 +74,7 @@ export function HomeDiscoverySection() {
     <InstitutionalSection
       eyebrow="Smarter discovery"
       title="Find the right profile without the noise"
-      intro="The V2 directory keeps discovery simple: search real listings, compare the details that matter, then connect directly."
+      intro="Search public listings, compare the details providers publish, then contact an independent therapist directly."
     >
       <InstitutionalCardGrid
         cards={discoveryFeatures.map(([title, body], index) => ({
@@ -95,8 +95,8 @@ export function HomeDiscoverySection() {
           Ready to narrow the directory?
         </h3>
         <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-text-secondary sm:text-base">
-          Start with search, then use local pages and profile details to compare the best fit for
-          your needs.
+          Start with search, then use local pages and profile details to compare options for your
+          needs.
         </p>
         <Link href="/search" className={`mt-7 ${primaryAction}`}>
           Search therapists
@@ -118,7 +118,7 @@ export function HomeCityDiscovery({ cities }: { cities: CityListing[] }) {
     <InstitutionalSection
       eyebrow="Browse by city"
       title="Explore male massage by city"
-      intro="Open local directory pages and compare therapists using live public listing data."
+      intro="Open local directory pages and compare therapists using current public listing data."
     >
       <div className="flex justify-end">
         <Link href="/cities" className={secondaryAction}>
@@ -188,7 +188,7 @@ const howItWorksSteps = [
     title: "Review and compare",
     description:
       "Read the full profile, compare specialties and location details, and check visible profile or identity signals.",
-    features: ["Reviewed profiles", "Profile details", "Incall or outcall", "Trust signals"],
+    features: ["Public profiles", "Profile details", "Incall or outcall", "Platform signals"],
   },
   {
     number: "03",
@@ -209,7 +209,7 @@ export function HomeHowItWorks() {
     <InstitutionalSection
       eyebrow="Simple process"
       title="How it works"
-      intro="Three steps from discovery to direct contact, without turning MasseurMatch into a booking marketplace."
+      intro="Three steps from discovery to direct contact. MasseurMatch is a directory and does not become a party to the massage appointment."
     >
       <StaggerList
         whileInView
@@ -254,20 +254,20 @@ export function HomeHowItWorks() {
 
 const trustPillars = [
   [
-    "Reviewed before going live",
-    "Every public profile passes platform review before publication. Review is not professional license verification or a background check.",
+    "Platform standards",
+    "Profiles and content are subject to MasseurMatch platform rules. Platform review does not verify professional licenses, credentials, backgrounds, or service quality.",
   ],
   [
     "Direct contact",
-    "MasseurMatch does not manage appointments or take a commission from massage-session payments.",
+    "MasseurMatch does not manage appointments or process massage-session payments between clients and providers.",
   ],
   [
-    "Clear identity signals",
-    "Where an identity badge appears, it refers only to the specific platform identity check described in the badge policy.",
+    "Limited identity signals",
+    "Where an identity badge appears, it refers only to the specific identity check described in the badge policy and is not a professional endorsement.",
   ],
   [
-    "Professional standards",
-    "Content and conduct policies establish expectations for professional, respectful, non-sexual directory use.",
+    "Independent providers",
+    "Providers are independent third parties responsible for their own services, qualifications, appointments, pricing, payments, and legal compliance.",
   ],
 ] as const;
 
@@ -275,9 +275,9 @@ export function HomeTrustSection() {
   return (
     <InstitutionalSection
       dark
-      eyebrow="Trust and safety"
-      title="Built around clearer expectations"
-      intro="MasseurMatch makes its directory role, profile review, and platform signals explicit so visitors can make better informed decisions."
+      eyebrow="Transparency & platform standards"
+      title="Clear information without overpromising"
+      intro="MasseurMatch explains its directory role and the limits of its platform signals so visitors can evaluate independent providers for themselves."
     >
       <InstitutionalCardGrid
         dark
@@ -294,28 +294,28 @@ export function HomeTrustSection() {
       >
         <div className="border-b border-white/[0.08] p-7 sm:p-8">
           <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#d66b7a]">
-            How we build trust
+            Platform transparency
           </p>
           <h3 className="mt-3 font-display text-2xl font-semibold tracking-tight text-white sm:text-3xl">
-            Know what each signal means
+            Know what MasseurMatch does — and does not — verify
           </h3>
         </div>
         <div className="grid gap-px bg-white/[0.08] sm:grid-cols-3">
           {[
             [
-              "Profile review",
-              "Before publication",
-              "New profiles are reviewed before they become publicly visible.",
+              "Profile content",
+              "Platform-rule review",
+              "MasseurMatch may review profile content for compliance with platform rules. This is not license, credential, or background verification.",
             ],
             [
               "Identity badges",
               "Identity only",
-              "A badge is not professional licensing, certification, or a service-quality guarantee.",
+              "A badge is a limited platform signal. It is not professional licensing, certification, a background check, endorsement, or guarantee.",
             ],
             [
               "Directory model",
               "Independent providers",
-              "Therapists manage their own services, appointments, qualifications, and payments.",
+              "Providers control and are responsible for their services, qualifications, appointments, pricing, payments, and legal compliance.",
             ],
           ].map(([eyebrow, title, body]) => (
             <div key={eyebrow} className="bg-[#111113] p-7 sm:p-8">
@@ -329,19 +329,34 @@ export function HomeTrustSection() {
             </div>
           ))}
         </div>
-        <div className="flex flex-wrap gap-4 border-t border-white/[0.08] p-7 sm:p-8">
-          <Link
-            href="/safety"
-            className="text-sm font-semibold text-[#d66b7a] underline-offset-4 hover:underline"
-          >
-            Safety guidance
-          </Link>
-          <Link
-            href="/badge-disclaimer"
-            className="text-sm font-semibold text-[#d66b7a] underline-offset-4 hover:underline"
-          >
-            Badge disclaimer
-          </Link>
+        <div className="border-t border-white/[0.08] p-7 sm:p-8">
+          <p className="max-w-5xl text-sm leading-7 text-white/58">
+            MasseurMatch is a directory platform only. Providers are independent third parties.
+            MasseurMatch does not provide massage services, employ providers, verify professional
+            licenses, conduct background checks, or guarantee provider qualifications, services,
+            pricing, availability, legality, safety, quality, or results. Users are responsible for
+            evaluating providers and making their own decisions.
+          </p>
+          <div className="mt-5 flex flex-wrap gap-4">
+            <Link
+              href="/safety"
+              className="text-sm font-semibold text-[#d66b7a] underline-offset-4 hover:underline"
+            >
+              Safety guidance
+            </Link>
+            <Link
+              href="/badge-disclaimer"
+              className="text-sm font-semibold text-[#d66b7a] underline-offset-4 hover:underline"
+            >
+              Badge disclaimer
+            </Link>
+            <Link
+              href="/platform-disclaimer"
+              className="text-sm font-semibold text-[#d66b7a] underline-offset-4 hover:underline"
+            >
+              Platform disclaimer
+            </Link>
+          </div>
         </div>
       </FadeIn>
     </InstitutionalSection>
@@ -349,7 +364,7 @@ export function HomeTrustSection() {
 }
 
 const providerBenefits = [
-  "Professional public profile",
+  "Public directory profile",
   "Direct prospective-client contact",
   "Local city discovery",
   "No booking commission",
@@ -361,8 +376,8 @@ export function HomeProviderGrowth() {
   return (
     <InstitutionalSection
       eyebrow="For massage therapists"
-      title="Grow your practice with MasseurMatch"
-      intro="Build a public directory presence in the cities you actually work, show prospective clients what you offer, and let them contact you directly. MasseurMatch is not a booking service and does not take a commission from your massage-session payments."
+      title="Build your public presence with MasseurMatch"
+      intro="Create a public directory presence in the cities you work, show prospective clients the information you choose to publish, and let them contact you directly. MasseurMatch is not a booking service and does not take a commission from your massage-session payments."
     >
       <div className="grid overflow-hidden rounded-[2rem] border border-border-subtle lg:grid-cols-2">
         <FadeIn whileInView direction="right" className="bg-bg-surface p-7 sm:p-9 lg:p-12">
@@ -370,7 +385,7 @@ export function HomeProviderGrowth() {
             Built for independent providers
           </p>
           <h3 className="mt-4 font-display text-3xl font-semibold tracking-tight text-text-primary">
-            A professional public presence you control.
+            A public directory presence you control.
           </h3>
           <ul className="mt-7 grid list-none gap-3 p-0 sm:grid-cols-2">
             {providerBenefits.map((benefit) => (
@@ -405,16 +420,16 @@ export function HomeProviderGrowth() {
           <div className="divide-y divide-border-subtle">
             {[
               [
-                "Professional profile",
-                "Present specialties, service formats, rates, location, photos, and direct contact details clearly.",
+                "Public profile",
+                "Present specialties, service formats, rates, location, photos, and direct contact details you choose to publish.",
               ],
               [
                 "Direct connections",
                 "Prospective clients can use your public profile to reach you without an internal booking marketplace.",
               ],
               [
-                "Keep your session revenue",
-                "MasseurMatch does not process or take a commission from payments for massage sessions.",
+                "Session payments stay direct",
+                "MasseurMatch does not process or take a commission from payments between clients and providers for massage sessions.",
               ],
             ].map(([title, description]) => (
               <div key={title} className="py-6 first:pt-0 last:pb-0">
@@ -434,27 +449,31 @@ export function HomeProviderGrowth() {
 export const homeFaqItems = [
   [
     "What is MasseurMatch?",
-    "MasseurMatch is a directory for discovering independent massage therapists. Visitors browse public profiles and contact therapists directly.",
+    "MasseurMatch is a directory for discovering independent massage therapists. Visitors browse public profiles and contact providers directly.",
   ],
   [
-    "Are profiles reviewed before they go live?",
-    "Yes. Public profiles are reviewed before publication. Profile review is not professional license verification, a background check, or a guarantee of service quality.",
+    "What does MasseurMatch review?",
+    "MasseurMatch may review profile content for compliance with platform rules. Any such review is not professional license or credential verification, a background check, endorsement, or guarantee of service quality.",
   ],
   [
     "Does MasseurMatch book massage appointments?",
-    "No. MasseurMatch does not schedule or manage client appointments. Session details are arranged directly with the independent therapist.",
+    "No. MasseurMatch does not schedule or manage client appointments. Session details are arranged directly with the independent provider.",
   ],
   [
     "Does MasseurMatch process massage-session payments?",
-    "No. MasseurMatch does not process payments between clients and therapists or take a commission from massage-session payments.",
+    "No. MasseurMatch does not process payments between clients and providers or take a commission from massage-session payments.",
   ],
   [
     "What does an ID verified badge mean?",
-    "It refers only to the identity check described by MasseurMatch's badge policy. It is not professional licensing, certification, a background check, or a guarantee.",
+    "It refers only to the specific identity check described by MasseurMatch's badge policy. It is not professional licensing, certification, credential verification, a background check, endorsement, or a guarantee.",
+  ],
+  [
+    "Are therapists MasseurMatch employees?",
+    "No. Providers listed on MasseurMatch are independent third parties responsible for their own services, qualifications, appointments, pricing, payments, and legal compliance.",
   ],
   [
     "What do incall and outcall mean?",
-    "When provided on a profile, incall means the therapist may receive clients at their location, while outcall means the therapist may travel to a client location. Confirm current details directly with the therapist.",
+    "When provided on a profile, incall means the provider may receive clients at their location, while outcall means the provider may travel to a client location. Confirm current details directly with the provider.",
   ],
 ] as const;
 
@@ -463,7 +482,7 @@ export function HomeFaq() {
     <InstitutionalSection
       eyebrow="Common questions"
       title="Everything you need to know."
-      intro="A quick guide to how the directory, profile review, direct contact, and identity signals work."
+      intro="A quick guide to the directory model, platform rules, direct contact, and limited identity signals."
     >
       <InstitutionalFaq items={homeFaqItems.map(([question, answer]) => ({ question, answer }))} />
       <Link
@@ -481,7 +500,7 @@ export function HomeFinalCta() {
     <InstitutionalCta
       eyebrow="For therapists"
       title="Get listed today."
-      description="Create a professional public profile, reach local discovery pages, and let prospective clients contact you directly."
+      description="Create a public directory profile, appear on relevant local discovery pages, and let prospective clients contact you directly."
       actions={[
         { label: "List your practice", href: "/for-therapists" },
         { label: "View pricing", href: "/pricing", secondary: true },
