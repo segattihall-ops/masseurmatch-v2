@@ -1,9 +1,20 @@
+import { ProAiCoach } from "@/components/pro/ai-coach";
+import { requireTherapist } from "@/lib/guards";
+import { getProDashboard } from "@/lib/pro-dashboard";
+
+export const metadata = { title: "AI Profile Coach | MasseurMatch" };
+export const dynamic = "force-dynamic";
+
 /**
- * AI Profile Coach.
+ * The Coach in the Pro shell.
  *
- * Re-exported rather than copied so there is one implementation to fix. The
- * page renders inside the Pro shell here and the legacy shell at its old path,
- * which is what lets `/therapist/*` keep working while `/pro/*` becomes the
- * front door.
+ * Reads the same gathered dashboard data as `/pro/dashboard`, so the banner
+ * there and the list here are always the same ranking — they are literally the
+ * same `coachAdvice` call.
  */
-export { default } from "@/app/therapist/ai-coach/page";
+export default async function ProAiCoachPage() {
+  const viewer = await requireTherapist("/pro/ai-coach");
+  const data = await getProDashboard(viewer.user.id);
+
+  return <ProAiCoach data={data} />;
+}

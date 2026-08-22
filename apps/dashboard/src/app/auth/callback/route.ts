@@ -1,9 +1,11 @@
 import { createSessionClient } from "@masseurmatch/db/auth";
+import { cookies } from "next/headers";
 import { NextResponse, type NextRequest } from "next/server";
 
 import { ensureProviderAccount } from "@/lib/account-setup";
 import { emailLinkType } from "@/lib/email-links";
 import { isNewAccount } from "@/lib/oauth";
+import { REFERRAL_COOKIE } from "@/lib/referrals";
 import { safeNext } from "@/lib/safe-next";
 
 /**
@@ -108,6 +110,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
           (result.data.user.user_metadata?.name as string | undefined) ??
           null,
         email: result.data.user.email ?? null,
+        // Set by `/r/<code>` before they signed up. This is the arrival that
+        // matters for Google, where nothing of ours rides the OAuth round trip.
+        referralCode: cookies().get(REFERRAL_COOKIE)?.value ?? null,
       });
     } catch (cause) {
       console.error("[auth/callback] could not finish account setup", cause);
@@ -115,5 +120,12 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     }
   }
 
-  return NextResponse.redirect(new URL(next, url.origin));
+  const arrived = NextResponse.redirect(new URL(next, url.origin));
+
+  // The referral has been claimed or refused by now, and either way the cookie
+  // has done its job. Leaving it would attribute the *next* account created in
+  // this browser to the same referrer.
+  if (createdAnAccount) arrived.cookies.delete(REFERRAL_COOKIE);
+
+  return arrived;
 }

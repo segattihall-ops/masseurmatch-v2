@@ -143,4 +143,14 @@ export const LIMITS = {
    * mistyped number, a correction, and one retry.
    */
   phoneCode: { limit: 3, windowMs: 60_000 },
+  /**
+   * Review-import requests, per account rather than per address.
+   *
+   * Per account because the cost of an accepted call is a row in a queue a
+   * person reads, not an email or a charge — and because therapists sharing a
+   * salon's connection must not lock each other out. An hour-long window: five
+   * old listings is already more than anyone has, and someone correcting a
+   * typo four times is still fine.
+   */
+  reviewImport: { limit: 5, windowMs: 3_600_000 },
 } as const;

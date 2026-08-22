@@ -1,6 +1,6 @@
 import "server-only";
 
-import { coachAdvice, type Advice } from "@masseurmatch/db/coach";
+import { coachAdvice, coachAllClear, type Advice, type CoachSignals } from "@masseurmatch/db/coach";
 import { createSessionClient } from "@masseurmatch/db/auth";
 import { createServiceClient } from "@masseurmatch/db/client";
 import { isAvailableNow } from "@masseurmatch/db/available-now";
@@ -43,8 +43,18 @@ export type PhotoCounts = { approved: number; pending: number; rejected: number 
 export type ProDashboardData = {
   profile: MyProfile;
   score: ProfileScore;
+  /**
+   * Everything the Coach would suggest, most urgent first.
+   *
+   * The whole list rather than a slice: the dashboard banner wants the first
+   * item and the Coach page wants all of them, and computing it twice from the
+   * same signals is how the two end up recommending different things.
+   */
+  advice: Advice[];
   /** The one thing the Coach would do next, or null when there is nothing. */
   nextAction: Advice | null;
+  /** What to say when `advice` is empty. Never a bare "no data". */
+  allClear: string;
 
   views: { window: number; long: number };
   contacts: { window: number; rate: number | null };
@@ -211,7 +221,7 @@ export async function getProDashboard(userId: string): Promise<ProDashboardData>
 
   const views = analytics?.total ?? 0;
 
-  const advice = coachAdvice({
+  const signals: CoachSignals = {
     scoreTotal: score.total,
     scoreActions: score.todo.map((check) => ({
       id: check.id,
@@ -230,24 +240,18 @@ export async function getProDashboard(userId: string): Promise<ProDashboardData>
     // is available here without asking would put advice on the page that the
     // therapist cannot act on.
     canSpike: false,
-    availableNow: isAvailableNow(profile as never, now),
-  });
-
-  const extras = profile as unknown as {
-    profile_completeness?: number | null;
-    completion_percentage?: number | null;
-    offers_outcall?: boolean | null;
-    outcall?: boolean | null;
-    traveling?: boolean | null;
-    travel_schedule?: unknown;
+    availableNow: isAvailableNow(profile, now),
   };
 
-  const trips = parseTravelSchedule(extras.travel_schedule);
+  const advice = coachAdvice(signals);
+  const trips = parseTravelSchedule(profile.travel_schedule);
 
   return {
     profile,
     score,
+    advice,
     nextAction: advice[0] ?? null,
+    allClear: coachAllClear(signals),
 
     views: { window: views, long: longViews },
     contacts: {
@@ -260,16 +264,16 @@ export async function getProDashboard(userId: string): Promise<ProDashboardData>
       score: demand?.reading?.score ?? null,
       direction: demand?.reading?.direction ?? "stable",
     },
-    completion: extras.profile_completeness ?? extras.completion_percentage ?? null,
+    completion: profile.profile_completeness ?? profile.completion_percentage ?? null,
     photos,
     identity,
     openTickets: tickets,
     unreadNotifications: notifications,
 
     toggles: {
-      availableNow: isAvailableNow(profile as never, now),
-      traveling: Boolean(extras.traveling) || upcomingVisits(trips, null, now).length > 0,
-      mobile: extras.offers_outcall ?? extras.outcall ?? null,
+      availableNow: isAvailableNow(profile, now),
+      traveling: Boolean(profile.traveling) || upcomingVisits(trips, null, now).length > 0,
+      mobile: profile.offers_outcall ?? profile.outcall ?? null,
       visible: profile.visibility_status === PUBLIC,
     },
   };

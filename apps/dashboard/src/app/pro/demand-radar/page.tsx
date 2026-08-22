@@ -1,9 +1,21 @@
+import { ProDemandRadar } from "@/components/pro/demand-radar";
+import { getMyCityDemand } from "@/lib/demand";
+import { requireTherapist } from "@/lib/guards";
+
+export const metadata = { title: "Demand Radar | MasseurMatch" };
+export const dynamic = "force-dynamic";
+
 /**
- * Demand Radar for the therapist's city.
+ * Demand Radar in the Pro shell.
  *
- * Re-exported rather than copied so there is one implementation to fix. The
- * page renders inside the Pro shell here and the legacy shell at its old path,
- * which is what lets `/therapist/*` keep working while `/pro/*` becomes the
- * front door.
+ * The page is a data fetch and a component. The component is shared with the
+ * legacy `/therapist/demand-radar` route, which supplies its own padding — the
+ * Pro layout already supplies this one's, and a page that carried its own would
+ * be indented twice here.
  */
-export { default } from "@/app/therapist/demand-radar/page";
+export default async function ProDemandRadarPage() {
+  const viewer = await requireTherapist("/pro/demand-radar");
+  const demand = await getMyCityDemand(viewer.user.id);
+
+  return <ProDemandRadar demand={demand} />;
+}
