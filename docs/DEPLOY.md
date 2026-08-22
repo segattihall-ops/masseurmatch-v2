@@ -154,7 +154,7 @@ Set these under **Settings** → **Environment Variables** on each project, for
 > Renaming is not optional and old names are not aliased — a variable under the
 > wrong name is the same as an unset one.
 
-The two apps need _different_ variables. This matters: nothing in `apps/web`
+The three apps need _different_ variables. This matters: nothing in `apps/web`
 reads any PayPal variable, so PayPal credentials set on `masseurmatch-v2` do
 nothing at all.
 
@@ -166,7 +166,7 @@ nothing at all.
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY`     | yes        |                                                                                                                                                                                 |
 | `NEXT_PUBLIC_SITE_URL`              | at cutover | Leave unset until the domain moves; it falls back to the Vercel URL. Set it to `https://www.masseurmatch.com` when cutting over                                                 |
 | `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` | for images | Without it, profile photos do not render                                                                                                                                        |
-| `NEXT_PUBLIC_TURNSTILE_SITE_KEY`    | optional   |                                                                                                                                                                                 |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY`    | not read   | `apps/web` renders no form that takes a credential. Setting it here does nothing — the Turnstile keys belong on the dashboard and admin projects (step 4d)                      |
 | `NEXT_PUBLIC_SENTRY_DSN`            | optional   |                                                                                                                                                                                 |
 | `SUPABASE_SERVICE_ROLE_KEY`         | for views  | Server only. `/api/views` records profile views with it; without it the endpoint is inert and view counts stay flat                                                             |
 | `NEXT_PUBLIC_DASHBOARD_URL`         | for signup | `https://dashboard.masseurmatch.com`. Without it, `/for-therapists` shows no "Create your account" button — there is no fallback, because a guessed host would be a dead button |
@@ -195,6 +195,30 @@ nothing at all.
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY`    | optional     | Both Turnstile keys, or neither — one alone leaves the check off                                                                                                   |
 | `TURNSTILE_SECRET_KEY`              | optional     | Server only                                                                                                                                                        |
 | `NEXT_PUBLIC_SENTRY_DSN`            | optional     |                                                                                                                                                                    |
+
+### `masseurmatch-v2-admin` (the admin app)
+
+This project was created after the section above was written and spent its
+first hours returning `500` on every page: the runtime logs read
+`Missing NEXT_PUBLIC_SUPABASE_URL`, 68 times, because nothing here had ever
+been set. There is no partial mode — `createSessionClient()` throws before any
+page renders, so the first three rows are the difference between a working app
+and a blank error.
+
+| Variable                         | Required | Notes                                                                                                                                                  |
+| -------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `NEXT_PUBLIC_SUPABASE_URL`       | yes      | Nothing renders without it                                                                                                                             |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY`  | yes      | Throws on the next line of the same call                                                                                                               |
+| `SUPABASE_SERVICE_ROLE_KEY`      | yes      | Server only. The verification, ticket, moderation and audit-log queues read with it. Bypasses RLS — never prefix with `NEXT_PUBLIC_`                   |
+| `NEXT_PUBLIC_SITE_URL`           | yes      | `https://www.masseurmatch.com`. Without it, "view public profile" falls back to this project's own host and every such link 404s on the admin domain   |
+| `NEXT_PUBLIC_ADMIN_URL`          | yes      | `https://admin.masseurmatch.com` — this app's own domain. Where Google returns an operator after sign-in; must match the redirect allow-list (step 4b) |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | optional | Both Turnstile keys, or neither — one alone leaves the check off                                                                                       |
+| `TURNSTILE_SECRET_KEY`           | optional | Server only                                                                                                                                            |
+| `NEXT_PUBLIC_SENTRY_DSN`         | optional |                                                                                                                                                        |
+
+Adding these needs a **redeploy** to take effect. Vercel fixes a deployment's
+environment when it is built; the deployment already serving the domain keeps
+the environment it was built with, however the dashboard now reads.
 
 ### Adding a variable Vercel does not already know about
 
@@ -362,11 +386,18 @@ an error page.
 > whoever owns the domain.
 
 1. Supabase → **Authentication** → **URL Configuration** → **Redirect URLs**.
-2. Add both:
+2. Add all four:
    - `https://dashboard.masseurmatch.com/auth/callback`
    - `https://dashboard.masseurmatch.com/auth/callback**`
+   - `https://admin.masseurmatch.com/auth/callback`
+   - `https://admin.masseurmatch.com/auth/callback**`
 
-   Two entries because the links carry a query string
+   The admin pair is what makes "Continue with Google" work on the admin app.
+   Supabase matches `redirectTo` against this list and refuses anything absent,
+   so without it the operator reaches Google, approves, and is bounced to the
+   Site URL — the old site — instead of coming back signed in.
+
+   Two entries per host because the links carry a query string
    (`?setup=1&next=…`, `?next=%2Freset-password`) and Supabase's documentation
    defines its wildcards (`*` stops at a separator, `**` does not, `.` and `/`
    are the separators) without saying whether the query string takes part in the
@@ -411,12 +442,27 @@ decision you have already made.
 **Google.** Already enabled on this Supabase project — `/auth/v1/settings`
 reports `google: true` — so "Continue with Google" works as soon as the
 `/auth/callback` entry from step 4b is in the allow-list. Nothing else to set.
+The OAuth client in Google Cloud needs no new redirect URI for a second app
+either: it points at Supabase's own `/auth/v1/callback`, not at ours.
 
 Worth knowing: Google is the one flow where signing up and signing in are the
 same click, so the role grant cannot be inferred from the button. It is decided
 from the auth user's `created_at` instead — an account created in the last ten
 minutes is new, anything older is a returning user and keeps whatever role it
 has. See `apps/dashboard/src/lib/oauth.ts`.
+
+**Google on the admin app.** The same button, and deliberately not the same
+rule behind it. `apps/admin` grants nothing: its callback exchanges the code for
+a session and stops, with no account setup and no role write. Authorisation
+stays with `requireAdmin()` reading `user_roles` on the server, so an operator
+signs in with Google exactly as they do with a password — and a Google account
+without the admin role authenticates successfully and still sees nothing but
+`/not-authorized`. Granting a role there would turn "anyone with a Google
+account" into "anyone who can reach the admin sign-in page".
+
+That page names the account it refused and offers a sign-out, because the
+account chooser makes arriving as the wrong person a one-click mistake, and
+without a way to drop the session the sign-in page just redirects back to it.
 
 **Phone.** Uses Supabase's own SMS provider settings (Twilio), so there is no
 new variable here either. Two properties are deliberate and will look like bugs
@@ -460,6 +506,55 @@ The flow, and the two things about it that are policy rather than plumbing:
 
 ---
 
+## Step 4d — Turn on Turnstile
+
+Optional — the apps run with it off, by construction — but everything in the
+code is already there. Five forms render the widget and verify the token
+server-side: dashboard sign-in, sign-up, forgot-password and phone sign-in, and
+admin sign-in. Both apps' CSPs already name `challenges.cloudflare.com`. What
+is missing is a widget and two keys.
+
+1. Cloudflare dashboard → **Turnstile** → **Add widget**. Mode **Managed** is
+   the right default; the code does not depend on which you pick.
+2. **Hostnames.** List each host that actually renders a form:
+   - `dashboard.masseurmatch.com`
+   - `admin.masseurmatch.com`
+
+   A hostname missing here is the most likely mistake, and it used to be an
+   invisible one: the widget refused, the form looked normal, and the server
+   answered "we could not verify that you are human". The widget now surfaces
+   that refusal on the page.
+
+3. Set both keys, on **both** the dashboard and admin projects:
+
+   | Variable                         | Value                        |
+   | -------------------------------- | ---------------------------- |
+   | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | the widget's site key        |
+   | `TURNSTILE_SECRET_KEY`           | its secret key — server only |
+
+   **Production only.** Leave both unset on Preview: preview hostnames are
+   generated per deployment and cannot be pinned in the widget's list, and an
+   unconfigured deployment is a supported state rather than a broken one.
+
+4. Redeploy. The site key is inlined at build time, so a running deployment
+   does not pick it up.
+
+**Set both or neither.** With one key present and the other missing,
+`verifyTurnstile` returns `not_configured`, and every form treats that as
+"nothing to check" and proceeds. That is deliberate — the alternative is an
+outage when an optional vendor is half-configured — but it does mean a
+half-finished setup looks exactly like a working one from the outside. The way
+to tell is to look at a form: no widget means no check.
+
+Cloudflare publishes dummy site and secret keys that always pass and always
+fail. Wiring the always-fail pair into a preview first is the cheapest way to
+prove the server side actually refuses, rather than assuming it.
+
+`apps/web` reads neither variable — it renders no form that takes a credential,
+so setting them on `masseurmatch-v2` does nothing at all.
+
+---
+
 ## Step 5 — Cut over the domain
 
 Only after steps 1–4 verify. Follow `CUTOVER.md`; the short version:
@@ -474,7 +569,7 @@ Only after steps 1–4 verify. Follow `CUTOVER.md`; the short version:
 
 ## Optional, safe to defer
 
-- **Turnstile** — a Cloudflare site key and secret. Both or neither.
+- **Turnstile** — a Cloudflare site key and secret. Both or neither. Step 4d.
 - **Sentry** — a DSN. `reportError` logs until one exists.
 - **Shared rate-limit store** — Upstash or Vercel KV. The current limiter is
   per-lambda-instance, so it is a speed bump rather than a guarantee.

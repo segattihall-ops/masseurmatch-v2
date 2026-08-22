@@ -59,6 +59,12 @@ credentials*.json
 # vercel
 .vercel
 
+# supabase CLI scratch. `supabase init` would put a .gitignore inside
+# supabase/ carrying this, but this repository keeps only the migrations
+# folder and was never initialised — so the first person to run any CLI
+# command gets an untracked file with nothing in it.
+supabase/.temp/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
