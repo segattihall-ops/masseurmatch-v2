@@ -1,0 +1,195 @@
+name: PR42 finalize once
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pr42-finalize-once
+  cancel-in-progress: false
+
+jobs:
+  finalize:
+    if: github.head_ref == 'fix/launch-critical-flows' && github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/launch-critical-flows
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Incorporate latest main
+        run: |
+          git fetch origin main
+          git merge --no-edit origin/main
+
+      - name: Apply final targeted fixes and launch smoke coverage
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+
+          path = Path('apps/web/src/components/public-profile-page.tsx')
+          text = path.read_text()
+          text = text.replace('  profilePath,\n', '')
+          text = text.replace('  const name = therapistName(profile);\n\n  async function submit', '\n  async function submit', 1)
+          text = text.replace(
+              '          profileId: profile.id,\n          profileSlug: profile.slug,\n          profileName: name,\n          category: data.get("category"),',
+              '          profileId: profile.id,\n          category: data.get("category"),',
+          )
+          old_social = '''  const socialLinks = asRecords(supplement.social_media).length
+    ? Object.entries(asRecords(supplement.social_media)[0]).filter(([, value]) => typeof value === "string" && /^https?:\\/\\//.test(value)) as Array<[string, string]>
+    : [];'''
+          new_social = '''  const socialMedia = asRecords(supplement.social_media)[0] ?? {};
+  const socialLinks = Object.entries(socialMedia).filter(
+    (entry): entry is [string, string] =>
+      typeof entry[1] === "string" && /^https?:\\/\\//.test(entry[1]),
+  );'''
+          if old_social not in text:
+              raise SystemExit('expected socialLinks block not found')
+          text = text.replace(old_social, new_social)
+          path.write_text(text)
+
+          test_path = Path('tests/smoke/launch-critical.spec.ts')
+          test_path.write_text('''import { expect, test, type APIRequestContext } from "@playwright/test";
+
+async function publicProfilePaths(request: APIRequestContext): Promise<string[]> {
+  const sitemap = await (await request.get("/sitemap.xml")).text();
+  return [...sitemap.matchAll(/<loc>([^<]+)<\\/loc>/g)]
+    .map((match) => new URL(match[1]).pathname)
+    .filter((path) => path.split("/").filter(Boolean).length === 3);
+}
+
+test("a public profile exposes contact and reporting actions", async ({ page, request }) => {
+  const paths = await publicProfilePaths(request);
+  expect(paths.length).toBeGreaterThan(0);
+
+  let matchedPath: string | null = null;
+  for (const path of paths.slice(0, 30)) {
+    const response = await page.goto(path);
+    if (response?.status() !== 200) continue;
+
+    const report = page.getByRole("button", { name: "Report this profile" });
+    const contact = page.locator(
+      'a[href^="tel:"], a[href^="sms:"], a[href^="mailto:"], a[href*="wa.me"], a:has-text("Provider scheduling link")',
+    );
+    if ((await report.count()) > 0 && (await contact.count()) > 0) {
+      matchedPath = path;
+      await expect(report).toBeVisible();
+      await expect(contact.first()).toBeVisible();
+      await report.click();
+      await expect(page.locator("#report-category")).toBeVisible();
+      await expect(page.locator("#report-reason")).toBeVisible();
+      await expect(page.locator("#report-email")).toBeVisible();
+      await expect(page.getByRole("button", { name: "Submit report" })).toBeVisible();
+      break;
+    }
+  }
+
+  expect(matchedPath, "expected at least one public provider with a contact method").not.toBeNull();
+});
+
+test("report submission cannot invent a public profile", async ({ request }) => {
+  const response = await request.post("/api/profile-reports", {
+    data: {
+      profileId: "00000000-0000-0000-0000-000000000000",
+      profileSlug: "client-controlled-slug",
+      profileName: "client-controlled-name",
+      category: "profile_accuracy",
+      reason: "This is a deliberately nonexistent profile used by the smoke test.",
+    },
+  });
+
+  expect(response.status()).toBe(404);
+});
+
+test("contact analytics refuses a non-public profile id", async ({ request }) => {
+  const response = await request.post("/api/profile-actions", {
+    data: {
+      profileId: "00000000-0000-0000-0000-000000000000",
+      action: "call",
+    },
+  });
+
+  expect(response.status()).toBe(404);
+});
+
+test.describe("launch-critical authorization boundaries", () => {
+  for (const path of [
+    "/admin/profile-reports",
+    "/admin/moderation",
+    "/pro/approval-status",
+    "/pro/listing",
+  ]) {
+    test(`${path} is not available anonymously`, async ({ page }) => {
+      await page.goto(path);
+      const landed = new URL(page.url()).pathname;
+      expect(landed, path).not.toBe(path);
+      expect(landed, path).toMatch(/\\/sign-in|\\/not-authorized/);
+    });
+  }
+});
+''')
+
+          lifecycle = Path('packages/db/tests/review-lifecycle.test.ts')
+          lifecycle_text = lifecycle.read_text()
+          needle = '''  it("treats either enforcement flag as a hard block", () => {
+    expect(isEnforcementBlocked({ ...base, isSuspended: true })).toBe(true);
+    expect(isEnforcementBlocked({ ...base, isBanned: true })).toBe(true);
+    expect(isEnforcementBlocked(base)).toBe(false);
+  });
+'''
+          addition = needle + '''\n  it("preserves the launch journey from requested changes through re-approval", () => {
+    const requestedChanges = {
+      ...base,
+      profileStatus: "rejected",
+      moderationStatus: "rejected",
+    };
+    expect(canProviderResubmit(requestedChanges)).toBe(true);
+    expect(isReviewableModerationState(requestedChanges)).toBe(false);
+
+    const resubmitted = {
+      ...base,
+      profileStatus: "pending",
+      moderationStatus: "pending",
+    };
+    expect(canProviderResubmit(resubmitted)).toBe(false);
+    expect(isReviewableModerationState(resubmitted)).toBe(true);
+
+    const approved = {
+      ...base,
+      profileStatus: "approved",
+      moderationStatus: "approved",
+    };
+    expect(canProviderResubmit(approved)).toBe(false);
+    expect(isReviewableModerationState(approved)).toBe(false);
+  });
+'''
+          if needle not in lifecycle_text:
+              raise SystemExit('expected lifecycle test insertion point not found')
+          lifecycle.write_text(lifecycle_text.replace(needle, addition))
+          PY
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Format repository
+        run: pnpm format
+
+      - name: Remove one-time workflow and commit
+        run: |
+          rm .github/workflows/pr42-finalize-once.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "test: cover launch-critical public and moderation journey"
+          git push origin HEAD:fix/launch-critical-flows
